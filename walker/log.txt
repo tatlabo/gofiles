@@ -1,0 +1,9 @@
+&[File has no extension: D:\Ilustracje geometryczne\linnea andersson\ced5e5a058178dc0c3561be1bbd646eec55e6684_MCCTWP001BLU_UK_Wrap_Round_Blue_Leaves_Art_Tray_By_Linnea_Andersson_38cm_ar5_6_LB02_LS
+ File has no extension: D:\Ilustracje geometryczne\linnea andersson\fed31a0fcc723c107706a4c85623420b32006e9d_MCCTWP001GRN_UK_Wrap_Rectangular_Green_Leaves_By_Linnea_Anderson_36x28cm_Multi_ar5_6_LB
+ File has no extension: D:\Photoshop Temp173397714664
+ File has no extension: D:\SteamLibrary\steamapps\common\A Little To The Left\A Little To The Left_Data\Resources\unity default resources
+ File has no extension: D:\SteamLibrary\steamapps\common\A Little To The Left\A Little To The Left_Data\Resources\unity_builtin_extra
+ File has no extension: D:\SteamLibrary\steamapps\common\A Little To The Left\A Little To The Left_Data\globalgamemanagers
+ File has no extension: D:\SteamLibrary\steamapps\common\A Little To The Left\A Little To The Left_Data\il2cpp_data\etc\mono\config
+ File has no extension: D:\SteamLibrary\steamapps\common\A Little To The Left\A Little To The Left_Data\level0
+ Error accessing path D:\System Volume Information: open D:\System Volume Information: Access is denied.]

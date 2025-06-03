@@ -1,0 +1,155 @@
+{{ define "index"}}
+<!DOCTYPE html>
+
+{{ template "header" .HeaderTitle }}
+{{ template "header" }}
+
+<body>
+    <nav>
+        <button id="theme-toggle">switch theme</button>
+    </nav>
+
+    <main class="">
+        <article id="fileList" class="" data-counter="{{ .Counter }}" data-name="{{ .Params.Name }}"
+            data-offset="{{ .Params.Offset }}">
+
+            {{ if equals .Params.NotFound "true" }}
+            <p class="">Nothing was found</p>
+            {{ template "form" .Params }}
+            {{ else }}
+
+            {{ template "form" .Params }}
+            <ul id="list-headers" class="file-list headers">
+                <li id="sort-name" data-sort-type="name" data-ascending="true">name</li>
+                <li id="sort-size" data-sort-type="size" data-ascending="true">size</li>
+                <li id="sort-date" data-sort-type="moddate" data-ascending="true">date</li>
+            </ul>
+            <!-- <p>{{ .Params }}</p> -->
+            <ol id="list" class="file-list" type="1">
+                {{ template "list" . }}
+            </ol>
+            <div id="button-container" class="button-container">
+                <button class="primary" type="button"
+                    hx-get="/append?name={{ .Params.Name }}&like={{ .Params.Like }}&limit={{ .Params.Limit }}&offset={{ .Params.Limit }}&dir={{ .Params.Dir }}"
+                    hx-target="#list" hx-swap="beforeend" hx-boost="true" hx-trigger="click" id="next">There is {{
+                    .Counter }} results.
+                </button>
+            </div>
+
+            {{ end }}
+        </article>
+
+
+    </main>
+
+    <article class="preview-container" id="preview-section">
+        <section class="preview">
+            <button type="button" class="primary" id="hidePreview" onClick="() => hidePreview()">x</button>
+            {{ template "preview-content" . }}
+        </section>
+    </article>
+
+    <script>
+
+
+
+        const previewSectionEl = document.getElementById("preview-section");
+        const fileListEl = document.getElementById("fileList");
+        previewSectionEl.style.display = "none";
+
+
+        document.addEventListener("DOMContentLoaded", function () {
+
+
+            const nextBtn = document.getElementById("next");
+            const list = document.getElementById("list");
+            const limit = parseInt("{{ .Params.Limit }}") || 10;
+            let offset = limit
+            const nameParam = "{{ .Params.Name }}";
+            const buttonContainer = document.getElementById("button-container");
+            const counter = parseInt("{{ .Counter }}") || 0;
+
+
+            if (counter <= limit && nextBtn) {
+                nextBtn.disabled = true; // Disable the button
+                nextBtn.innerHTML = `There is ${counter} results`// Update button text
+            }
+
+            if (buttonContainer) {
+
+                buttonContainer.addEventListener("click", function (event) {
+
+                    offset += limit
+
+                    // let like = `{{ .Params.Like }}` === `on` ? true : false
+                    // let dir = `{{ .Params.Dir }}` === `on` ? true : false
+
+
+                    let jsonURL = `/append?name=${nameParam}&limit=${limit}&offset=${offset}`
+
+
+                    if ("{{ .Params.Dir }}" === "on") {
+                        jsonURL += `&dir=on`;
+                    }
+
+                    if ("{{ .Params.Like }}" === "on") {
+                        jsonURL += `&like=on`;
+                    }
+
+                    console.log("jsonURL", jsonURL)
+
+                    nextBtn.innerHTML = `There is ${counter} results`;
+
+                    nextBtn.setAttribute("hx-get", jsonURL);
+
+                    if (offset >= counter) {
+                        nextBtn.disabled = true; // Disable the button
+                        nextBtn.innerHTML = `There is ${counter} results` // Update button text
+                    }
+                    htmx.process(nextBtn)
+
+                })
+            }
+
+
+
+
+            let listContainer = document.getElementById("list"); // The parent container of the list items
+            if (listContainer) {
+                let listItems = Array.from(listContainer.querySelectorAll("li.item-list")); // Get all list items
+                const sortObject = {
+                    name: true,
+                    size: true,
+                    date: true
+                };
+                let nameAsc = true; // Flag for ascending/descending order
+                let sizeAsc = true; // Flag for ascending/descending order
+                let dateAsc = true; // Flag for ascending/descending order
+
+                document.getElementById("sort-size").addEventListener("click", (event) => handleSortClick(event))
+                document.getElementById("sort-name").addEventListener("click", (event) => handleSortClick(event))
+                document.getElementById("sort-date").addEventListener("click", (event) => handleSortClick(event))
+            }
+
+
+
+
+
+
+
+
+        })
+
+    </script>
+
+</body>
+
+</html>
+{{ end }}
+
+
+<!-- {{ block "preview-content" . }}
+<div id="preview">
+    {{ .Text | html }}
+</div>
+{{ end }} -->

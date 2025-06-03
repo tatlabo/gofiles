@@ -1,0 +1,673 @@
+[
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL', '---COMMON', '', true, 0,'2022-07-07 13:42:06')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON', '32 points', 'png', false, 4164758,'2019-10-02 10:18:23')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON', 'Acneminum_RO_TV_20191001-prev', 'jpg', false, 881637,'2019-10-02 11:05:02')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON', 'Belka Aflo', 'psd', false, 1388162,'2019-09-05 10:34:10')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON', 'Belka Aflo.psd', 'zip', false, 1184050,'2019-09-06 15:04:48')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON', 'Fonts', '', true, 0,'2022-07-07 13:42:09')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts', 'fonts', '', true, 0,'2022-07-08 10:57:35')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts', 'Gotham', '', true, 0,'2022-07-07 13:42:13')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'Gotham-BlackIta_0', 'ttf', false, 148112,'2011-07-19 11:14:56')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'Gotham-BlackItalic_4', 'otf', false, 170932,'2008-09-11 17:32:48')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'Gotham-Black_0', 'ttf', false, 135508,'2011-07-18 20:41:16')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'Gotham-Black_6', 'otf', false, 165580,'2008-09-11 17:30:42')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'Gotham-BoldItalic_0', 'ttf', false, 64204,'2005-10-09 22:30:00')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'Gotham-BoldItalic_6', 'otf', false, 161132,'2008-09-11 17:32:06')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'Gotham-Bold_2', 'ttf', false, 148164,'2011-07-20 20:33:14')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'Gotham-Bold_6', 'otf', false, 157328,'2008-09-11 17:31:58')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'Gotham-BookIta_0', 'ttf', false, 173760,'2011-07-19 11:19:18')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'Gotham-Book_4', 'otf', false, 158964,'2008-09-11 17:31:50')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'Gotham-Book_4', 'ttf', false, 166968,'2011-07-19 11:16:02')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'Gotham-ExtraLightItalic_2', 'otf', false, 173876,'2008-09-11 17:32:40')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'Gotham-ExtraLight_2', 'otf', false, 161604,'2008-09-11 17:31:24')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'Gotham-LightIta_0', 'ttf', false, 206040,'2011-07-19 11:22:38')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'Gotham-Light_2', 'ttf', false, 185756,'2011-07-19 11:20:54')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'Gotham-Light_6', 'otf', false, 155004,'2008-09-11 17:31:42')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'Gotham-MediumIta_0', 'ttf', false, 154208,'2011-07-19 11:26:26')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'Gotham-Medium_2', 'otf', false, 159852,'2008-09-11 17:30:56')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'Gotham-Medium_4', 'ttf', false, 154904,'2011-07-19 11:25:20')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'Gotham-ThinItalic_0', 'ttf', false, 63112,'2005-10-09 22:25:18')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'Gotham-Thin_4', 'otf', false, 160092,'2008-09-11 17:31:32')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'Gotham-UltraItalic_4', 'otf', false, 159052,'2008-09-11 17:32:30')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'Gotham-Ultra_0', 'ttf', false, 65536,'2005-10-09 22:25:52')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'Gotham-XLightItalic_0', 'otf', false, 23316,'2005-09-29 17:05:36')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'Gotham-XLightItalic_0', 'ttf', false, 64644,'2005-10-09 22:28:08')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'Gotham-XLight_0', 'otf', false, 21976,'2005-09-29 17:02:32')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'Gotham-XLight_0', 'ttf', false, 67012,'2005-10-09 22:27:38')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'GothamCondensed-Bold_0', 'otf', false, 28508,'2006-11-04 00:49:08')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'GothamCondensed-Bold_0', 'ttf', false, 98428,'2011-07-13 15:12:44')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'GothamCondensed-Light_0', 'otf', false, 28524,'2006-11-04 00:49:08')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'GothamCondensed-Light_0', 'ttf', false, 127348,'2011-07-19 18:24:40')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'GothamCondensed-Medium_0', 'otf', false, 28564,'2006-11-04 00:49:08')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'GothamNarrow-BlackItalic_4', 'otf', false, 171264,'2008-09-12 12:08:34')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'GothamNarrow-Black_2', 'otf', false, 157052,'2008-09-12 12:03:48')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'GothamNarrow-BoldItalic_4', 'otf', false, 197436,'2008-09-11 17:37:16')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'GothamNarrow-Bold_4', 'otf', false, 176412,'2008-09-11 17:34:28')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'GothamNarrow-BookItalic_4', 'otf', false, 198228,'2008-09-11 17:38:12')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'GothamNarrow-Book_4', 'otf', false, 177824,'2008-10-02 16:00:10')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'GothamNarrow-LightItalic_4', 'otf', false, 197156,'2008-09-11 17:40:24')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'GothamNarrow-Light_4', 'otf', false, 174132,'2008-09-11 17:34:20')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'GothamNarrow-MediumItalic_4', 'otf', false, 198100,'2008-09-11 17:38:04')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'GothamNarrow-Medium_4', 'otf', false, 178648,'2008-09-11 17:33:42')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'GothamNarrow-ThinItalic_4', 'otf', false, 161652,'2008-09-12 12:08:26')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'GothamNarrow-Thin_4', 'otf', false, 145972,'2008-09-12 12:03:42')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'GothamNarrow-UltraItalic_4', 'otf', false, 157176,'2008-09-12 12:08:42')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'GothamNarrow-Ultra_2', 'otf', false, 146180,'2008-09-12 12:05:16')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'GothamNarrow-XLightItalic_2', 'otf', false, 173832,'2008-09-12 12:08:50')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Gotham', 'GothamNarrow-XLight_2', 'otf', false, 149448,'2008-09-12 12:04:52')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts', 'Mark Pro Font Family', '', true, 0,'2022-07-07 13:42:13')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Mark Pro Font Family', 'MARKPRO', 'OTF', false, 165396,'2020-09-27 17:36:32')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Mark Pro Font Family', 'MARKPROBLACK', 'OTF', false, 164300,'2020-09-27 17:36:34')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Mark Pro Font Family', 'MARKPROBOLD', 'OTF', false, 165936,'2020-09-27 17:36:38')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Mark Pro Font Family', 'MARKPROBOOK', 'OTF', false, 165500,'2020-09-27 17:36:42')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Mark Pro Font Family', 'MARKPROEXTRALIGHT', 'OTF', false, 160780,'2020-09-27 17:36:44')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Mark Pro Font Family', 'MARKPROHEAVY', 'OTF', false, 165096,'2020-09-27 17:36:46')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Mark Pro Font Family', 'MARKPROLIGHT', 'OTF', false, 163500,'2020-09-27 17:36:48')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Mark Pro Font Family', 'MARKPROMEDIUM', 'OTF', false, 162260,'2020-09-27 17:36:50')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts', 'MavenPro', '', true, 0,'2022-07-07 13:42:14')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\MavenPro', 'MavenPro-Black', 'ttf', false, 57780,'2011-05-25 00:00:00')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\MavenPro', 'MavenPro-Bold', 'ttf', false, 57812,'2011-05-25 00:00:00')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\MavenPro', 'MavenPro-ExtraBold', 'ttf', false, 57916,'2011-05-25 00:00:00')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\MavenPro', 'MavenPro-Medium', 'ttf', false, 57776,'2011-05-25 00:00:00')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\MavenPro', 'MavenPro-SemiBold', 'ttf', false, 57928,'2011-05-25 00:00:00')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\MavenPro', 'MavenPro-VariableFont_wght', 'ttf', false, 89520,'2011-05-25 00:00:00')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts', 'Maven_Pro', 'zip', false, 235431,'2022-06-07 13:37:24')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts', 'Ubuntu', '', true, 0,'2022-07-08 10:57:38')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Ubuntu', 'Ubuntu-Bold', 'ttf', false, 269584,'2010-12-14 23:00:00')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Ubuntu', 'Ubuntu-BoldItalic', 'ttf', false, 282700,'2010-12-14 23:00:00')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Ubuntu', 'Ubuntu-Italic', 'ttf', false, 326292,'2010-12-14 23:00:00')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Ubuntu', 'Ubuntu-Light', 'ttf', false, 361676,'2010-12-14 23:00:00')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Ubuntu', 'Ubuntu-LightItalic', 'ttf', false, 349540,'2010-12-14 23:00:00')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Ubuntu', 'Ubuntu-Medium', 'ttf', false, 284424,'2010-12-14 23:00:00')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Ubuntu', 'Ubuntu-MediumItalic', 'ttf', false, 308748,'2010-12-14 23:00:00')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Ubuntu', 'Ubuntu-Regular', 'ttf', false, 298928,'2010-12-14 23:00:00')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Fonts\fonts\Ubuntu', 'UbuntuCondensed-Regular', 'ttf', false, 276700,'2011-10-05 00:00:00')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON', 'Specyfikacje_HU', '', true, 0,'2019-09-13 15:27:56')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\Specyfikacje_HU', 'Hungary-WhitePage-8-2019-01 (1)', 'pdf', false, 265633,'2019-09-13 15:27:56')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON', 'animowane_loga_aflofarm_191001', '', true, 0,'2019-10-01 10:20:42')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\animowane_loga_aflofarm_191001', 'LOGO_lewe_alfa', 'mov', false, 27993415,'2019-10-01 08:19:32')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\animowane_loga_aflofarm_191001', 'LOGO_prawe_alfa', 'mov', false, 28453751,'2019-10-01 08:19:32')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON', 'napisy_hu', 'aep', false, 548587,'2020-02-18 14:12:58')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON', 'suplement_diety_HU', 'psd', false, 16737870,'2020-02-18 14:03:44')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON', 'wytyczne', '', true, 0,'2020-06-29 15:25:34')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\wytyczne', 'Akustone_21122016_cotton bud_transcript_FINAL for studio', 'docx', false, 83337,'2019-09-06 12:17:43')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\wytyczne', 'Femitonina BG _transcript_rev1 Final version rev1', 'docx', false, 28199,'2019-09-06 12:17:43')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\wytyczne', 'Hydrominum_09082018_window glass_transcript with HU 280819v7 to be approved by AFPL', 'docx', false, 29648,'2019-09-06 12:17:43')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\wytyczne', 'NaturseptMED_lizaki_20170906_testimonial + doctor_transcript _FINAL for studio', 'docx', false, 564067,'2019-09-06 12:17:43')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time; 
+INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ('\\192.168.123.52\projects\AFLOFARM_ONILNE\INTERNATIONAL\---COMMON\wytyczne', 'Ultrablanca BG _transcript - Copy', 'docx', false, 24157,'2019-09-06 12:17:43')
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET 
+path = EXCLUDED.path,
+name = EXCLUDED.name,
+size = EXCLUDED.size,
+mod_time = EXCLUDED.mod_time;]

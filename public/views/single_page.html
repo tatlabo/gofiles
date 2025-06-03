@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+    {{ template "header"  }}
+    <body>
+    {{ define "single_page" }}
+        <div class="media-preview">
+            <h3>{{ .Name }}</h3>
+            {{ if .IsImage}}
+                <img src="/{{ .Src }}" alt="Image" >
+            {{ end}}
+            {{ if .IsVideo}}
+            <video controls>
+                <source src="/{{ .Src }}" type="video/mp4">
+            </video>
+            {{ end}}
+            {{ if .IsText}}
+                <p>text</p>
+                <p>{{ .Link }}</p>
+            {{ end}}
+        </div>
+    {{end}}
+</body>
+</html>

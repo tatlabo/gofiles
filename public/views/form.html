@@ -1,0 +1,27 @@
+{{ define "form" }}
+<form action="/search" method="POST" class="form flex column" id="search-form" >
+    <input 
+        class=""
+        type="text" 
+        id="name" 
+        name="name" 
+        required placeholder="search" 
+        {{ if .Name }} 
+            value="{{ .Name }}"
+        {{ else }}
+            placeholder="files"
+        {{ end }}
+    >
+    <div>
+        <label for="like" class="">
+            <input type="checkbox" id="like" name="like" {{ if .Like }} checked {{ end }}/>
+            Like 
+        </label class="">
+        <label for="dir">
+            <input type="checkbox" id="dir" name="dir" {{ if .Dir }} checked {{ end }} />
+            Dir
+        </label>
+    </div>
+    <button class="primary" type="submit" id="submit">Submit</button>
+</form>
+{{ end }}

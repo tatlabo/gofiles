@@ -1,0 +1,102 @@
+
+{{ define "list" }}
+    {{ range .TC }}
+            <li 
+                class ="item-list"
+                id="entry"
+                data-size="{{ .Size }}"
+                data-name="{{ .Name }}{{ .Ext }}"
+                data-moddate="{{ .ModTime }}"
+            >
+
+                <!-- <div class="item-data"> -->
+
+
+
+                    {{ if .IsText }}
+                    <span>
+                        <a href="/preview/{{.Id}}" 
+                        class="strong"
+                        hx-get="/preview/{{.Id}}" 
+                        hx-target="#preview" 
+                        hx-swap="innerHTML"
+                        hx-boost="true"
+                        onClick="showPreview()">
+                            {{ .Name }}.{{ .Ext }}
+                        </a> 
+                        <span class="item-id">
+                            <a href="/detail/{{ .Id }}">
+                                ({{ .Id }})
+                            </a> 
+
+                        </span>
+                    </span>
+ 
+                {{ else if .IsImage }}
+                <span>
+
+                    <a href="/preview/image/{{.Id}}" 
+                    class="strong"
+                    hx-get="/preview/image/{{.Id}}" 
+                    hx-target="#preview" 
+                    hx-swap="innerHTML"
+                    hx-boost="true"
+                    onClick="showPreview()"
+                    >
+                        {{ .Name }}.{{ .Ext }}
+                    </a> >
+                                            <a href="/detail/{{ .Id }}">
+                            ({{ .Id }})
+                        </a> 
+                </span>
+
+ 
+                {{ else if .IsVideo }}
+                <span>
+
+                    <a href="/preview/image/{{.Id}}" 
+                    class=""
+                    hx-get="/preview/image/{{.Id}}" 
+                    hx-target="#preview" 
+                    hx-swap="innerHTML"
+                    hx-boost="true"
+                    onClick="showPreview()"
+                    >
+                        {{ .Name }}.{{ .Ext }}
+                    </a> 
+                                            <a href="/detail/{{ .Id }}">
+                            ({{ .Id }})
+                        </a> 
+                </span>
+
+                {{ else if .IsDir }}
+                    <span>
+                        <strong>&#128448;</strong> {{ .Name }}; 
+                    </span>
+                    <span></span>
+                    <span></span>
+                {{ else }}
+                    <span>
+                        {{ .Name }}.{{ .Ext }}
+                    </span>
+                    <span class="">
+                        {{ .SizeStr }}
+                    </span> 
+                {{ end }}
+
+                {{ if not .IsDir }}
+                    <span class="">
+                            {{ .SizeStr }}
+                    </span> 
+                {{ end }}
+
+                <time datetime="{{ .ModTime | formatDate }}" class="">
+                    {{ .ModTime | formatDate }}
+                </time>   
+                <span class="">
+                    {{ .Path }} 
+                </span>
+                <!-- </div> -->
+            </li>
+    {{ end }}
+{{ end }}

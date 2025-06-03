@@ -1,0 +1,26 @@
+{{ define "error" }}
+<!DOCTYPE html>
+<html lang="en">
+        {{ template "header"}}
+    <body>
+        <main class="search-page">
+            {{ template "form" }}
+                {{ if .Error }}
+                    <p class="error">
+                    {{ .Error.Error }}
+                    {{ if .Error.Msg }}
+                    <br/>
+                        {{ .Error.Msg }}
+                    {{ end }}
+                    
+                {{ end }}
+            </p>
+        </main>
+        <p>
+             {{ . }}
+        </p>
+    </body>
+    </html>
+{{ end }}
+    
+    

@@ -1,0 +1,24 @@
+{{ define "startpage" }}
+<!DOCTYPE html>
+<html lang="en">
+{{ template "header" }}
+<title>Search page</title>
+
+<body>
+    <main class="startpage">
+        {{ template "form" }}
+        {{ if .Error }}
+        <p class="">
+            {{ .Error.Error }}
+                {{ if .Error.Msg }}
+                <br />
+                    {{ .Error.Msg }}
+                {{ end }}
+
+        {{ end }}
+        </p>
+    </main>
+</body>
+
+</html>
+{{ end }}

@@ -1,0 +1,76 @@
+{{ define "detail"}}
+<!DOCTYPE html>
+{{ template "header" .Title }}
+
+<body>
+    <main class="">
+
+        <!-- {{ template "form"}} -->
+
+        <ul>
+            <li>
+                Id: {{ .Id }}
+            </li>
+            <li>
+                ParentId: {{ .ParentId }}
+            </li>
+            <li>
+                Path: {{ .Path }}
+            </li>
+            <li>
+                Name: {{ .Name }}
+            </li>
+            <li>
+                Ext: {{ .Ext }}
+            </li>
+            <li>
+                IsDir: {{ .IsDir }}
+            </li>
+            <li>
+                Size: {{ .Size }}
+            </li>
+            <li>
+                SizeStr: {{ .SizeStr }}
+            </li>
+            <li>
+                ModTime: {{ .ModTime }}
+            </li>
+            <li>
+                IsImage: {{ .IsImage }}
+            </li>
+            <li>
+                IsText: {{ .IsText }}
+            </li>
+            <li>
+                IsVideo: {{ .IsVideo }}
+            </li>
+            <li>
+                Link: {{ .Link }}
+            </li>
+            <li>
+                Src: {{ .Src }}
+            </li>
+            <li>
+                Empty: {{ .Empty }}
+            </li>
+        </ul>
+
+        {{ if .IsText }}
+            {{ template "p-content" . }}
+        {{ else }}
+            <p>File is not readable</p>
+        {{ end }}
+    </main>
+
+
+</body>
+
+</html>
+{{ end }}
+
+
+{{ block "p-content" . }}
+    <div id="preview">
+        {{ .HTML }}
+    </div>
+{{ end }}

@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Founded in db: main.go</title>
+
+    <link rel="stylesheet" href="main.go_files/style.css">
+
+
+
+    <link rel="stylesheet" href="main.go_files/github.css">
+
+
+
+    <script src="main.go_files/htmx.js" defer="defer">
+    </script>
+
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+    <link rel="stylesheet" href="main.go_files/style.css">
+    <link rel="stylesheet" href="main.go_files/github.css">
+    <script src="main.go_files/htmx.js" defer="defer">
+    </script>
+    <style>
+        .htmx-indicator {
+            opacity: 0
+        }
+
+        .htmx-request .htmx-indicator {
+            opacity: 1;
+            transition: opacity 200ms ease-in;
+        }
+
+        .htmx-request.htmx-indicator {
+            opacity: 1;
+            transition: opacity 200ms ease-in;
+        }
+    </style>
+    <style>
+        .htmx-indicator {
+            opacity: 0
+        }
+
+        .htmx-request .htmx-indicator {
+            opacity: 1;
+            transition: opacity 200ms ease-in;
+        }
+
+        .htmx-request.htmx-indicator {
+            opacity: 1;
+            transition: opacity 200ms ease-in;
+        }
+    </style>
+</head>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<body>
+
+
+    <main class="">
+        <article id="fileList" class="" data-counter="8" data-name="main.go" data-offset="0">
+
+
+            <form id="theme" class="form flex row">
+                <label>
+                    Auto
+                    <input type="radio" name="theme" value="auto" checked="checked">
+                </label>
+                <label>
+                    Light
+                    <input type="radio" name="theme" value="light">
+                </label>
+                <label>
+                    Dark
+                    <input type="radio" name="theme" value="dark">
+                </label>
+            </form>
+
+
+            <form action="/search" method="POST" class="form flex column" id="search-form">
+                <input class="" type="text" id="name" name="name" required="" placeholder="search" value="main.go">
+                <div>
+                    <label for="like" class="">
+                        <input type="checkbox" id="like" name="like">
+                        Like
+                    </label>
+                    <label for="dir">
+                        <input type="checkbox" id="dir" name="dir">
+                        Dir
+                    </label>
+                </div>
+                <button class="primary" type="submit" id="submit">Submit</button>
+            </form>
+
+            <ul id="list-headers" class="flex row file-headers">
+                <li id="sort-name" data-sort-type="name" data-ascending="true">name</li>
+                <li id="sort-size" data-sort-type="size" data-ascending="true">size</li>
+                <li id="sort-date" data-sort-type="moddate" data-ascending="true">date</li>
+            </ul>
+
+            <ol id="list" class="file-list" type="1">
+
+
+                <li class="item-list" id="entry" data-size="5963" data-name="maingo"
+                    data-moddate="2025-05-08 12:51:27 +0200 CEST">
+
+                    <div class="item-data">
+
+
+
+
+                        <a href="http://localhost:8000/preview/5881" class="strong" hx-get="/preview/5881"
+                            hx-target="#preview" hx-swap="innerHTML" hx-boost="true" onclick="showPreview()">
+                            main.go
+                        </a>
+                        <span class="">
+                            5.82 KB
+                        </span>
+
+
+                        <time datetime="2025-05-08 12:51:27" class="">
+                            2025-05-08 12:51:27
+                        </time>
+                        <span class="">
+                            C:/Users/ice/Documents/chroma/_tools/css2style
+                            <a href="http://localhost:8000/detail/5881">
+                                (5881)
+                            </a>
+
+                        </span>
+                    </div>
+                </li>
+
+                <li class="item-list" id="entry" data-size="1055" data-name="maingo"
+                    data-moddate="2025-05-08 12:51:27 +0200 CEST">
+
+                    <div class="item-data">
+
+
+
+
+                        <a href="http://localhost:8000/preview/5883" class="strong" hx-get="/preview/5883"
+                            hx-target="#preview" hx-swap="innerHTML" hx-boost="true" onclick="showPreview()">
+                            main.go
+                        </a>
+                        <span class="">
+                            1.03 KB
+                        </span>
+
+
+                        <time datetime="2025-05-08 12:51:27" class="">
+                            2025-05-08 12:51:27
+                        </time>
+                        <span class="">
+                            C:/Users/ice/Documents/chroma/_tools/exercise
+                            <a href="http://localhost:8000/detail/5883">
+                                (5883)
+                            </a>
+
+                        </span>
+                    </div>
+                </li>
+
+                <li class="item-list" id="entry" data-size="13373" data-name="maingo"
+                    data-moddate="2025-05-08 12:51:27 +0200 CEST">
+
+                    <div class="item-data">
+
+
+
+
+                        <a href="http://localhost:8000/preview/5910" class="strong" hx-get="/preview/5910"
+                            hx-target="#preview" hx-swap="innerHTML" hx-boost="true" onclick="showPreview()">
+                            main.go
+                        </a>
+                        <span class="">
+                            13.06 KB
+                        </span>
+
+
+                        <time datetime="2025-05-08 12:51:27" class="">
+                            2025-05-08 12:51:27
+                        </time>
+                        <span class="">
+                            C:/Users/ice/Documents/chroma/cmd/chroma
+                            <a href="http://localhost:8000/detail/5910">
+                                (5910)
+                            </a>
+
+                        </span>
+                    </div>
+                </li>
+
+                <li class="item-list" id="entry" data-size="5385" data-name="maingo"
+                    data-moddate="2025-05-08 12:51:27 +0200 CEST">
+
+                    <div class="item-data">
+
+
+
+
+                        <a href="http://localhost:8000/preview/5914" class="strong" hx-get="/preview/5914"
+                            hx-target="#preview" hx-swap="innerHTML" hx-boost="true" onclick="showPreview()">
+                            main.go
+                        </a>
+                        <span class="">
+                            5.26 KB
+                        </span>
+
+
+                        <time datetime="2025-05-08 12:51:27" class="">
+                            2025-05-08 12:51:27
+                        </time>
+                        <span class="">
+                            C:/Users/ice/Documents/chroma/cmd/chromad
+                            <a href="http://localhost:8000/detail/5914">
+                                (5914)
+                            </a>
+
+                        </span>
+                    </div>
+                </li>
+
+                <li class="item-list" id="entry" data-size="342" data-name="maingo"
+                    data-moddate="2025-05-05 09:42:54 +0200 CEST">
+
+                    <div class="item-data">
+
+
+
+
+                        <a href="http://localhost:8000/preview/21006" class="strong" hx-get="/preview/21006"
+                            hx-target="#preview" hx-swap="innerHTML" hx-boost="true" onclick="showPreview()">
+                            main.go
+                        </a>
+                        <span class="">
+                            342 B
+                        </span>
+
+
+                        <time datetime="2025-05-05 09:42:54" class="">
+                            2025-05-05 09:42:54
+                        </time>
+                        <span class="">
+                            C:/Users/ice/Documents/golang/miscellaneous/src
+                            <a href="http://localhost:8000/detail/21006">
+                                (21006)
+                            </a>
+
+                        </span>
+                    </div>
+                </li>
+
+                <li class="item-list" id="entry" data-size="878" data-name="maingo"
+                    data-moddate="2025-05-05 09:42:54 +0200 CEST">
+
+                    <div class="item-data">
+
+
+
+
+                        <a href="http://localhost:8000/preview/20979" class="strong" hx-get="/preview/20979"
+                            hx-target="#preview" hx-swap="innerHTML" hx-boost="true" onclick="showPreview()">
+                            main.go
+                        </a>
+                        <span class="">
+                            878 B
+                        </span>
+
+
+                        <time datetime="2025-05-05 09:42:54" class="">
+                            2025-05-05 09:42:54
+                        </time>
+                        <span class="">
+                            C:/Users/ice/Documents/golang/miscellaneous/gorutine/delay
+                            <a href="http://localhost:8000/detail/20979">
+                                (20979)
+                            </a>
+
+                        </span>
+                    </div>
+                </li>
+
+                <li class="item-list" id="entry" data-size="2029" data-name="maingo"
+                    data-moddate="2025-04-07 09:32:47 +0200 CEST">
+
+                    <div class="item-data">
+
+
+
+
+                        <a href="http://localhost:8000/preview/20885" class="strong" hx-get="/preview/20885"
+                            hx-target="#preview" hx-swap="innerHTML" hx-boost="true" onclick="showPreview()">
+                            main.go
+                        </a>
+                        <span class="">
+                            1.98 KB
+                        </span>
+
+
+                        <time datetime="2025-04-07 09:32:47" class="">
+                            2025-04-07 09:32:47
+                        </time>
+                        <span class="">
+                            C:/Users/ice/Documents/go-class-exer-7.11-start/part1
+                            <a href="http://localhost:8000/detail/20885">
+                                (20885)
+                            </a>
+
+                        </span>
+                    </div>
+                </li>
+
+                <li class="item-list" id="entry" data-size="2863" data-name="maingo"
+                    data-moddate="2025-04-07 09:32:47 +0200 CEST">
+
+                    <div class="item-data">
+
+
+
+
+                        <a href="http://localhost:8000/preview/20887" class="strong" hx-get="/preview/20887"
+                            hx-target="#preview" hx-swap="innerHTML" hx-boost="true" onclick="showPreview()">
+                            main.go
+                        </a>
+                        <span class="">
+                            2.80 KB
+                        </span>
+
+
+                        <time datetime="2025-04-07 09:32:47" class="">
+                            2025-04-07 09:32:47
+                        </time>
+                        <span class="">
+                            C:/Users/ice/Documents/go-class-exer-7.11-start/part2
+                            <a href="http://localhost:8000/detail/20887">
+                                (20887)
+                            </a>
+
+                        </span>
+                    </div>
+                </li>
+
+
+            </ol>
+            <span id="button-container" class="">
+                <button class="primary" type="button"
+                    hx-get="/append?name=main.go&amp;like=&amp;limit=10&amp;offset=10&amp;dir=" hx-target="#list"
+                    hx-swap="beforeend" hx-boost="true" hx-trigger="click" id="next" disabled="disabled">There is 8
+                    results</button>
+            </span>
+
+
+        </article>
+
+
+    </main>
+
+    <article class="preview-container" id="preview-section" style="display: none;">
+        <section class="preview">
+            <button type="button" class="primary" id="hidePreview" onclick="() => hidePreview()">x</button>
+
+            <div id="preview">
+                Content preview
+            </div>
+
+        </section>
+    </article>
+
+    <script>
+
+
+
+        const previewSectionEl = document.getElementById("preview-section");
+        const fileListEl = document.getElementById("fileList");
+        previewSectionEl.style.display = "none";
+
+        function hidePreview() {
+            previewSectionEl.classList.remove("width-50")
+            previewSectionEl.style.display = "none";
+            fileListEl.classList.remove("widht-50")
+            fileListEl.classList.add("width-100");
+        }
+
+        function showPreview() {
+            if (previewSectionEl.style.display === "none") {
+                previewSectionEl.style.display = "";
+                fileListEl.classList.remove("width-100")
+                previewSectionEl.classList.add("width-50")
+                fileListEl.classList.add("width-50")
+            }
+
+            if (previewSectionEl.style.display !== "none") {
+                const hidePreviewBtn = document.getElementById("hidePreview");
+                hidePreviewBtn.addEventListener("click", hidePreview);
+
+            }
+        }
+
+
+
+        document.addEventListener("DOMContentLoaded", function () {
+
+
+            const nextBtn = document.getElementById("next");
+            const list = document.getElementById("list");
+            const limit = parseInt("10") || 10;
+            let offset = limit
+            const nameParam = "main.go";
+            const buttonContainer = document.getElementById("button-container");
+            const counter = parseInt("8") || 0;
+
+
+            if (counter <= limit && nextBtn) {
+                nextBtn.disabled = true;
+                nextBtn.innerHTML = `There is ${counter} results`
+            }
+
+            if (buttonContainer) {
+
+                buttonContainer.addEventListener("click", function (event) {
+
+                    offset += limit
+
+
+
+
+
+                    let jsonURL = `/append?name=${nameParam}&limit=${limit}&offset=${offset}`
+
+
+                    if ("" === "on") {
+                        jsonURL += `&dir=on`;
+                    }
+
+                    if ("" === "on") {
+                        jsonURL += `&like=on`;
+                    }
+
+                    console.log("jsonURL", jsonURL)
+
+                    nextBtn.innerHTML = `There is ${counter} results`;
+
+                    nextBtn.setAttribute("hx-get", jsonURL);
+
+                    if (offset >= counter) {
+                        nextBtn.disabled = true;
+                        nextBtn.innerHTML = `There is ${counter} results`
+                    }
+                    htmx.process(nextBtn)
+
+                })
+            }
+
+
+
+
+            let listContainer = document.getElementById("list");
+            if (listContainer) {
+                let listItems = Array.from(listContainer.querySelectorAll("li.item-list"));
+                const sortObject = {
+                    name: true,
+                    size: true,
+                    date: true
+                };
+                let nameAsc = true;
+                let sizeAsc = true;
+                let dateAsc = true;
+
+                document.getElementById("sort-size").addEventListener("click", (event) => handleSortClick(event))
+                document.getElementById("sort-name").addEventListener("click", (event) => handleSortClick(event))
+                document.getElementById("sort-date").addEventListener("click", (event) => handleSortClick(event))
+            }
+
+
+            function sortList(parameter, ascending = true) {
+                listItems.sort((a, b) => {
+                    const aValue = a.dataset[parameter];
+                    const bValue = b.dataset[parameter];
+
+                    switch (parameter) {
+                        case "name":
+                            return ascending ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+                        case "size":
+                            return ascending ? parseInt(aValue) - parseInt(bValue) : parseInt(bValue) - parseInt(aValue);
+                        case "moddate":
+                            let a = aValue.replace(/\s+[A-Z]+$/, "")
+                            let b = bValue.replace(/\s+[A-Z]+$/, "")
+                            return ascending ? new Date(a) - new Date(b) : new Date(b) - new Date(a);
+                        default:
+                            return 0;
+                    }
+                    const aParsed = parameter === "size" || parameter === "moddate" ? parseFloat(aValue) : aValue.toLowerCase();
+                    const bParsed = parameter === "size" || parameter === "moddate" ? parseFloat(bValue) : bValue.toLowerCase();
+
+                    if (aParsed < bParsed) return ascending ? -1 : 1;
+                    if (aParsed > bParsed) return ascending ? 1 : -1;
+                    return 0;
+                });
+
+
+                const fragment = document.createDocumentFragment();
+                listItems.forEach(item => fragment.appendChild(item));
+
+
+                listContainer.innerHTML = "";
+                listContainer.appendChild(fragment);
+            }
+
+
+
+
+            function handleSortClick(event) {
+
+                listContainer = document.getElementById("list")
+                listItems = Array.from(listContainer.querySelectorAll("li.item-list"))
+
+                const target = event.target;
+                const sortType = target.getAttribute("data-sort-type");
+                const ascending = target.getAttribute("data-ascending") === "true";
+
+                console.log("sortType", sortType)
+
+
+                sortList(sortType, ascending);
+
+
+                target.setAttribute("data-ascending", !ascending);
+            }
+
+
+
+        })
+
+    </script>
+
+    <script>
+
+        theme.oninput = e => {
+
+
+
+
+
+            document.firstElementChild.setAttribute('data-theme', e.target.value)
+
+        }
+
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+
+        }
+    </script>
+    <script>
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const savedTheme = localStorage.getItem("theme");
+            const themeForm = document.getElementById("theme");
+            if (savedTheme) {
+                document.documentElement.setAttribute("data-theme", savedTheme);
+
+                const radio = themeForm.querySelector(`input[name="theme"][value="${savedTheme}"]`);
+                if (radio) radio.checked = true;
+            }
+
+
+            themeForm.oninput = function (e) {
+                const value = e.target.value;
+                document.documentElement.setAttribute("data-theme", value);
+                localStorage.setItem("theme", value);
+            };
+        });
+    </script>
+
+
+
+
+</body>
+
+</html>
