@@ -5,6 +5,9 @@
 <title>Search page</title>
 
 <body>
+    <nav>
+        <button id="theme-toggle">switch theme</button>
+    </nav>
     <main class="startpage">
         {{ template "form" }}
         {{ if .Error }}
@@ -14,11 +17,13 @@
                 <br />
                     {{ .Error.Msg }}
                 {{ end }}
-
         {{ end }}
         </p>
     </main>
 </body>
-
 </html>
 {{ end }}
+
+
+
+

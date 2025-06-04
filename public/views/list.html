@@ -28,7 +28,6 @@
                             <a href="/detail/{{ .Id }}">
                                 ({{ .Id }})
                             </a> 
-
                         </span>
                     </span>
  
@@ -44,7 +43,7 @@
                     onClick="showPreview()"
                     >
                         {{ .Name }}.{{ .Ext }}
-                    </a> >
+                    </a>
                                             <a href="/detail/{{ .Id }}">
                             ({{ .Id }})
                         </a> 
@@ -74,14 +73,15 @@
                         <strong>&#128448;</strong> {{ .Name }}; 
                     </span>
                     <span></span>
-                    <span></span>
                 {{ else }}
                     <span>
                         {{ .Name }}.{{ .Ext }}
+                        <span class="item-id">
+                                <a href="/detail/{{ .Id }}">
+                                    ({{ .Id }})
+                                </a> 
+                        </span>
                     </span>
-                    <span class="">
-                        {{ .SizeStr }}
-                    </span> 
                 {{ end }}
 
                 {{ if not .IsDir }}

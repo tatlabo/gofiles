@@ -8,15 +8,26 @@
     <nav>
         <button id="theme-toggle">switch theme</button>
     </nav>
+    {{ if equals .Params.NotFound "true" }}
+    <main class="startpage">
+        <p class="">Nothing was found</p>
+        {{ template "form" .Params}}
+        {{ if .Error }}
+        <p class="">
+            {{ .Error.Error }}
+            {{ if .Error.Msg }}
+            <br />
+            {{ .Error.Msg }}
+            {{ end }}
+            {{ end }}
+        </p>
+    </main>
+
+    {{ else }}
 
     <main class="">
         <article id="fileList" class="" data-counter="{{ .Counter }}" data-name="{{ .Params.Name }}"
             data-offset="{{ .Params.Offset }}">
-
-            {{ if equals .Params.NotFound "true" }}
-            <p class="">Nothing was found</p>
-            {{ template "form" .Params }}
-            {{ else }}
 
             {{ template "form" .Params }}
             <ul id="list-headers" class="file-list headers">
@@ -35,14 +46,11 @@
                     .Counter }} results.
                 </button>
             </div>
-
-            {{ end }}
         </article>
-
-
     </main>
 
-    <article class="preview-container" id="preview-section">
+    {{ end }}
+    <article class="preview-wrapper" id="preview-section">
         <section class="preview">
             <button type="button" class="primary" id="hidePreview" onClick="() => hidePreview()">x</button>
             {{ template "preview-content" . }}

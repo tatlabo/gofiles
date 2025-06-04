@@ -637,7 +637,9 @@ func previewById(c echo.Context) error {
 		ctx.HTML, _ = textToChoroma(finfo)
 	}
 
-	return c.String(http.StatusOK, string(ctx.HTML))
+	wrap := fmt.Sprintf("<div><h3>%s.%s</h3><p>%s</p>%s</div>", ctx.Finfo.Name, ctx.Finfo.Ext, ctx.Finfo.Path, string(ctx.HTML))
+
+	return c.String(http.StatusOK, wrap)
 }
 
 func textToChoroma(f Finfo) (template.HTML, error) {

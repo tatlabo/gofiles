@@ -3,8 +3,10 @@
 <html lang="en">
         {{ template "header"}}
     <body>
+        <pre>error.html</pre>
         <main class="search-page">
-            {{ template "form" }}
+            <main class="startpage">
+                <p class="">Nothing was found</p>
                 {{ if .Error }}
                     <p class="error">
                     {{ .Error.Error }}
@@ -14,6 +16,19 @@
                     {{ end }}
                     
                 {{ end }}
+                
+                {{ template "form" }}
+                {{ if .Error }}
+                <p class="">
+                    {{ .Error.Error }}
+                    {{ if .Error.Msg }}
+                    <br />
+                    {{ .Error.Msg }}
+                    {{ end }}
+                    {{ end }}
+                </p>
+            </main>
+            {{ template "form" }}
             </p>
         </main>
         <p>
