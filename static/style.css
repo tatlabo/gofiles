@@ -6,6 +6,15 @@
 @import "https://unpkg.com/open-props/theme.dark.switch.min.css";
 
 
+[data-theme="light"] {
+  --surface-3: rgb(222, 226, 230, .68);
+}
+
+
+[data-theme="dark"] {
+  --surface-3: rgb(29, 53, 59, .68);
+}
+
 
 /* html[data-theme="auto"], html:not([data-theme]) {
   color-scheme: light dark;
@@ -263,7 +272,7 @@ ol.file-list > li::before {
   overflow: auto;
   display: flex;
   justify-content: start;
-  background: var(--surface-3);
+  background-color: var(--surface-3);
   padding: var(--size-2);
   width: 100%;
 }
