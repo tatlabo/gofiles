@@ -5,7 +5,7 @@
 @import "https://unpkg.com/open-props/theme.light.switch.min.css";
 @import "https://unpkg.com/open-props/theme.dark.switch.min.css";
 
-
+/* 
 [data-theme="light"] {
   --surface-3: rgb(222, 226, 230, .68);
 }
@@ -13,7 +13,7 @@
 
 [data-theme="dark"] {
   --surface-3: rgb(29, 53, 59, .68);
-}
+} */
 
 
 /* html[data-theme="auto"], html:not([data-theme]) {
@@ -82,11 +82,11 @@ ol.file-list {
 }
 
 ol.file-list li:nth-child(odd) {
-  background: var(--surface-3);
+  background: var(--surface-4);
 }
 
 ol.file-list li:nth-child(even) {
-  background: var(--surface-2);
+  background: var(--surface-1);
 }
 
 .button-container,
