@@ -131,19 +131,20 @@ function handleSortClick(event) {
 
 
 function hidePreview() {
-    previewSectionEl.classList.remove("width-50")
     previewSectionEl.style.display = "none";
-    fileListEl.classList.remove("widht-50")
-    fileListEl.classList.add("width-100");
 }
 
+document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape" || event.key === "Esc") {
+        if (typeof previewSectionEl !== "undefined" && previewSectionEl.style.display !== "none") {
+            hidePreview();
+        }
+    }
+});
 
 function showPreview() {
     if (previewSectionEl.style.display === "none") {
         previewSectionEl.style.display = "";
-        fileListEl.classList.remove("width-100")
-        previewSectionEl.classList.add("width-50")
-        fileListEl.classList.add("width-50")
     }
 
     if (previewSectionEl.style.display !== "none") {

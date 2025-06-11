@@ -1,65 +1,58 @@
 {{ define "detail"}}
 <!DOCTYPE html>
-{{ template "header" .Title }}
+<!-- {{ template "header" .Title }} -->
 
 <body>
     <main class="">
 
         <!-- {{ template "form"}} -->
 
-        <ul>
-            <li>
-                Id: {{ .Id }}
-            </li>
-            <li>
-                ParentId: {{ .ParentId }}
-            </li>
-            <li>
-                Path: {{ .Path }}
-            </li>
-            <li>
-                Name: {{ .Name }}
-            </li>
-            <li>
-                Ext: {{ .Ext }}
-            </li>
-            <li>
-                IsDir: {{ .IsDir }}
-            </li>
-            <li>
-                Size: {{ .Size }}
-            </li>
-            <li>
-                SizeStr: {{ .SizeStr }}
-            </li>
-            <li>
-                ModTime: {{ .ModTime }}
-            </li>
-            <li>
-                IsImage: {{ .IsImage }}
-            </li>
-            <li>
-                IsText: {{ .IsText }}
-            </li>
-            <li>
-                IsVideo: {{ .IsVideo }}
-            </li>
-            <li>
-                Link: {{ .Link }}
-            </li>
-            <li>
-                Src: {{ .Src }}
-            </li>
-            <li>
-                Empty: {{ .Empty }}
-            </li>
-        </ul>
+        <h1 class="title">
+            {{ .Name }}.{{ .Ext }}
+        </h1>
+        <p class="subtitle">
+            {{ .SizeStr }}; {{ .ModTime }}
+        </p>
+        <p>
+            {{ .Path }}\{{ .Name }}.{{ .Ext }}
+        </p>
 
-        {{ if .IsText }}
+<!-- 
+            <ul class="file-detail">
+                <li>
+                    Id: {{ .Id }}
+                </li>
+                <li>
+                    Ext: {{ .Ext }}
+                </li>
+                <li>
+                    IsDir: {{ .IsDir }}
+                </li>
+                <li>
+                    Size: {{ .Size }}
+                </li>
+                <li>
+                    SizeStr: {{ .SizeStr }}
+                </li>
+                <li>
+                    ModTime: {{ .ModTime }}
+                </li>
+                <li>
+                    IsImage: {{ .IsImage }}
+                </li>
+                <li>
+                    IsText: {{ .IsText }}
+                </li>
+                <li>
+                    IsVideo: {{ .IsVideo }}
+                </li>
+            </ul> -->
+
+            {{ if .IsText }}
             {{ template "p-content" . }}
-        {{ else }}
+            {{ else }}
             <p>File is not readable</p>
-        {{ end }}
+            {{ end }}
     </main>
 
 
@@ -70,7 +63,7 @@
 
 
 {{ block "p-content" . }}
-    <div id="preview">
-        {{ .HTML }}
-    </div>
+<div id="preview">
+    {{ .HTML }}
+</div>
 {{ end }}

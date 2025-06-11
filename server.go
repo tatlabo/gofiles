@@ -583,6 +583,7 @@ func detailById(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Error checking extension item")
 	}
 
+	item.SizeStr = utils.ConvertBytes(item.Size)
 	fc := FinfoDetail{}
 	fc.Finfo = item
 	fc.Title = fmt.Sprintf("Details for: %s.%s", item.Name, item.Ext)
