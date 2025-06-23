@@ -59,7 +59,7 @@ const creteIndexOnFiles = `
 CREATE INDEX IF NOT EXISTS idx_name ON files(LOWER(name));`
 
 const creteIndexOnExt = `
-CREATE INDEX IF NOT EXISTS idx_ext ON ext(LOWER(ext));`
+CREATE INDEX IF NOT EXISTS idx_ext ON files(LOWER(ext));`
 
 func CreateFiles() error {
 

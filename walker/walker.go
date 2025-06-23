@@ -28,6 +28,10 @@ type Finfo struct {
 	ModTime  time.Time `db:"mod_time"`
 }
 
+var query = `INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET size = EXCLUDED.size, mod_time = EXCLUDED.mod_time;`
+
 func (f *Finfo) String() string {
 	return fmt.Sprintf("%s, %s, %s, %T\n", f.Path, f.Name, f.Ext, f.IsDir)
 	// 	return fmt.Sprintf("Path: %s, Name: %s, Extension: %s, IsDir: %t, Size: %d, ModTime: %s",
@@ -123,9 +127,9 @@ func main() {
 		fmt.Printf("There was %d items inserted\n", len(stmt))
 	}
 
-	// stmt = simpleString(fileList)
+	// s := simpleString(fileList)
 
-	// if err := writeStmtToFile(stmt); err != nil {
+	// if err := writeStmtToFile(s); err != nil {
 	// 	fmt.Println("Error writing to file: ", err)
 	// 	os.Exit(1)
 	// }
@@ -138,6 +142,26 @@ func main() {
 
 	/* write to file */
 
+}
+
+func writeStmtToFile(s []string) error {
+
+	f, err := os.Create("outputFile.txt")
+	if err != nil {
+		return err
+	}
+
+	defer f.Close()
+
+	for _, item := range s {
+		if _, err := f.WriteString(item + "\n"); err != nil {
+			return err
+		}
+	}
+
+	fmt.Printf("There was %d items written to file %s\n", len(s), outputFile)
+
+	return nil
 }
 
 func writeLog(log *[]string) error {
@@ -156,7 +180,18 @@ func writeLog(log *[]string) error {
 	return nil
 }
 
-func insertToPostgres(stmt []string) error {
+// func insertStmt(params []interface{}) error {
+
+// 	db, err := utils.PgConn()
+// 	_, err = db.Exec(query, params...)
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	return nil
+// }
+
+func insertToPostgres(stmt [][]interface{}) error {
 	db, err := utils.PgConn()
 	if err != nil {
 		panic(err)
@@ -164,44 +199,49 @@ func insertToPostgres(stmt []string) error {
 	defer db.Close()
 
 	var (
-		s        = len(stmt)
-		counter  int
-		quantity = 100
+		s = len(stmt)
+		// counter  int
+		// quantity = 100
 	)
 
-	for {
+	// for {
 
-		if s < quantity {
+	// 	if s < quantity {
 
-			if _, err = db.Exec(strings.Join(stmt[counter:], " ")); err != nil {
-				panic(err)
-			}
+	// 		if _, err = db.Exec(query, stmt[counter:]); err != nil {
+	// 			panic(err)
+	// 		}
 
-			fmt.Printf("Insetred %d : %d items\n", counter, s)
-			break
+	// 		fmt.Printf("Insetred %d : %d items\n", counter, s)
+	// 		break
 
-		} else {
-			if _, err := db.Exec(strings.Join(stmt[counter:counter+quantity], " ")); err != nil {
-				fmt.Println("Error writing to database: ", err)
-				fmt.Printf("%v", strings.Join(stmt[counter:counter+quantity], " "))
-				os.Exit(1)
-			}
+	// 	} else {
+	// 		if _, err := db.Exec(strings.Join(stmt[counter:counter+quantity], " ")); err != nil {
+	// 			fmt.Println("Error writing to database: ", err)
+	// 			fmt.Printf("%v", strings.Join(stmt[counter:counter+quantity], " "))
+	// 			os.Exit(1)
+	// 		}
 
-			s -= quantity
-			counter += quantity
+	// 		s -= quantity
+	// 		counter += quantity
 
+	// 	}
+	// }
+
+	for _, p := range stmt {
+		_, err := db.Exec(query, p...)
+		if err != nil {
+			// handle error
 		}
 	}
 
-	var cnt = len(stmt)
-
-	if cnt == 0 {
+	if s == 0 {
 		fmt.Println("No items to insert")
 		os.Exit(1)
-	} else if cnt < 5 {
+	} else if s < 5 {
 		fmt.Println(stmt)
 	} else {
-		fmt.Println(stmt[len(stmt)-3:])
+		fmt.Println(stmt[s-3:])
 	}
 
 	return nil
@@ -210,24 +250,29 @@ func insertToPostgres(stmt []string) error {
 func simpleString(f []Finfo) []string {
 	s := []string{}
 	for _, item := range f {
-		s = append(s, item.String())
+		s = append(s,
+			item.Path+","+item.Name+","+item.Ext+","+fmt.Sprintf("%t", item.IsDir)+","+fmt.Sprintf("%d", item.Size)+","+item.ModTime.Format("2006-01-02 15:04:05"))
 	}
 
 	return s
 }
 
-func insertItem(f []Finfo) []string {
+func insertItem(f []Finfo) [][]interface{} {
 
-	stmt := []string{}
+	params := [][]interface{}{}
 
-	for i := range len(fileList) {
-		inertItem := fmt.Sprintf(`
-INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
-VALUES ('%s', '%s', '%s', %t, %d,'%v') ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET size = EXCLUDED.size, mod_time = EXCLUDED.mod_time;`,
-			fileList[i].Path, fileList[i].Name, fileList[i].Ext, fileList[i].IsDir, fileList[i].Size, fileList[i].ModTime.Format("2006-01-02 15:04:05"))
+	for i := range len(f) {
 
-		stmt = append(stmt, inertItem)
+		params = append(params, []interface{}{
+			f[i].Path,
+			fileList[i].Name,
+			f[i].Ext,
+			f[i].IsDir,
+			f[i].Size,
+			f[i].ModTime,
+		})
+
 	}
 
-	return stmt
+	return params
 }

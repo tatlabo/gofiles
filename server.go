@@ -205,7 +205,7 @@ func (s *SearchParams) QueryStmt() error {
 		clause = "=$1"
 	case 1:
 		s.QueryParam = s.QueryParam + "%"
-		clause = "LIKE $1"
+		clause = "LIKE LOWER($1)"
 	case 100:
 		clause = "LIKE $1 AND is_dir=true"
 	case 101:
@@ -213,7 +213,11 @@ func (s *SearchParams) QueryStmt() error {
 		clause = "LIKE $1 AND is_dir=true"
 	}
 
-	s.Stmt = fmt.Sprintf(`SELECT id, name, ext, is_dir, path, size, mod_time FROM files WHERE LOWER(name) %s ORDER BY mod_time DESC LIMIT $2 OFFSET $3;`, clause)
+	s.Stmt = fmt.Sprintf(`SELECT id, name, ext, is_dir, path, size, mod_time FROM files WHERE LOWER(name) %s
+		ORDER BY mod_time DESC 
+		LIMIT $2 OFFSET $3;`,
+		clause)
+
 	s.ExplainAnalyze = fmt.Sprintf(`EXPLAIN ANALYZE %s`, s.Stmt)
 
 	s.Placeholders = []any{s.QueryParam, s.Limit, s.Offset}
@@ -267,18 +271,19 @@ func findInDb(c echo.Context) (IndexData, error) {
 		// handle error
 	}
 
-	// explainRows, err := conn.Query(searchParams.ExplainAnalyze, searchParams.Placeholders...)
-	// for explainRows.Next() {
-	// 	var line string
-	// 	if err := explainRows.Scan(&line); err != nil {
-	// 		log.Println("Error scanning EXPLAIN ANALYZE line:", err)
-	// 		continue
-	// 	}
-	// 	log.Println(line)
-	// }
-	// if err := explainRows.Err(); err != nil {
-	// 	log.Println("Error iterating EXPLAIN ANALYZE rows:", err)
-	// }
+	log.Println(searchParams.Stmt, searchParams.Placeholders)
+	explainRows, err := conn.Query(searchParams.ExplainAnalyze, searchParams.Placeholders...)
+	for explainRows.Next() {
+		var line string
+		if err := explainRows.Scan(&line); err != nil {
+			log.Println("Error scanning EXPLAIN ANALYZE line:", err)
+			continue
+		}
+		log.Println(line)
+	}
+	if err := explainRows.Err(); err != nil {
+		log.Println("Error iterating EXPLAIN ANALYZE rows:", err)
+	}
 
 	if err != nil {
 		c.Render(200, "error", err)
@@ -323,9 +328,6 @@ func findInDb(c echo.Context) (IndexData, error) {
 		finfo.SizeStr = utils.ConvertBytes(finfo.Size)
 
 		_ = finfo.CheckExtension()
-		if err != nil {
-			return indexData, c.String(http.StatusInternalServerError, "Error checking extension item")
-		}
 
 		if finfo.IsImage {
 			finfo.Src = template.URL(finfo.Link)
@@ -352,7 +354,7 @@ func findInDb(c echo.Context) (IndexData, error) {
 	if searchParams.Offset+searchParams.Limit < counter {
 		context.Params["NextPage"] = fmt.Sprintf("/json/search?name=%s&offset=%d&limit=%d", searchParams.Params, searchParams.Offset+searchParams.Limit, searchParams.Limit)
 	}
-	context.Params["PreviousPage"] = fmt.Sprintf("")
+	context.Params["PreviousPage"] = ""
 
 	return context, nil
 }
@@ -447,7 +449,7 @@ func main() {
 		log.Println(http.ListenAndServe("localhost:6060", nil))
 	}()
 
-	e.Logger.Fatal(e.Start(":8000"))
+	e.Logger.Fatal(e.Start(":8"))
 
 }
 
@@ -466,7 +468,7 @@ func previewImage(c echo.Context) error {
 	defer conn.Close()
 
 	finfo := Finfo{}
-	stmt := fmt.Sprintf(`SELECT id, name, ext, is_dir, path, size, mod_time FROM files WHERE id = $1;`)
+	stmt := (`SELECT id, name, ext, is_dir, path, size, mod_time FROM files WHERE id = $1;`)
 
 	err = conn.QueryRow(stmt, id).Scan(
 		&finfo.Id,
@@ -488,9 +490,6 @@ func previewImage(c echo.Context) error {
 	destPath = strings.ReplaceAll(destPath, "\\", "/")
 
 	_ = finfo.CheckExtension()
-	if err != nil {
-		return c.String(http.StatusInternalServerError, "Error checking extension item")
-	}
 
 	// Ensure the destination directory exists
 	if err := os.MkdirAll("media/images", os.ModePerm); err != nil {
@@ -562,7 +561,7 @@ func detailById(c echo.Context) error {
 	defer conn.Close()
 
 	item := Finfo{}
-	stmt := fmt.Sprintf(`SELECT id, name, ext, is_dir, path, size, mod_time FROM files WHERE id = $1;`)
+	stmt := `SELECT id, name, ext, is_dir, path, size, mod_time FROM files WHERE id = $1;`
 
 	err = conn.QueryRow(stmt, id).Scan(
 		&item.Id,
@@ -579,9 +578,6 @@ func detailById(c echo.Context) error {
 	}
 
 	_ = item.CheckExtension()
-	if err != nil {
-		return c.String(http.StatusInternalServerError, "Error checking extension item")
-	}
 
 	item.SizeStr = utils.ConvertBytes(item.Size)
 	fc := FinfoDetail{}
@@ -610,7 +606,7 @@ func previewById(c echo.Context) error {
 	defer conn.Close()
 
 	finfo := Finfo{}
-	stmt := fmt.Sprintf(`SELECT id, name, ext, is_dir, path, size, mod_time FROM files WHERE id = $1;`)
+	stmt := `SELECT id, name, ext, is_dir, path, size, mod_time FROM files WHERE id = $1;`
 
 	err = conn.QueryRow(stmt, id).Scan(
 		&finfo.Id,
