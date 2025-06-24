@@ -61,6 +61,12 @@ CREATE INDEX IF NOT EXISTS idx_name ON files(LOWER(name));`
 const creteIndexOnExt = `
 CREATE INDEX IF NOT EXISTS idx_ext ON files(LOWER(ext));`
 
+const insertIntoExt = `INSERT INTO ext (ext)
+SELECT DISTINCT ext FROM files WHERE ext IS NOT NULL;`
+
+const updateExtId = `
+UPDATE files SET ext_id = ext.id FROM ext WHERE files.ext = ext.ext;`
+
 func CreateFiles() error {
 
 	db, err := PgConn()
