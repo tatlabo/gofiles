@@ -18,10 +18,10 @@
 
 [data-theme="dark"] {
   --surface-30: rgb(29, 53, 59, .68);
-} */
+}
 
-
-html[data-theme="auto"], html:not([data-theme]) {
+*/ html[data-theme="auto"],
+html:not([data-theme]) {
   color-scheme: light dark;
   background: var(--surface-3);
   color: var(--text-1);
@@ -40,7 +40,7 @@ html[data-theme="dark"] {
   --surface-3: rgba(155, 107, 115, 0.075); */
   color-scheme: dark;
   color: var(--text-2);
-} 
+}
 
 
 body {
@@ -160,12 +160,12 @@ ol.file-list li,
 
 ol.file-list li {
   position: relative;
-  padding-left: calc( 2* var(--size-fluid-2));
+  padding-left: calc(2* var(--size-fluid-2));
   list-style: none;
 }
 
 .file-list.headers {
-  padding-left: calc( 2* var(--size-fluid-2));
+  padding-left: calc(2* var(--size-fluid-2));
 }
 
 
@@ -179,7 +179,7 @@ ol.file-list li {
 
 
 
-ol.file-list > li::before {
+ol.file-list>li::before {
   counter-increment: item;
   content: counter(item) "";
   position: absolute;
@@ -213,58 +213,61 @@ ol.file-list > li::before {
 
   }
 
-  .item-list, 
+  .item-list,
   .file-list {
     width: 100vw;
     padding: 0;
   }
 
 
-  ol.file-list > li::before {
-  counter-increment: item;
-  content: counter(item) ".";
-  position: absolute;
-  left: var(--size-fluid-2);
-  font-weight: bold;
-  opacity: 0.1;
-  font-size: var(--size-4);
+  ol.file-list>li::before {
+    counter-increment: item;
+    content: counter(item) ".";
+    position: absolute;
+    left: var(--size-fluid-2);
+    font-weight: bold;
+    opacity: 0.1;
+    font-size: var(--size-4);
 
-}
+  }
 
-.item-id {
-  display: none;
-}
-.item-list {
-  font-size: var(--size-3);
-}
+  .item-id {
+    display: none;
+  }
 
-ol.file-list li {
-  display: grid;
-  grid-template-columns: auto;
-  align-items: center;
-}
+  .item-list {
+    font-size: var(--size-3);
+  }
 
-ol.file-list li > *,
-.file-list li span:not(:first-child),
-.file-list time {
+  ol.file-list li {
+    display: grid;
+    grid-template-columns: auto;
+    align-items: center;
+  }
 
-  justify-self: start;
-  text-align: left;
-}
+  ol.file-list li>*,
+  .file-list li span:not(:first-child),
+  .file-list time {
 
-ol.file-list > li::before {
-  font-size: var(--size-3);
-  left: var(--size-fluid-0);
-}
+    justify-self: start;
+    text-align: left;
+  }
 
-.file-list.headers, ol.file-list li {
-  margin-left: 0
-}
-.button-container {
-  padding-block: var(--size-fluid-6);
-  display: flex;
-  justify-content: center;
-}
+  ol.file-list>li::before {
+    font-size: var(--size-3);
+    left: var(--size-fluid-0);
+  }
+
+  .file-list.headers,
+  ol.file-list li {
+    margin-left: 0
+  }
+
+  .button-container {
+    padding-block: var(--size-fluid-6);
+    display: flex;
+    justify-content: center;
+  }
 }
 
 
@@ -310,7 +313,8 @@ nav {
 .preview .primary {
   position: fixed;
   top: 1rem;
-  left: 1rem;}
+  left: 1rem;
+}
 
 
 .preview {
@@ -331,4 +335,19 @@ nav {
 
 .file-detail {
   list-style: none;
+}
+
+
+.useful-tricks {
+  padding: min(2em, 5%);
+  font-size: clamp(2rem, 2vw, 5rem);
+  /* min, prefered, max */
+
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 9 / 16;
+  object-fit: contain;
+  object-fit: cover;
+  
+  height: 100dvh;
 }

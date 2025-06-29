@@ -202,34 +202,40 @@ func (s *SearchParams) QueryStmt() error {
 
 	switch switcher {
 	case 0:
-		clause = "=$1"
+		clause = "keywords = $1"
 	case 1:
 		s.QueryParam = s.QueryParam + "%"
-		clause = "LIKE LOWER($1)"
+		clause = "keywords LIKE $1"
 	case 100:
-		clause = "LIKE $1 AND is_dir=true"
+		clause = "keywords = $1 AND is_dir=true"
 	case 101:
-		s.QueryParam = "%" + s.QueryParam + "%"
-		clause = "LIKE $1 AND is_dir=true"
+		s.QueryParam = s.QueryParam + "%"
+		clause = "keywords LIKE $1 AND is_dir=true"
 	}
 
-	s.Stmt = fmt.Sprintf(`SELECT id, name, ext, is_dir, path, size, mod_time FROM files WHERE LOWER(name) %s
-		ORDER BY mod_time DESC 
-		LIMIT $2 OFFSET $3;`,
-		clause)
+	// SQL
 
-	s.ExplainAnalyze = fmt.Sprintf(`EXPLAIN ANALYZE %s`, s.Stmt)
+	s.Stmt = fmt.Sprintf(`
+	SELECT id, name, ext, is_dir, path, size, mod_time FROM files 
+	WHERE %s 
+	ORDER BY mod_time DESC LIMIT $2 OFFSET $3;`, clause)
 
 	s.Placeholders = []any{s.QueryParam, s.Limit, s.Offset}
 
-	s.CounterStmt = fmt.Sprintf(`SELECT COUNT(*) FROM files WHERE LOWER(name) %s;`, clause)
+	s.CounterStmt = fmt.Sprintf(`SELECT COUNT(*) FROM files WHERE %s;`, clause)
 	if len(s.Ext) > 0 {
-		s.Stmt = fmt.Sprintf(`SELECT files.id, name, files.ext, is_dir, path, size, mod_time FROM files JOIN ext ON files.ext_id = ext.id
-			WHERE LOWER(name) %s AND ext.ext = $2 ORDER BY mod_time DESC LIMIT $3 OFFSET $4;`, clause)
-		s.ExplainAnalyze = fmt.Sprintf(`EXPLAIN (ANALYZE, BUFFERS) %s`, s.Stmt)
-		s.CounterStmt = fmt.Sprintf(`SELECT COUNT(*) FROM files WHERE LOWER(name) %s AND LOWER(ext) = $2;`, clause)
+		s.Stmt = fmt.Sprintf(`SELECT files.id, name, files.ext, is_dir, path, size, mod_time FROM files 
+		JOIN ext ON files.ext_id = ext.id 
+		WHERE %s AND ext.ext = $2
+		ORDER BY mod_time DESC LIMIT $3 OFFSET $4;`, clause)
+
+		s.CounterStmt = fmt.Sprintf(`SELECT COUNT(*) 
+		FROM files JOIN ext ON files.ext_id = ext.id 
+		WHERE %s AND ext.ext = $2;`, clause)
 		s.Placeholders = []any{s.Placeholders[0], s.Ext, s.Placeholders[1], s.Placeholders[2]}
 	}
+
+	s.ExplainAnalyze = fmt.Sprintf(`EXPLAIN ANALYZE %s`, s.Stmt)
 
 	return nil
 
