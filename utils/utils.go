@@ -62,10 +62,10 @@ const creteIndexOnExt = `
 CREATE INDEX IF NOT EXISTS idx_ext ON files(LOWER(ext));`
 
 const insertIntoExt = `INSERT INTO ext (ext)
-SELECT DISTINCT ext FROM files WHERE ext IS NOT NULL;`
+SELECT DISTINCT ext FROM files WHERE files.ext IS NOT NULL ON CONFLICT (ext) DO NOTHING;`
 
 const updateExtId = `
-UPDATE files SET ext_id = ext.id FROM ext WHERE files.ext = ext.ext;`
+UPDATE files SET ext_id = ext.id FROM ext WHERE files.ext = ext.ext AND files.ext_id != NULL;`
 
 func CreateFiles() error {
 
