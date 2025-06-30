@@ -200,38 +200,41 @@ func (s *SearchParams) QueryStmt() error {
 
 	clause := ""
 
+	column := "files.keywords"
+	tableName := "files"
+
 	switch switcher {
 	case 0:
-		clause = "keywords = $1"
+		clause = column + " = $1"
 	case 1:
 		s.QueryParam = s.QueryParam + "%"
-		clause = "keywords LIKE $1"
+		clause = column + " LIKE $1"
 	case 100:
-		clause = "keywords = $1 AND is_dir=true"
+		clause = column + " = $1 AND is_dir=true"
 	case 101:
 		s.QueryParam = s.QueryParam + "%"
-		clause = "keywords LIKE $1 AND is_dir=true"
+		clause = column + " LIKE $1 AND is_dir=true"
 	}
 
 	// SQL
 
 	s.Stmt = fmt.Sprintf(`
-	SELECT id, name, ext, is_dir, path, size, mod_time FROM files 
+	SELECT id, name, ext, is_dir, path, size, mod_time FROM %s
 	WHERE %s 
-	ORDER BY mod_time DESC LIMIT $2 OFFSET $3;`, clause)
+	ORDER BY mod_time DESC LIMIT $2 OFFSET $3;`, tableName, clause)
 
 	s.Placeholders = []any{s.QueryParam, s.Limit, s.Offset}
 
-	s.CounterStmt = fmt.Sprintf(`SELECT COUNT(*) FROM files WHERE %s;`, clause)
+	s.CounterStmt = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE %s;`, tableName, clause)
 	if len(s.Ext) > 0 {
-		s.Stmt = fmt.Sprintf(`SELECT files.id, name, files.ext, is_dir, path, size, mod_time FROM files 
+		s.Stmt = fmt.Sprintf(`SELECT files.id, name, files.ext, is_dir, path, size, mod_time FROM %s
 		JOIN ext ON files.ext_id = ext.id 
 		WHERE %s AND ext.ext = $2
-		ORDER BY mod_time DESC LIMIT $3 OFFSET $4;`, clause)
+		ORDER BY files.mod_time DESC LIMIT $3 OFFSET $4;`, tableName, clause)
 
-		s.CounterStmt = fmt.Sprintf(`SELECT COUNT(*) 
-		FROM files JOIN ext ON files.ext_id = ext.id 
-		WHERE %s AND ext.ext = $2;`, clause)
+		s.CounterStmt = fmt.Sprintf(`SELECT COUNT(*) FROM %s 
+		JOIN ext ON files.ext_id = ext.id 
+		WHERE %s AND ext.ext = $2;`, tableName, clause)
 		s.Placeholders = []any{s.Placeholders[0], s.Ext, s.Placeholders[1], s.Placeholders[2]}
 	}
 
