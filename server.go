@@ -192,7 +192,12 @@ func (s *SearchParams) QueryStmt() error {
 
 	if strings.Contains(s.Params, ".") {
 		// Regex: split on dot, comma, semicolon, or any whitespace
+<<<<<<< HEAD
 		re := regexp.MustCompile(`[.,;]+`)
+=======
+		// re := regexp.MustCompile(`[.,;\s]+`)
+		re := regexp.MustCompile(`[.]+`)
+>>>>>>> d2e5894d9d6b39d3a0d735fbe69ebe7ca06a21ea
 		parts := re.Split(s.Params, -1)
 		s.QueryParam = parts[0]
 		s.QueryParam = strings.TrimSpace(s.QueryParam)
