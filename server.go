@@ -190,14 +190,9 @@ func (s *SearchParams) QueryStmt() error {
 
 	s.QueryParam = s.Params
 
-	if strings.Contains(s.Params, ".") {
+	if strings.ContainsAny(s.Params, ",.;") {
 		// Regex: split on dot, comma, semicolon, or any whitespace
-<<<<<<< HEAD
 		re := regexp.MustCompile(`[.,;]+`)
-=======
-		// re := regexp.MustCompile(`[.,;\s]+`)
-		re := regexp.MustCompile(`[.]+`)
->>>>>>> d2e5894d9d6b39d3a0d735fbe69ebe7ca06a21ea
 		parts := re.Split(s.Params, -1)
 		s.QueryParam = parts[0]
 		s.QueryParam = strings.TrimSpace(s.QueryParam)
@@ -213,7 +208,7 @@ func (s *SearchParams) QueryStmt() error {
 	case 0:
 		clause = column + " = $1"
 	case 1:
-		s.QueryParam = s.QueryParam + "%"
+		s.QueryParam = "%" + s.QueryParam + "%"
 		clause = column + " LIKE $1"
 	case 100:
 		clause = column + " = $1 AND is_dir=true"
