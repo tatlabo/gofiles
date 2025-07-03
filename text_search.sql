@@ -72,3 +72,15 @@ SELECT * FROM polish_stopwords;
 
 -- stemming
 -- https://youtu.be/wHL1VVejFEk?t=365
+
+
+
+-- Select keywords FROM files WHERE LENGTH(keywords) > 5 AND keywords ~ '^[a-z]{5}[a-zA-Z]+' LIMIT 10;
+
+-- SELECT * FROM keywords_gin WHERE keyword ~ '^[a-z]{5}[a-zA-Z]+' LIMIT 10;
+-- ALTER TABLE keywords_gin ADD COLUMN steam TEXT;
+
+-- SELECT to_tsvector('polish', 'Na moście granicznym w Słubicach pojawiły się osoby, które legitymują cudzoziemców i kontrolują ich dokumenty.');
+
+
+https://www.pg4e.com/lessons/week5#
