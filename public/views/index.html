@@ -29,6 +29,15 @@
             data-offset="{{ .Params.Offset }}">
 
             {{ template "form" .Params }}
+            {{ if .Params.Like }}
+                <span class="search-like">Like: {{ .Params.Like }}</span> 
+            {{ end}}
+                {{ if .Params.Dir }}
+                <span class="search-like">Dir: {{ .Params.Dir }}</span> 
+            {{ end}}
+            {{ if .Params.Keywords }}
+                <span class="search-like">Keywords: {{ .Params.Keywords }}</span> 
+            {{ end}}
             <ul id="list-headers" class="file-list headers">
                 <li id="sort-name" data-sort-type="name" data-ascending="true">name</li>
                 <li id="sort-size" data-sort-type="size" data-ascending="true">size</li>
@@ -40,7 +49,7 @@
             </ol>
             <div id="button-container" class="button-container">
                 <button class="primary" type="button"
-                    hx-get="/append?name={{ .Params.Name }}&like={{ .Params.Like }}&limit={{ .Params.Limit }}&offset={{ .Params.Limit }}&dir={{ .Params.Dir }}"
+                    hx-get="/append?name={{ .Params.Name }}&like={{ .Params.Like }}&limit={{ .Params.Limit }}&offset={{ .Params.Limit }}&dir={{ .Params.Dir }}&keywords={{ .Params.Keywords }}"
                     hx-target="#list" hx-swap="beforeend" hx-boost="true" hx-trigger="click" id="next">There is {{
                     .Counter }} results.
                 </button>
@@ -101,6 +110,10 @@
 
                     if ("{{ .Params.Like }}" === "on") {
                         jsonURL += `&like=on`;
+                    }
+
+                    if ("{{ .Params.Keywords }}" === "on") {
+                        jsonURL += `&keywords=on`;
                     }
 
                     console.log("jsonURL", jsonURL)

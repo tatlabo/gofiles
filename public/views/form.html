@@ -9,7 +9,7 @@
         {{ if .Name }} 
             value="{{ .Name }}"
         {{ else }}
-            placeholder="files"
+            placeholder="search files"
         {{ end }}
     >
     <div>
@@ -20,6 +20,10 @@
         <label for="dir">
             <input type="checkbox" id="dir" name="dir" {{ if .Dir }} checked {{ end }} />
             Dir
+        </label>
+        <label for="keywords">
+            <input type="checkbox" id="keywords" name="keywords" {{ if .Keywords }} checked {{ end }} />
+            Keywords
         </label>
     </div>
     <button class="primary" type="submit" id="submit">Submit</button>

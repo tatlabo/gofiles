@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
+	"gofiles/models"
 	"gofiles/utils"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	_ "github.com/lib/pq"
 )
@@ -17,28 +17,11 @@ const outputFile = "output.txt"
 var skipDirectories = []string{".git", "node_modules", "tmp", "temp", ".vscode", ".idea", "vendor", "build", "dist", "__pycache__", ",bin", ".vite", "$SysReset", "$Windows.~WS", "OneDriveTemp", "AppData"}
 var skipFiles = []string{".DS_Store", ".gitignore", ".gitattributes", ".gitmodules", "package-lock.json", "yarn.lock", "dpx", ".gitignore"}
 
-type Finfo struct {
-	Id       int       `db:"id"`
-	ParentId int       `db:"parent_id"`
-	Path     string    `db:"path"`
-	Name     string    `db:"name"`
-	Ext      string    `db:"ext"`
-	IsDir    bool      `db:"is_dir"`
-	Size     int64     `db:"size"`
-	ModTime  time.Time `db:"mod_time"`
-}
-
 var query = `INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
 VALUES ($1, $2, $3, $4, $5, $6)
 ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET size = EXCLUDED.size, mod_time = EXCLUDED.mod_time;`
 
-func (f *Finfo) String() string {
-	return fmt.Sprintf("%s, %s, %s, %T\n", f.Path, f.Name, f.Ext, f.IsDir)
-	// 	return fmt.Sprintf("Path: %s, Name: %s, Extension: %s, IsDir: %t, Size: %d, ModTime: %s",
-	// 		f.Path, f.Name, f.Ext, f.IsDir, f.Size, f.ModTime.Format("1999-01-02 15:04:05"))
-}
-
-var fileList = []Finfo{}
+var fileList = []models.Finfo{}
 
 var log = []string{}
 
@@ -68,7 +51,7 @@ func visit(path string, d fs.DirEntry, err error) error {
 			return nil
 		}
 
-		s := Finfo{}
+		s := models.Finfo{}
 		s.Name = strings.TrimSuffix(d.Name(), extension)
 		s.Name = strings.ReplaceAll(s.Name, "'", "''")
 
@@ -126,21 +109,6 @@ func main() {
 	} else {
 		fmt.Printf("There was %d items inserted\n", len(stmt))
 	}
-
-	// s := simpleString(fileList)
-
-	// if err := writeStmtToFile(s); err != nil {
-	// 	fmt.Println("Error writing to file: ", err)
-	// 	os.Exit(1)
-	// }
-
-	/* insert to postgres */
-	// if err := insertToPostgres(stmt); err != nil {
-	// 	fmt.Println("Error inserting to postgres: ", err)
-	// 	os.Exit(1)
-	// }
-
-	/* write to file */
 
 }
 
@@ -247,7 +215,7 @@ func insertToPostgres(stmt [][]interface{}) error {
 	return nil
 }
 
-func simpleString(f []Finfo) []string {
+func simpleString(f []models.Finfo) []string {
 	s := []string{}
 	for _, item := range f {
 		s = append(s,
@@ -257,7 +225,7 @@ func simpleString(f []Finfo) []string {
 	return s
 }
 
-func insertItem(f []Finfo) [][]interface{} {
+func insertItem(f []models.Finfo) [][]interface{} {
 
 	params := [][]interface{}{}
 

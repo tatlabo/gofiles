@@ -3,14 +3,13 @@ package main
 import (
 	"fmt"
 	"gofiles/chroma"
+	"gofiles/models"
 	"gofiles/utils"
 	"html/template"
 	"io"
 	"log"
 	"net/http"
 	"os"
-	"regexp"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -20,45 +19,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type Finfo struct {
-	Id       int       `json:"id"`
-	ParentId int       `json:"parentId"`
-	Path     string    `json:"path"`
-	Name     string    `json:"name"`
-	Ext      string    `json:"ext"`
-	IsDir    bool      `json:"isDir"`
-	Size     int64     `json:"size"`
-	SizeStr  string    `json:"sizeStr"`
-	ModTime  time.Time `json:"modTime"`
-	IsImage  bool
-	IsText   bool
-	IsVideo  bool
-	Link     string
-	Src      template.URL
-	Empty    bool
-}
-
-type FinfoDetail struct {
-	Finfo
-	Title   string
-	Preview string
-	HTML    template.HTML
-}
-
-type IndexData struct {
-	TC          []Finfo `json:"FileList"`
-	Text        string
-	HeaderTitle string
-	Counter     int
-	Params      map[string]string
-	Error       map[string]string
-}
-
 var limit int
-
-var textFiles = []string{"py", "txt", "js", "jsx", "json", "css", "go", "html", "edl", "xml", "java", "c", "cpp", "h", "php", "sql", "sh", "bat", "pl", "rb", "swift", "ts", "yaml", "yml", "csv"}
-var imageFiles = []string{"jpg", "jpeg", "png", "gif", "bmp", "tiff", "webp", "svg", "ico", "heic", "raw"}
-var videoFiles = []string{"mp4"}
 
 type Template struct {
 	templates *template.Template
@@ -76,181 +37,12 @@ func not(b bool) bool {
 	return !b
 }
 
-func (f *Finfo) CheckExtension() error {
+func findInDb(c echo.Context) (models.IndexData, error) {
 
-	if slices.Contains(textFiles, f.Ext) {
-		f.IsText = true
-		f.Link = fmt.Sprintf("%s\\%s.%v", f.Path, f.Name, f.Ext)
-		f.Link = strings.ReplaceAll(f.Link, "\\", "/")
+	indexData := models.IndexData{}
 
-	} else if slices.Contains(imageFiles, f.Ext) {
-		f.IsImage = true
-		f.Link = fmt.Sprintf("file:///%s\\%s.%v", f.Path, f.Name, f.Ext)
-	} else if slices.Contains(videoFiles, f.Ext) {
-		f.IsVideo = true
-		f.Link = fmt.Sprintf("file:///%s\\%s.%v", f.Path, f.Name, f.Ext)
-	}
-
-	fSrc := fmt.Sprintf("%s\\%s.%v", f.Path, f.Name, f.Ext)
-	fSrc = strings.ReplaceAll(fSrc, "\\", "/")
-	f.Src = template.URL(fSrc)
-
-	return nil
-}
-
-func (sp *SearchParams) SearchParams(c echo.Context) error {
-
-	method := c.Request().Method
-
-	switch method {
-
-	case http.MethodGet:
-
-		if len(c.QueryParam("name")) == 0 {
-			sp.Error = map[string]string{"Error": "No search parameters provided"}
-		} else {
-			sp.Params = utils.CleanInput(c.QueryParam("name"))
-
-			if len(c.QueryParam("like")) > 0 {
-				sp.Like = utils.CleanInput(c.QueryParam("like"))
-			}
-
-			if len(c.QueryParam("dir")) > 0 {
-				sp.Dir = utils.CleanInput(c.QueryParam("dir"))
-			}
-
-			offsetStr := c.QueryParam("offset")
-			limitStr := c.QueryParam("limit")
-
-			if len(limitStr) > 0 {
-				sp.Limit, _ = strconv.Atoi(limitStr)
-			} else {
-				sp.Limit = 10
-			}
-
-			if len(offsetStr) > 0 {
-				sp.Offset, _ = strconv.Atoi(offsetStr)
-			} else {
-				sp.Offset = 0
-			}
-		}
-
-	case http.MethodPost:
-		params := c.FormValue("name")
-		sp.Params = utils.CleanInput(params)
-
-		if len(c.FormValue("like")) > 0 {
-			sp.Like = c.FormValue("like")
-		}
-
-		if len(c.FormValue("dir")) > 0 {
-			sp.Dir = c.FormValue("dir")
-		}
-
-		sp.Limit = 10
-		sp.Offset = 0
-
-	}
-
-	return nil
-}
-
-type SearchParams struct {
-	Params         string
-	Like           string
-	Dir            string
-	Limit          int
-	Offset         int
-	QueryParam     string
-	Stmt           string
-	ExplainAnalyze string
-	CounterStmt    string
-	Ext            string
-	Placeholders   []any
-	Error          map[string]string
-}
-
-func (s *SearchParams) QueryStmt() error {
-
-	switcher := 0
-	isOn := []string{"on", "true", "1", "yes", "ok", "y", "tak", "t"}
-
-	if slices.Contains(isOn, s.Like) {
-		switcher += 1
-	}
-
-	if len(s.Ext) > 0 {
-		s.QueryParam = "%" + s.QueryParam + "%"
-		switcher += 10
-	}
-
-	if slices.Contains(isOn, s.Dir) {
-		switcher += 100
-	}
-
-	s.QueryParam = s.Params
-
-	if strings.ContainsAny(s.Params, ",.;") {
-		// Regex: split on dot, comma, semicolon, or any whitespace
-		re := regexp.MustCompile(`[.,;]+`)
-		parts := re.Split(s.Params, -1)
-		s.QueryParam = parts[0]
-		s.QueryParam = strings.TrimSpace(s.QueryParam)
-		s.Ext = parts[1]
-	}
-
-	clause := ""
-
-	column := "files.keywords"
-	tableName := "files"
-
-	switch switcher {
-	case 0:
-		clause = column + " = $1"
-	case 1:
-		s.QueryParam = "%" + s.QueryParam + "%"
-		clause = column + " LIKE $1"
-	case 100:
-		clause = column + " = $1 AND is_dir=true"
-	case 101:
-		s.QueryParam = s.QueryParam + "%"
-		clause = column + " LIKE $1 AND is_dir=true"
-	}
-
-	// SQL
-
-	s.Stmt = fmt.Sprintf(`
-	SELECT id, name, ext, is_dir, path, size, mod_time FROM %s
-	WHERE %s 
-	ORDER BY mod_time DESC LIMIT $2 OFFSET $3;`, tableName, clause)
-
-	s.Placeholders = []any{s.QueryParam, s.Limit, s.Offset}
-
-	s.CounterStmt = fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE %s;`, tableName, clause)
-	if len(s.Ext) > 0 {
-		s.Stmt = fmt.Sprintf(`SELECT files.id, name, files.ext, is_dir, path, size, mod_time FROM %s
-		JOIN ext ON files.ext_id = ext.id 
-		WHERE %s AND ext.ext = $2
-		ORDER BY files.mod_time DESC LIMIT $3 OFFSET $4;`, tableName, clause)
-
-		s.CounterStmt = fmt.Sprintf(`SELECT COUNT(*) FROM %s 
-		JOIN ext ON files.ext_id = ext.id 
-		WHERE %s AND ext.ext = $2;`, tableName, clause)
-		s.Placeholders = []any{s.Placeholders[0], s.Ext, s.Placeholders[1], s.Placeholders[2]}
-	}
-
-	s.ExplainAnalyze = fmt.Sprintf(`EXPLAIN ANALYZE %s`, s.Stmt)
-
-	return nil
-
-}
-
-func findInDb(c echo.Context) (IndexData, error) {
-
-	indexData := IndexData{}
-
-	var searchParams SearchParams
-	err := searchParams.SearchParams(c)
+	var searchParams models.SearchParams
+	err := searchParams.SetParams(c)
 
 	if err != nil {
 		return indexData, c.String(http.StatusInternalServerError, "Error parsing search parameters")
@@ -310,10 +102,10 @@ func findInDb(c echo.Context) (IndexData, error) {
 		log.Println("Error executing count query:", err)
 	}
 
-	fInfoList := []Finfo{}
+	fInfoList := []models.Finfo{}
 
 	for rows.Next() {
-		var finfo = Finfo{}
+		var finfo = models.Finfo{}
 		// Scan the current row into variables
 		err := rows.Scan(
 			&finfo.Id,
@@ -347,15 +139,15 @@ func findInDb(c echo.Context) (IndexData, error) {
 		fInfoList = append(fInfoList, finfo)
 	}
 
-	context := IndexData{}
-	context.TC = fInfoList
-	context.HeaderTitle = "Founded in db: " + searchParams.Params
-	context.Text = "Content preview"
-	context.Counter = counter
-	context.Params = map[string]string{
+	indexData.TC = fInfoList
+	indexData.HeaderTitle = "Founded in db: " + searchParams.Params
+	indexData.Text = "Content preview"
+	indexData.Counter = counter
+	indexData.Params = map[string]string{
 		"Name":         searchParams.Params,
 		"Like":         searchParams.Like,
 		"Dir":          searchParams.Dir,
+		"Keywords":     searchParams.Keywords,
 		"Limit":        strconv.Itoa(searchParams.Limit),
 		"Offset":       strconv.Itoa(searchParams.Offset),
 		"NextPage":     "",
@@ -363,11 +155,11 @@ func findInDb(c echo.Context) (IndexData, error) {
 	}
 
 	if searchParams.Offset+searchParams.Limit < counter {
-		context.Params["NextPage"] = fmt.Sprintf("/json/search?name=%s&offset=%d&limit=%d", searchParams.Params, searchParams.Offset+searchParams.Limit, searchParams.Limit)
+		indexData.Params["NextPage"] = fmt.Sprintf("/json/search?name=%s&offset=%d&limit=%d", searchParams.Params, searchParams.Offset+searchParams.Limit, searchParams.Limit)
 	}
-	context.Params["PreviousPage"] = ""
+	indexData.Params["PreviousPage"] = ""
 
-	return context, nil
+	return indexData, nil
 }
 
 func searchInDb(c echo.Context) error {
@@ -478,7 +270,7 @@ func previewImage(c echo.Context) error {
 	}
 	defer conn.Close()
 
-	finfo := Finfo{}
+	finfo := models.Finfo{}
 	stmt := (`SELECT id, name, ext, is_dir, path, size, mod_time FROM files WHERE id = $1;`)
 
 	err = conn.QueryRow(stmt, id).Scan(
@@ -571,7 +363,7 @@ func detailById(c echo.Context) error {
 	}
 	defer conn.Close()
 
-	item := Finfo{}
+	item := models.Finfo{}
 	stmt := `SELECT id, name, ext, is_dir, path, size, mod_time FROM files WHERE id = $1;`
 
 	err = conn.QueryRow(stmt, id).Scan(
@@ -591,15 +383,13 @@ func detailById(c echo.Context) error {
 	_ = item.CheckExtension()
 
 	item.SizeStr = utils.ConvertBytes(item.Size)
-	fc := FinfoDetail{}
-	fc.Finfo = item
-	fc.Title = fmt.Sprintf("Details for: %s.%s", item.Name, item.Ext)
 
-	if fc.IsText == true {
-		fc.HTML, _ = textToChoroma(item)
+	item.Title = fmt.Sprintf("Details for: %s.%s", item.Name, item.Ext)
+	if item.IsText == true {
+		item.HTML, _ = textToChoroma(item)
 	}
 
-	return c.Render(http.StatusOK, "detail", fc)
+	return c.Render(http.StatusOK, "detail", item)
 }
 
 func previewById(c echo.Context) error {
@@ -616,7 +406,7 @@ func previewById(c echo.Context) error {
 	}
 	defer conn.Close()
 
-	finfo := Finfo{}
+	finfo := models.Finfo{}
 	stmt := `SELECT id, name, ext, is_dir, path, size, mod_time FROM files WHERE id = $1;`
 
 	err = conn.QueryRow(stmt, id).Scan(
@@ -638,19 +428,16 @@ func previewById(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Error checking extension item")
 	}
 
-	var ctx FinfoDetail
-	ctx.Finfo = finfo
-
-	if ctx.IsText == true {
-		ctx.HTML, _ = textToChoroma(finfo)
+	if finfo.IsText == true {
+		finfo.HTML, _ = textToChoroma(finfo)
 	}
 
-	wrap := fmt.Sprintf("<div><h3>%s.%s</h3><p>%s</p>%s</div>", ctx.Finfo.Name, ctx.Finfo.Ext, ctx.Finfo.Path, string(ctx.HTML))
+	wrap := fmt.Sprintf("<div><h3>%s.%s</h3><p>%s</p>%s</div>", finfo.Name, finfo.Ext, finfo.Path, string(finfo.HTML))
 
 	return c.String(http.StatusOK, wrap)
 }
 
-func textToChoroma(f Finfo) (template.HTML, error) {
+func textToChoroma(f models.Finfo) (template.HTML, error) {
 
 	address := fmt.Sprintf("%s\\%s.%v", f.Path, f.Name, f.Ext)
 	fin, err := os.Open(address)
