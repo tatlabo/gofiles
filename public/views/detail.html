@@ -1,6 +1,6 @@
 {{ define "detail"}}
 <!DOCTYPE html>
-    {{ template "header" .Title }}
+{{ template "header" .Title }}
 
 <body>
     <main class="">
@@ -17,7 +17,7 @@
             {{ .Path }}\{{ .Name }}.{{ .Ext }}
         </p>
 
-<!-- 
+        <!-- 
             <ul class="file-detail">
                 <li>
                     Id: {{ .Id }}
@@ -48,11 +48,47 @@
                 </li>
             </ul> -->
 
-            {{ if .IsText }}
-            {{ template "p-content" . }}
-            {{ else }}
-            <p>File is not readable</p>
-            {{ end }}
+        {{ if .IsText }}
+        {{ template "p-content" . }}
+        {{ else }}
+        <p>File is not readable</p>
+        {{ end }}
+        <pre>
+Id:   
+{{	.Id       }}
+ParentId 
+{{	.ParentId }}
+Path:     
+{{	.Path     }}
+Name:     
+{{	.Name     }}
+Ext:      
+{{	.Ext      }}
+Size     
+{{	.Size     }}
+IsDir:    
+{{	.IsDir    }}
+SizeStr:  
+{{	.SizeStr  }}
+ModTime:  
+{{	.ModTime  }}
+IsImage:  
+{{	.IsImage  }}
+IsText:   
+{{	.IsText   }}
+IsVideo:  
+{{	.IsVideo  }}
+Link:    
+{{	.Link     }}
+Src:      
+{{	.Src      }}
+Title:   
+{{	.Title   }}
+Preview: 
+{{	.Preview }}
+HTML:    
+{{	.HTML    }}
+            </pre>
     </main>
 
 

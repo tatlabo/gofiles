@@ -19,6 +19,45 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+func main() {
+
+	// Initialize Echo framework
+	e := echo.New()
+
+	t := &Template{
+		templates: template.Must(template.New("").Funcs(template.FuncMap{
+			"formatDate": formatDate, // Register the custom function
+			"not":        not,
+			"equals":     equals,
+		}).ParseGlob("public/views/*.html")),
+	}
+
+	e.Static("/static", "static")
+	e.Static("/media", "media")
+	e.Renderer = t
+
+	e.GET("/", startpage)
+	e.GET("/search", searchInDb) // FindForm
+	e.POST("/search", searchInDb)
+	e.GET("/detail/:id", detailById)
+	e.GET("/details/:id", detailById)
+	e.GET("/preview/:id", previewById)
+	e.GET("/preview/image/:id", previewImage)
+
+	// e.GET("/files", findInDb)
+
+	e.GET("/json/search", searchJson)
+
+	e.GET("/append", searchAppend)
+
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
+
+	e.Logger.Fatal(e.Start(":8"))
+
+}
+
 var limit int
 
 type Template struct {
@@ -106,22 +145,39 @@ func findInDb(c echo.Context) (models.IndexData, error) {
 
 	for rows.Next() {
 		var finfo = models.Finfo{}
+		if searchParams.Like == "" && searchParams.Dir == "" {
+			err := rows.Scan(
+				&finfo.Id,
+				&finfo.Name,
+				&finfo.Ext,
+				&finfo.IsDir,
+				&finfo.Path,
+				&finfo.Size,
+				&finfo.ModTime,
+				&finfo.TsRank,
+			)
+
+			if err != nil {
+				return indexData, c.String(http.StatusInternalServerError, "Error scanning result")
+			}
+		} else {
+			err := rows.Scan(
+				&finfo.Id,
+				&finfo.Name,
+				&finfo.Ext,
+				&finfo.IsDir,
+				&finfo.Path,
+				&finfo.Size,
+				&finfo.ModTime,
+			)
+
+			if err != nil {
+				return indexData, c.String(http.StatusInternalServerError, "Error scanning result")
+			}
+		}
 		// Scan the current row into variables
-		err := rows.Scan(
-			&finfo.Id,
-			&finfo.Name,
-			&finfo.Ext,
-			&finfo.IsDir,
-			&finfo.Path,
-			&finfo.Size,
-			&finfo.ModTime,
-		)
 
 		// Check for errors during scanning
-
-		if err != nil {
-			return indexData, c.String(http.StatusInternalServerError, "Error scanning result")
-		}
 
 		if err := rows.Err(); err != nil {
 			return indexData, c.String(http.StatusInternalServerError, "Error iterating over rows")
@@ -215,45 +271,6 @@ func startpage(c echo.Context) error {
 
 func equals(a, b interface{}) bool {
 	return a == b
-}
-
-func main() {
-
-	// Initialize Echo framework
-	e := echo.New()
-
-	t := &Template{
-		templates: template.Must(template.New("").Funcs(template.FuncMap{
-			"formatDate": formatDate, // Register the custom function
-			"not":        not,
-			"equals":     equals,
-		}).ParseGlob("public/views/*.html")),
-	}
-
-	e.Static("/static", "static")
-	e.Static("/media", "media")
-	e.Renderer = t
-
-	e.GET("/", startpage)
-	e.GET("/search", searchInDb) // FindForm
-	e.POST("/search", searchInDb)
-	e.GET("/detail/:id", detailById)
-	e.GET("/details/:id", detailById)
-	e.GET("/preview/:id", previewById)
-	e.GET("/preview/image/:id", previewImage)
-
-	// e.GET("/files", findInDb)
-
-	e.GET("/json/search", searchJson)
-
-	e.GET("/append", searchAppend)
-
-	go func() {
-		log.Println(http.ListenAndServe("localhost:6060", nil))
-	}()
-
-	e.Logger.Fatal(e.Start(":8"))
-
 }
 
 func previewImage(c echo.Context) error {
@@ -363,33 +380,37 @@ func detailById(c echo.Context) error {
 	}
 	defer conn.Close()
 
-	item := models.Finfo{}
+	finfo := models.Finfo{}
 	stmt := `SELECT id, name, ext, is_dir, path, size, mod_time FROM files WHERE id = $1;`
 
 	err = conn.QueryRow(stmt, id).Scan(
-		&item.Id,
-		&item.Name,
-		&item.Ext,
-		&item.IsDir,
-		&item.Path,
-		&item.Size,
-		&item.ModTime,
+		&finfo.Id,
+		&finfo.Name,
+		&finfo.Ext,
+		&finfo.IsDir,
+		&finfo.Path,
+		&finfo.Size,
+		&finfo.ModTime,
 	)
 
 	if err != nil {
 		return c.String(http.StatusInternalServerError, "Error executing query")
 	}
 
-	_ = item.CheckExtension()
+	_ = finfo.CheckExtension()
 
-	item.SizeStr = utils.ConvertBytes(item.Size)
+	finfo.SizeStr = utils.ConvertBytes(finfo.Size)
 
-	item.Title = fmt.Sprintf("Details for: %s.%s", item.Name, item.Ext)
-	if item.IsText == true {
-		item.HTML, _ = textToChoroma(item)
+	finfodetail := models.FinfoDetail{
+		Finfo: &finfo,
 	}
 
-	return c.Render(http.StatusOK, "detail", item)
+	finfodetail.Title = "Details for: " + finfo.Name + finfo.Ext
+	if finfo.IsText == true {
+		finfodetail.HTML, _ = textToChoroma(finfo)
+	}
+
+	return c.Render(http.StatusOK, "detail", finfodetail)
 }
 
 func previewById(c echo.Context) error {
@@ -428,11 +449,15 @@ func previewById(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Error checking extension item")
 	}
 
-	if finfo.IsText == true {
-		finfo.HTML, _ = textToChoroma(finfo)
+	finfodetail := models.FinfoDetail{
+		Finfo: &finfo,
 	}
 
-	wrap := fmt.Sprintf("<div><h3>%s.%s</h3><p>%s</p>%s</div>", finfo.Name, finfo.Ext, finfo.Path, string(finfo.HTML))
+	if finfo.IsText == true {
+		finfodetail.HTML, _ = textToChoroma(finfo)
+	}
+
+	wrap := fmt.Sprintf("<div><h3>%s.%s</h3><p>%s</p>%s</div>", finfodetail.Name, finfodetail.Ext, finfodetail.Path, string(finfodetail.HTML))
 
 	return c.String(http.StatusOK, wrap)
 }

@@ -15,26 +15,34 @@ import (
 )
 
 var textFiles = []string{"py", "txt", "js", "jsx", "json", "css", "go", "html", "edl", "xml", "java", "c", "cpp", "h", "php", "sql", "sh", "bat", "pl", "rb", "swift", "ts", "yaml", "yml", "csv"}
-var imageFiles = []string{"jpg", "jpeg", "png", "gif", "bmp", "tiff", "webp", "svg", "ico", "heic", "raw"}
-var videoFiles = []string{"mp4"}
+var imageFiles = []string{"jpg", "jpeg", "png", "gif", "bmp", "tif", "tiff", "webp", "svg", "ico", "heic", "raw"}
+var videoFiles = []string{"mp4", "wav", "mp3", "aif", "aiff"}
 
 type Finfo struct {
-	Id       int    `db:"id" json:"id"`
-	ParentId int    `db:"parent_id" json:"parent_id"`
-	Path     string `db:"path" json:"path"`
-	Name     string `db:"name" json:"name"`
-	Ext      string `db:"ext" json:"ext"`
-	IsDir    bool   `db:"is_dir" json:"is_dir"`
-	Size     int64  `db:"size"`
-	SizeStr  string
-	ModTime  time.Time `db:"mod_time"`
-	IsImage  bool
-	IsText   bool
-	IsVideo  bool
-	Link     string
-	Src      template.URL
-	Empty    bool
+	Id       int          `db:"id" json:"id"`
+	ParentId int          `db:"parent_id" json:"parentId"`
+	Path     string       `db:"path" json:"path"`
+	Name     string       `db:"name" json:"name"`
+	Ext      string       `db:"ext" json:"ext"`
+	IsDir    bool         `db:"is_dir" json:"isDir"`
+	Size     int64        `db:"size" json:"size"`
+	SizeStr  string       `json:"sizeStr"`
+	ModTime  time.Time    `db:"modTime"`
+	IsImage  bool         `json:"isImage"`
+	IsText   bool         `json:"isText"`
+	IsVideo  bool         `json:"isVideo"`
+	Link     string       `json:"link"`
+	Src      template.URL `json:"src"`
+	TsRank   float64      `db:"ts_rank" json:"tsRank"` // For full-text search ranking
+	// Empty    bool
 
+	// Title   string
+	// Preview string
+	// HTML    template.HTML
+}
+
+type FinfoDetail struct {
+	*Finfo
 	Title   string
 	Preview string
 	HTML    template.HTML
@@ -42,10 +50,15 @@ type Finfo struct {
 
 func (f *Finfo) CheckExtension() error {
 
+	if f.IsDir {
+		fSrc := strings.ReplaceAll(f.Path+"\\"+f.Name, "\\", "/")
+		f.Src = template.URL(fSrc)
+		return nil
+	}
+
 	if slices.Contains(textFiles, f.Ext) {
 		f.IsText = true
 		f.Link = fmt.Sprintf("%s\\%s.%v", f.Path, f.Name, f.Ext)
-		f.Link = strings.ReplaceAll(f.Link, "\\", "/")
 
 	} else if slices.Contains(imageFiles, f.Ext) {
 		f.IsImage = true
@@ -55,6 +68,7 @@ func (f *Finfo) CheckExtension() error {
 		f.Link = fmt.Sprintf("file:///%s\\%s.%v", f.Path, f.Name, f.Ext)
 	}
 
+	f.Link = strings.ReplaceAll(f.Link, "\\", "/")
 	fSrc := fmt.Sprintf("%s\\%s.%v", f.Path, f.Name, f.Ext)
 	fSrc = strings.ReplaceAll(fSrc, "\\", "/")
 	f.Src = template.URL(fSrc)
@@ -100,11 +114,6 @@ func (s *SearchParams) QueryStmt() error {
 		switcher += 1
 	}
 
-	if len(s.Ext) > 0 {
-		s.QueryParam = "%" + s.QueryParam + "%"
-		switcher += 10
-	}
-
 	if slices.Contains(isOn, s.Dir) {
 		switcher += 100
 	}
@@ -123,16 +132,18 @@ func (s *SearchParams) QueryStmt() error {
 	clause := ""
 
 	column := "files.keywords"
-	tableName := "files"
+	// tableName := "files"
 
 	switch switcher {
 	case 0:
 		clause = s.QueryParam
 
 		s.Stmt = `
-		SELECT id, name, ext, is_dir, path, size, mod_time FROM files
+		SELECT id, name, ext, is_dir, path, size, mod_time,
+		ts_rank_cd( to_tsvector('polish', keywords), websearch_to_tsquery('polish', $1) ) as ts_rank
+		FROM files
 		WHERE websearch_to_tsquery('polish', $1) @@ to_tsvector('polish', keywords)
-		ORDER BY mod_time DESC
+		ORDER BY ts_rank DESC
 		LIMIT $2 OFFSET $3;`
 
 		s.CounterStmt = `
@@ -168,9 +179,9 @@ func (s *SearchParams) QueryStmt() error {
 		clause = column + " LIKE $1 AND is_dir=true"
 
 		s.Stmt = fmt.Sprintf(`
-		SELECT id, name, ext, is_dir, path, size, mod_time FROM %s
+		SELECT id, name, ext, is_dir, path, size, mod_time FROM files
 		WHERE %s 
-		ORDER BY mod_time DESC LIMIT $2 OFFSET $3;`, tableName, clause)
+		ORDER BY mod_time DESC LIMIT $2 OFFSET $3;`, clause)
 
 		s.CounterStmt = fmt.Sprintf(`SELECT COUNT(*) FROM files WHERE %s;`, clause)
 	}
@@ -186,18 +197,18 @@ func (s *SearchParams) QueryStmt() error {
 
 	if len(s.Ext) > 0 {
 		clause = column + " = $1"
-		s.Stmt = fmt.Sprintf(`SELECT files.id, name, files.ext, is_dir, path, size, mod_time FROM files
+		s.Stmt = fmt.Sprintln(`SELECT files.id, name, files.ext, is_dir, path, size, mod_time,
+		ts_rank( to_tsvector('polish', keywords), websearch_to_tsquery('polish', $1) ) as ts_rank
+		FROM files
 		JOIN ext ON files.ext_id = ext.id 
-		-- WHERE %s 
 		WHERE websearch_to_tsquery('polish', $1) @@ to_tsvector('polish', files.keywords)
 		AND ext.ext = $2
-		ORDER BY files.mod_time DESC LIMIT $3 OFFSET $4;`, clause)
+		ORDER BY ts_rank DESC LIMIT $3 OFFSET $4;`)
 
-		s.CounterStmt = fmt.Sprintf(`SELECT COUNT(*) FROM files 
+		s.CounterStmt = fmt.Sprintln(`SELECT COUNT(*) FROM files 
 		JOIN ext ON files.ext_id = ext.id 
-		-- WHERE %s 
 		WHERE websearch_to_tsquery('polish', $1) @@ to_tsvector('polish', files.keywords)
-		AND ext.ext = $2;`, clause)
+		AND ext.ext = $2;`)
 		s.Placeholders = []any{s.Placeholders[0], s.Ext, s.Placeholders[1], s.Placeholders[2]}
 	}
 
