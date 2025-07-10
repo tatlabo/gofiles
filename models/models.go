@@ -138,6 +138,7 @@ func (s *SearchParams) QueryStmt() error {
 	case 0:
 		clause = s.QueryParam
 
+		// column = keywords
 		s.Stmt = `
 		SELECT id, name, ext, is_dir, path, size, mod_time,
 		ts_rank_cd( to_tsvector('polish', keywords), websearch_to_tsquery('polish', $1) ) as ts_rank
@@ -152,16 +153,17 @@ func (s *SearchParams) QueryStmt() error {
 
 	case 1:
 		s.QueryParam = s.QueryParam + "%"
-		clause = column + " LIKE $1"
-
-		s.Stmt = fmt.Sprintf(`
+		// column = "name"
+		s.Stmt = fmt.Sprintln(`
 		SELECT id, name, ext, is_dir, path, size, mod_time FROM files
-		WHERE %s 
-		ORDER BY mod_time DESC LIMIT $2 OFFSET $3;`, clause)
+		WHERE name LIKE $1
+		ORDER BY mod_time DESC LIMIT $2 OFFSET $3;`)
 
 		s.CounterStmt = fmt.Sprintf(`SELECT COUNT(*) FROM files WHERE %s;`, clause)
 	case 100:
 		clause = s.Params
+
+		// column = "files.keywords"
 
 		s.Stmt = fmt.Sprintln(`
 		SELECT id, name, ext, is_dir, path, size, mod_time FROM files

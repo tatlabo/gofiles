@@ -103,9 +103,6 @@ func findInDb(c echo.Context) (models.IndexData, error) {
 	}
 	defer conn.Close()
 
-	var counter int
-	// var explainAnalyze string
-
 	rows, err := conn.Query(searchParams.Stmt, searchParams.Placeholders...)
 
 	if err != nil {
@@ -114,24 +111,28 @@ func findInDb(c echo.Context) (models.IndexData, error) {
 	}
 
 	log.Println(searchParams.Stmt, searchParams.Placeholders)
-	explainRows, err := conn.Query(searchParams.ExplainAnalyze, searchParams.Placeholders...)
-	for explainRows.Next() {
-		var line string
-		if err := explainRows.Scan(&line); err != nil {
-			log.Println("Error scanning EXPLAIN ANALYZE line:", err)
-			continue
+
+	go func() {
+		explainAnalyze := fmt.Sprintf("EXPLAIN ANALYZE %s", searchParams.Stmt)
+		explainRows, err := conn.Query(explainAnalyze, searchParams.Placeholders...)
+		if err != nil {
+			log.Println("Error running EXPLAIN ANALYZE:", err)
 		}
-		log.Println(line)
-	}
-	if err := explainRows.Err(); err != nil {
-		log.Println("Error iterating EXPLAIN ANALYZE rows:", err)
-	}
+		defer explainRows.Close()
+		for explainRows.Next() {
+			var line string
+			if err := explainRows.Scan(&line); err != nil {
+				log.Println("Error scanning EXPLAIN ANALYZE line:", err)
+				continue
+			}
+			log.Println(line)
+		}
+		if err := explainRows.Err(); err != nil {
+			log.Println("Error iterating EXPLAIN ANALYZE rows:", err)
+		}
+	}()
 
-	if err != nil {
-		c.Render(200, "error", err)
-		return indexData, err
-	}
-
+	counter := 0
 	if searchParams.Ext != "" {
 		err = conn.QueryRow(searchParams.CounterStmt, searchParams.QueryParam, searchParams.Ext).Scan(&counter)
 	} else {

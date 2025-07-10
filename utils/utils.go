@@ -55,6 +55,7 @@ keywords TEXT,
 mod_time TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 UNIQUE (path, name, ext, is_dir));`
 
+// create index on files
 const creteIndexOnFiles = `
 CREATE INDEX IF NOT EXISTS idx_name ON files(LOWER(name));`
 
@@ -67,6 +68,12 @@ SELECT DISTINCT ext FROM files WHERE files.ext IS NOT NULL ON CONFLICT (ext) DO 
 const updateExtId = `
 UPDATE files SET ext_id = ext.id FROM ext WHERE files.ext = ext.ext AND files.ext_id != NULL;`
 
+const updateKeywords = `
+UPDATE files SET keywords = ( to_tsvector('polish', name) || ' ' || ext ) WHERE keywords IS NOT NULL;`
+
+const createGinOnKeywords = `
+CREATE INDEX idx_keywords_gin ON keywords_gin USING GIN (to_tsvector('polish', keyword));`
+
 func CreateFiles() error {
 
 	db, err := PgConn()
@@ -75,18 +82,36 @@ func CreateFiles() error {
 	}
 	defer db.Close()
 
-	if _, err := db.Exec(createExt); err != nil {
-		return err
-	}
 	if _, err := db.Exec(createFiles); err != nil {
 		return err
 	}
-	if _, err := db.Exec(creteIndexOnFiles); err != nil {
+
+	if _, err := db.Exec(createExt); err != nil {
 		return err
 	}
+	// if _, err := db.Exec(creteIndexOnFiles); err != nil {
+	// 	return err
+	// }
 	if _, err := db.Exec(creteIndexOnExt); err != nil {
 		return err
 	}
+
+	if _, err := db.Exec(insertIntoExt); err != nil {
+		return err
+	}
+
+	if _, err := db.Exec(updateExtId); err != nil {
+		return err
+	}
+
+	if _, err := db.Exec(updateKeywords); err != nil {
+		return err
+	}
+
+	if _, err := db.Exec(createGinOnKeywords); err != nil {
+		return err
+	}
+
 	return nil
 }
 

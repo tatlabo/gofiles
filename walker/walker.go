@@ -25,6 +25,132 @@ var fileList = []models.Finfo{}
 
 var log = []string{}
 
+const createExt = `
+CREATE TABLE IF NOT EXISTS ext (id SERIAL, ext TEXT UNIQUE, PRIMARY KEY (id));
+`
+
+const createFiles = `
+CREATE TABLE IF NOT EXISTS files 
+(id SERIAL PRIMARY KEY,
+parent_id INTEGER,
+path TEXT NOT NULL,
+name TEXT NOT NULL,
+ext TEXT,
+ext_id INTEGER, FOREIGN KEY(ext_id) REFERENCES ext(id) ON DELETE CASCADE,
+is_dir BOOLEAN NOT NULL DEFAULT FALSE,
+size BIGINT,
+keywords TEXT,
+mod_time TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+UNIQUE (path, name, ext, is_dir));`
+
+// create index on files
+
+const creteIndexOnExt = `
+CREATE INDEX IF NOT EXISTS idx_ext ON files(LOWER(ext));`
+
+const insertIntoExt = `INSERT INTO ext (ext)
+SELECT DISTINCT ext FROM files WHERE files.ext IS NOT NULL ON CONFLICT (ext) DO NOTHING;`
+
+const updateExtId = `
+UPDATE files SET ext_id = ext.id FROM ext WHERE files.ext = ext.ext AND files.is_dir = FALSE;`
+
+const updateKeywords = `
+UPDATE files SET keywords = ( to_tsvector('polish', (name||' '||ext)));`
+
+const createGinOnKeywords = `
+CREATE INDEX IF NOT EXISTS idx_keywords_gin ON files USING GIN (to_tsvector('polish', keywords));`
+
+func CreateFiles() error {
+
+	db, err := utils.PgConn()
+	if err != nil {
+		return (err)
+	}
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback()
+
+	if _, err := tx.Exec(createExt); err != nil {
+		return err
+	}
+
+	if _, err := tx.Exec(createFiles); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func CreateIndexes() error {
+
+	db, err := utils.PgConn()
+	if err != nil {
+		return (err)
+	}
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
+	if _, err := tx.Exec(createGinOnKeywords); err != nil {
+		return err
+	}
+
+	if _, err := tx.Exec(creteIndexOnExt); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func UpdateFiles() error {
+
+	db, err := utils.PgConn()
+	if err != nil {
+		return (err)
+	}
+	defer db.Close()
+
+	//transactions
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.Exec(insertIntoExt); err != nil {
+		return err
+	}
+
+	if _, err := tx.Exec(updateKeywords); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func UpdateExtId() error {
+
+	db, err := utils.PgConn()
+	if err != nil {
+		return (err)
+	}
+	defer db.Close()
+
+	if _, err := db.Exec(updateExtId); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func visit(path string, d fs.DirEntry, err error) error {
 
 	if err != nil {
@@ -91,14 +217,18 @@ func main() {
 		}
 	}
 
+	if err := CreateFiles(); err != nil {
+		panic(err)
+	}
+
+	if err := CreateIndexes(); err != nil {
+		panic(err)
+	}
+
 	err := filepath.WalkDir(path, visit)
 	if err != nil {
 		fmt.Println(err)
 		writeLog(&log)
-	}
-
-	if err := utils.CreateFiles(); err != nil {
-		panic(err)
 	}
 
 	stmt := insertItem(fileList)
@@ -110,26 +240,14 @@ func main() {
 		fmt.Printf("There was %d items inserted\n", len(stmt))
 	}
 
-}
-
-func writeStmtToFile(s []string) error {
-
-	f, err := os.Create("outputFile.txt")
-	if err != nil {
-		return err
+	if err := UpdateFiles(); err != nil {
+		panic(err)
 	}
 
-	defer f.Close()
-
-	for _, item := range s {
-		if _, err := f.WriteString(item + "\n"); err != nil {
-			return err
-		}
+	if err := UpdateExtId(); err != nil {
+		panic(err)
 	}
 
-	fmt.Printf("There was %d items written to file %s\n", len(s), outputFile)
-
-	return nil
 }
 
 func writeLog(log *[]string) error {
@@ -147,17 +265,6 @@ func writeLog(log *[]string) error {
 
 	return nil
 }
-
-// func insertStmt(params []interface{}) error {
-
-// 	db, err := utils.PgConn()
-// 	_, err = db.Exec(query, params...)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	return nil
-// }
 
 func insertToPostgres(stmt [][]interface{}) error {
 	db, err := utils.PgConn()
@@ -213,16 +320,6 @@ func insertToPostgres(stmt [][]interface{}) error {
 	}
 
 	return nil
-}
-
-func simpleString(f []models.Finfo) []string {
-	s := []string{}
-	for _, item := range f {
-		s = append(s,
-			item.Path+","+item.Name+","+item.Ext+","+fmt.Sprintf("%t", item.IsDir)+","+fmt.Sprintf("%d", item.Size)+","+item.ModTime.Format("2006-01-02 15:04:05"))
-	}
-
-	return s
 }
 
 func insertItem(f []models.Finfo) [][]interface{} {

@@ -84,3 +84,6 @@ SELECT * FROM polish_stopwords;
 
 
 https://www.pg4e.com/lessons/week5#
+
+
+CREATE INDEX idx_keywords_gin ON keywords_gin USING GIN (to_tsvector('polish', keyword));
