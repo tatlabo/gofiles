@@ -25,42 +25,70 @@ var fileList = []models.Finfo{}
 
 var log = []string{}
 
-const createExt = `
-CREATE TABLE IF NOT EXISTS ext (id SERIAL, ext TEXT UNIQUE, PRIMARY KEY (id));
-`
+func CreateTables() []string {
 
-const createFiles = `
-CREATE TABLE IF NOT EXISTS files 
-(id SERIAL PRIMARY KEY,
-parent_id INTEGER,
-path TEXT NOT NULL,
-name TEXT NOT NULL,
-ext TEXT,
-ext_id INTEGER, FOREIGN KEY(ext_id) REFERENCES ext(id) ON DELETE CASCADE,
-is_dir BOOLEAN NOT NULL DEFAULT FALSE,
-size BIGINT,
-keywords TEXT,
-mod_time TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-UNIQUE (path, name, ext, is_dir));`
+	var t = []string{}
 
-// create index on files
+	createExt := `CREATE TABLE IF NOT EXISTS ext (
+	id SERIAL PRIMARY KEY,
+	ext TEXT UNIQUE);`
 
-const creteIndexOnExt = `
-CREATE INDEX IF NOT EXISTS idx_ext ON files(LOWER(ext));`
+	const createFiles = `
+	CREATE TABLE IF NOT EXISTS files 
+	(id SERIAL PRIMARY KEY,
+	parent_id INTEGER,
+	path TEXT NOT NULL,
+	name TEXT NOT NULL,
+	ext TEXT,
+	ext_id INTEGER, FOREIGN KEY(ext_id) REFERENCES ext(id) ON DELETE CASCADE,
+	is_dir BOOLEAN NOT NULL DEFAULT FALSE,
+	size BIGINT,
+	keywords TEXT,
+	mod_time TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	UNIQUE (path, name, ext, is_dir));`
 
-const insertIntoExt = `INSERT INTO ext (ext)
-SELECT DISTINCT ext FROM files WHERE files.ext IS NOT NULL ON CONFLICT (ext) DO NOTHING;`
+	const searchedWords = `
+	CREATE TABLE IF NOT EXISTS search
+	(id SERIAL PRIMARY KEY,
+	input TEXT,
+	created TIMESTAMPTZ NOT NULL DEFAULT NOW());`
 
-const updateExtId = `
-UPDATE files SET ext_id = ext.id FROM ext WHERE files.ext = ext.ext AND files.is_dir = FALSE;`
+	t = append(t, createExt, createFiles, searchedWords)
 
-const updateKeywords = `
-UPDATE files SET keywords = ( to_tsvector('polish', (name||' '||ext)));`
+	return t
+}
 
-const createGinOnKeywords = `
-CREATE INDEX IF NOT EXISTS idx_keywords_gin ON files USING GIN (to_tsvector('polish', keywords));`
+func CreateIndexes() []string {
+	var t = []string{}
 
-func CreateFiles() error {
+	const creteIndexOnExt = `
+	CREATE INDEX IF NOT EXISTS idx_ext ON files(LOWER(ext));`
+	const createGinOnKeywords = `
+	CREATE INDEX IF NOT EXISTS idx_keywords_gin ON files USING GIN (to_tsvector('polish', keywords));`
+
+	t = append(t, creteIndexOnExt, createGinOnKeywords)
+	return t
+}
+
+func InsertExtKeywords() []string {
+
+	var t = []string{}
+
+	const insertIntoExt = `INSERT INTO ext (ext)
+	SELECT DISTINCT ext FROM files WHERE files.ext IS NOT NULL ON CONFLICT (ext) DO NOTHING;`
+	const updateKeywords = `
+	UPDATE files SET keywords = ( to_tsvector('polish', (translate(name, ',._-+', '     ')||' '||ext)));`
+	t = append(t, insertIntoExt, updateKeywords)
+
+	return t
+}
+
+func UpdateExtId() []string {
+	var t = []string{`UPDATE files SET ext_id = ext.id FROM ext WHERE files.ext = ext.ext AND files.is_dir = FALSE;`}
+	return t
+}
+
+func CommitSql(sql []string) error {
 
 	db, err := utils.PgConn()
 	if err != nil {
@@ -73,82 +101,13 @@ func CreateFiles() error {
 		return err
 	}
 
-	defer tx.Rollback()
-
-	if _, err := tx.Exec(createExt); err != nil {
-		return err
-	}
-
-	if _, err := tx.Exec(createFiles); err != nil {
-		return err
+	for i := range len(sql) {
+		if _, err := tx.Exec(sql[i]); err != nil {
+			return err
+		}
 	}
 
 	return tx.Commit()
-}
-
-func CreateIndexes() error {
-
-	db, err := utils.PgConn()
-	if err != nil {
-		return (err)
-	}
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	if _, err := tx.Exec(createGinOnKeywords); err != nil {
-		return err
-	}
-
-	if _, err := tx.Exec(creteIndexOnExt); err != nil {
-		return err
-	}
-
-	return tx.Commit()
-}
-
-func UpdateFiles() error {
-
-	db, err := utils.PgConn()
-	if err != nil {
-		return (err)
-	}
-	defer db.Close()
-
-	//transactions
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	if _, err := tx.Exec(insertIntoExt); err != nil {
-		return err
-	}
-
-	if _, err := tx.Exec(updateKeywords); err != nil {
-		return err
-	}
-
-	return tx.Commit()
-}
-
-func UpdateExtId() error {
-
-	db, err := utils.PgConn()
-	if err != nil {
-		return (err)
-	}
-	defer db.Close()
-
-	if _, err := db.Exec(updateExtId); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func visit(path string, d fs.DirEntry, err error) error {
@@ -217,12 +176,16 @@ func main() {
 		}
 	}
 
-	if err := CreateFiles(); err != nil {
-		panic(err)
+	createTables := CreateTables()
+	if err := CommitSql(createTables); err != nil {
+		fmt.Println("Error creating tables: ", err)
+		os.Exit(1)
 	}
 
-	if err := CreateIndexes(); err != nil {
-		panic(err)
+	createIndexes := CreateIndexes()
+	if err := CommitSql(createIndexes); err != nil {
+		fmt.Println("Error creating indexes: ", err)
+		os.Exit(1)
 	}
 
 	err := filepath.WalkDir(path, visit)
@@ -240,12 +203,16 @@ func main() {
 		fmt.Printf("There was %d items inserted\n", len(stmt))
 	}
 
-	if err := UpdateFiles(); err != nil {
-		panic(err)
+	insertExtKeywords := InsertExtKeywords()
+	if err := CommitSql(insertExtKeywords); err != nil {
+		fmt.Println("Error inserting extension keywords: ", err)
+		os.Exit(1)
 	}
 
-	if err := UpdateExtId(); err != nil {
-		panic(err)
+	updateExtId := UpdateExtId()
+	if err := CommitSql(updateExtId); err != nil {
+		fmt.Println("Error updating extension IDs: ", err)
+		os.Exit(1)
 	}
 
 }
