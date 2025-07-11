@@ -29,6 +29,7 @@ func main() {
 			"formatDate": formatDate, // Register the custom function
 			"not":        not,
 			"equals":     equals,
+			"notequals":  notequals,
 		}).ParseGlob("public/views/*.html")),
 	}
 
@@ -87,7 +88,7 @@ func findInDb(c echo.Context) (models.IndexData, error) {
 		return indexData, c.String(http.StatusInternalServerError, "Error parsing search parameters")
 	}
 
-	if searchParams.Error["Error"] != "" {
+	if searchParams.Error["Error"] == "No search parameters provided" {
 		indexData.Error = searchParams.Error
 		return indexData, nil
 	}
@@ -113,6 +114,13 @@ func findInDb(c echo.Context) (models.IndexData, error) {
 	log.Println(searchParams.Stmt, searchParams.Placeholders)
 
 	go func() {
+
+		conn, err := utils.PgConn()
+		if err != nil {
+			log.Println("Error connecting to the database for search words:", err)
+			return
+		}
+		defer conn.Close()
 		explainAnalyze := fmt.Sprintf("EXPLAIN ANALYZE %s", searchParams.Stmt)
 		explainRows, err := conn.Query(explainAnalyze, searchParams.Placeholders...)
 		if err != nil {
@@ -130,6 +138,23 @@ func findInDb(c echo.Context) (models.IndexData, error) {
 		if err := explainRows.Err(); err != nil {
 			log.Println("Error iterating EXPLAIN ANALYZE rows:", err)
 		}
+	}()
+
+	const addSearchWords = `INSERT INTO search (input) VALUES ($1);`
+	go func() {
+		conn, err := utils.PgConn()
+		if err != nil {
+			log.Println("Error connecting to the database for search words:", err)
+			return
+		}
+		defer conn.Close()
+		log.Println("Inserting search words into the database:", searchParams.Params)
+		// Insert the search parameters into the search table
+		_, err = conn.Exec(addSearchWords, searchParams.Params)
+		if err != nil {
+			log.Println("Error inserting search words:", err)
+		}
+
 	}()
 
 	counter := 0
@@ -222,8 +247,12 @@ func findInDb(c echo.Context) (models.IndexData, error) {
 func searchInDb(c echo.Context) error {
 	context, err := findInDb(c)
 
-	if context.Error["Error"] != "" {
-		c.Render(http.StatusOK, "error", context)
+	if context.Error["Error"] == "No search parameters provided" {
+		context.Params = map[string]string{
+			"NotFound":  "true",
+			"StartPage": "true",
+		}
+		c.Render(http.StatusOK, "index", context)
 		return nil
 	}
 
@@ -272,6 +301,10 @@ func startpage(c echo.Context) error {
 
 func equals(a, b interface{}) bool {
 	return a == b
+}
+
+func notequals(a, b interface{}) bool {
+	return a != b
 }
 
 func previewImage(c echo.Context) error {

@@ -4,24 +4,19 @@
 {{ template "header" .HeaderTitle }}
 
 <body>
+    <pre>index.html</pre>
     <nav>
         <button id="theme-toggle">switch theme</button>
     </nav>
-    {{ if equals .Params.NotFound "true" }}
-    <main class="startpage">
-        <p class="">Nothing was found</p>
-        {{ template "form" .Params}}
-        {{ if .Error }}
-        <p class="">
-            {{ .Error.Error }}
-            {{ if .Error.Msg }}
-            <br />
-            {{ .Error.Msg }}
-            {{ end }}
-            {{ end }}
-        </p>
-    </main>
-
+        {{ if equals .Params.NotFound "true" }}
+        <main class="search-page">
+            <main class="startpage">
+                {{ if notequals .Params.StartPage "true" }}
+                    <p class="">Nothing was found: <strong>{{ .Params.Name }}</strong></p>
+                {{ end }}
+                    {{ template "form" .Params }}
+                </main>
+        </main>
     {{ else }}
 
     <main class="">
@@ -57,13 +52,13 @@
         </article>
     </main>
 
-    {{ end }}
     <article class="preview-wrapper" id="preview-section">
         <section class="preview">
             <button type="button" class="primary" id="hidePreview" onClick="() => hidePreview()">x</button>
             {{ template "preview-content" . }}
         </section>
     </article>
+    {{ end }}
 
     <script>
 

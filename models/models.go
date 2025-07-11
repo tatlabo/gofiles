@@ -14,7 +14,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-var textFiles = []string{"py", "txt", "js", "jsx", "json", "css", "go", "html", "edl", "xml", "java", "c", "cpp", "h", "php", "sql", "sh", "bat", "pl", "rb", "swift", "ts", "yaml", "yml", "csv"}
+var textFiles = []string{"py", "txt", "js", "jsx", "json", "css", "go", "html", "edl", "xml", "java", "c", "cpp", "h", "php", "sql", "sh", "bat", "pl", "rb", "swift", "ts", "yaml", "yml", "csv", "R", "r"}
 var imageFiles = []string{"jpg", "jpeg", "png", "gif", "bmp", "tif", "tiff", "webp", "svg", "ico", "heic", "raw"}
 var videoFiles = []string{"mp4", "wav", "mp3", "aif", "aiff"}
 
@@ -34,11 +34,6 @@ type Finfo struct {
 	Link     string       `json:"link"`
 	Src      template.URL `json:"src"`
 	TsRank   float64      `db:"ts_rank" json:"tsRank"` // For full-text search ranking
-	// Empty    bool
-
-	// Title   string
-	// Preview string
-	// HTML    template.HTML
 }
 
 type FinfoDetail struct {
@@ -90,19 +85,19 @@ type IndexData struct {
 }
 
 type SearchParams struct {
-	Params         string
-	Like           string
-	Dir            string
-	Keywords       string
-	Limit          int
-	Offset         int
-	QueryParam     string
-	Stmt           string
-	ExplainAnalyze string
-	CounterStmt    string
-	Ext            string
-	Placeholders   []any
-	Error          map[string]string
+	Params     string
+	Like       string
+	Dir        string
+	Keywords   string
+	Limit      int
+	Offset     int
+	QueryParam string
+	Stmt       string
+	// ExplainAnalyze string
+	CounterStmt  string
+	Ext          string
+	Placeholders []any
+	Error        map[string]string
 }
 
 func (s *SearchParams) QueryStmt() error {
@@ -118,6 +113,11 @@ func (s *SearchParams) QueryStmt() error {
 		switcher += 100
 	}
 
+	language := "'polish'"
+	if len(s.Keywords) > 0 {
+		language = "'english'"
+	}
+
 	s.QueryParam = s.Params
 
 	if strings.Contains(s.Params, ".") {
@@ -129,92 +129,76 @@ func (s *SearchParams) QueryStmt() error {
 		s.Ext = parts[1]
 	}
 
-	clause := ""
-
-	column := "files.keywords"
-	// tableName := "files"
-
 	switch switcher {
 	case 0:
-		clause = s.QueryParam
 
 		// column = keywords
-		s.Stmt = `
+		s.Stmt = fmt.Sprintf(`
 		SELECT id, name, ext, is_dir, path, size, mod_time,
-		ts_rank_cd( to_tsvector('polish', keywords), websearch_to_tsquery('polish', $1) ) as ts_rank
+		ts_rank_cd( to_tsvector(%[1]s, keywords), websearch_to_tsquery(%[1]s, $1) ) as ts_rank
 		FROM files
-		WHERE websearch_to_tsquery('polish', $1) @@ to_tsvector('polish', keywords)
+		WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords)
 		ORDER BY ts_rank DESC
-		LIMIT $2 OFFSET $3;`
+		LIMIT $2 OFFSET $3;`, language)
 
-		s.CounterStmt = `
+		s.CounterStmt = fmt.Sprintf(`
 		SELECT COUNT(id) FROM files
-		WHERE websearch_to_tsquery('polish', $1) @@ to_tsvector('polish', keywords);`
+		WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords);`, language)
 
 	case 1:
-		s.QueryParam = s.QueryParam + "%"
+		s.QueryParam = "^" + s.QueryParam
 		// column = "name"
-		s.Stmt = fmt.Sprintln(`
+		s.Stmt = `
 		SELECT id, name, ext, is_dir, path, size, mod_time FROM files
-		WHERE name LIKE $1
-		ORDER BY mod_time DESC LIMIT $2 OFFSET $3;`)
+		WHERE LOWER(name) ~ LOWER($1)
+		ORDER BY mod_time DESC LIMIT $2 OFFSET $3;`
 
-		s.CounterStmt = fmt.Sprintf(`SELECT COUNT(*) FROM files WHERE %s;`, clause)
+		s.CounterStmt = `SELECT COUNT(*) FROM files WHERE LOWER(name) ~ LOWER($1);`
 	case 100:
-		clause = s.Params
 
 		// column = "files.keywords"
 
-		s.Stmt = fmt.Sprintln(`
-		SELECT id, name, ext, is_dir, path, size, mod_time FROM files
-		WHERE websearch_to_tsquery('polish', $1) @@ to_tsvector('polish', files.keywords)
-		AND is_dir=true
-		ORDER BY mod_time DESC LIMIT $2 OFFSET $3;`)
-
-		s.CounterStmt = fmt.Sprintln(`
-		SELECT COUNT(*) FROM files 
-		WHERE websearch_to_tsquery('polish', $1) @@ to_tsvector('polish', files.keywords)
-		AND is_dir=true;`)
-
-	case 101:
-		s.QueryParam = s.QueryParam + "%"
-		clause = column + " LIKE $1 AND is_dir=true"
-
 		s.Stmt = fmt.Sprintf(`
 		SELECT id, name, ext, is_dir, path, size, mod_time FROM files
-		WHERE %s 
-		ORDER BY mod_time DESC LIMIT $2 OFFSET $3;`, clause)
+		WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, files.keywords)
+		AND is_dir=true
+		ORDER BY mod_time DESC LIMIT $2 OFFSET $3;`, language)
 
-		s.CounterStmt = fmt.Sprintf(`SELECT COUNT(*) FROM files WHERE %s;`, clause)
+		s.CounterStmt = fmt.Sprintf(`
+		SELECT COUNT(*) FROM files 
+		WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, files.keywords)
+		AND is_dir=true;`, language)
+
+	case 101:
+		s.QueryParam = "^" + s.QueryParam
+
+		s.Stmt = `
+		SELECT id, name, ext, is_dir, path, size, mod_time FROM files
+		WHERE LOWER(name) ~ LOWER($1) AND is_dir=true
+		ORDER BY mod_time DESC LIMIT $2 OFFSET $3;`
+		s.CounterStmt = `SELECT COUNT(*) FROM files WHERE LOWER(name) ~ LOWER($1) AND is_dir=true;`
 	}
-
-	// SQL
-
-	// s.Stmt = fmt.Sprintf(`
-	// SELECT id, name, ext, is_dir, path, size, mod_time FROM %s
-	// WHERE %s
-	// ORDER BY mod_time DESC LIMIT $2 OFFSET $3;`, tableName, clause)
 
 	s.Placeholders = []any{s.QueryParam, s.Limit, s.Offset}
 
 	if len(s.Ext) > 0 {
-		clause = column + " = $1"
-		s.Stmt = fmt.Sprintln(`SELECT files.id, name, files.ext, is_dir, path, size, mod_time,
-		ts_rank( to_tsvector('polish', keywords), websearch_to_tsquery('polish', $1) ) as ts_rank
-		FROM files
-		JOIN ext ON files.ext_id = ext.id 
-		WHERE websearch_to_tsquery('polish', $1) @@ to_tsvector('polish', files.keywords)
-		AND ext.ext = $2
-		ORDER BY ts_rank DESC LIMIT $3 OFFSET $4;`)
 
-		s.CounterStmt = fmt.Sprintln(`SELECT COUNT(*) FROM files 
-		JOIN ext ON files.ext_id = ext.id 
-		WHERE websearch_to_tsquery('polish', $1) @@ to_tsvector('polish', files.keywords)
-		AND ext.ext = $2;`)
+		s.Stmt = fmt.Sprintf(`SELECT files.id, name, files.ext, is_dir, path, size, mod_time,
+		ts_rank( to_tsvector(%[1]s, keywords), websearch_to_tsquery(%[1]s, $1) ) as ts_rank
+		FROM files
+		JOIN ext ON files.ext_id = ext.id
+		WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, files.keywords)
+		AND ext.ext = $2
+		ORDER BY ts_rank DESC LIMIT $3 OFFSET $4;`, language)
+
+		s.CounterStmt = fmt.Sprintf(`SELECT COUNT(*) FROM files
+		JOIN ext ON files.ext_id = ext.id
+		WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, files.keywords)
+		AND ext.ext = $2;`, language)
 		s.Placeholders = []any{s.Placeholders[0], s.Ext, s.Placeholders[1], s.Placeholders[2]}
 	}
 
-	s.ExplainAnalyze = fmt.Sprintf(`EXPLAIN ANALYZE %s`, s.Stmt)
+	// s.ExplainAnalyze = fmt.Sprintf(`EXPLAIN ANALYZE %s`, s.Stmt)
 
 	return nil
 
@@ -239,6 +223,10 @@ func (sp *SearchParams) SetParams(c echo.Context) error {
 
 			if len(c.QueryParam("dir")) > 0 {
 				sp.Dir = utils.CleanInput(c.QueryParam("dir"))
+			}
+
+			if len(c.QueryParam("keywords")) > 0 {
+				sp.Keywords = utils.CleanInput(c.QueryParam("keywords"))
 			}
 
 			offsetStr := c.QueryParam("offset")
