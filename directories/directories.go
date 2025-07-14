@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"gofiles/utils"
+	"gofiles/internal/utils"
 	"strings"
 
 	_ "github.com/lib/pq"

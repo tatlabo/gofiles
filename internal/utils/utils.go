@@ -22,11 +22,6 @@ func GenerateID() string {
 	return hex.EncodeToString(b)
 }
 
-// FormatDate formats a time.Time object into a string.
-func FormatDate(t time.Time) string {
-	return t.Format("2006-01-02 15:04:05")
-}
-
 func PgConn() (*sql.DB, error) {
 
 	const connStr = "user=golang password=golang dbname=go host=localhost sslmode=disable"
@@ -149,4 +144,20 @@ func CleanInput(input string) string {
 	re := regexp.MustCompile(`[^a-zA-Z0-9.,;\-_!$ ]+ `)
 	// re := regexp.MustCompile(`[^a-zA-Z0-9.,\-_ ]+`)
 	return re.ReplaceAllString(input, "")
+}
+
+func FormatDate(t time.Time) string {
+	return t.Format("2006-01-02 15:04:05") // Customize the format as needed
+}
+
+func Not(b bool) bool {
+	return !b
+}
+
+func Equals(a, b any) bool {
+	return a == b
+}
+
+func Notequals(a, b any) bool {
+	return a != b
 }

@@ -3,7 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"gofiles/utils"
+	"gofiles/internal/utils"
 	"os"
 
 	_ "github.com/lib/pq"

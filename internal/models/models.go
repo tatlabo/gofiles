@@ -2,7 +2,7 @@ package models
 
 import (
 	"fmt"
-	"gofiles/utils"
+	"gofiles/internal/utils"
 	"html/template"
 	"net/http"
 	"regexp"
@@ -13,6 +13,18 @@ import (
 
 	"github.com/labstack/echo/v4"
 )
+
+type User struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
+
+type Product struct {
+	ID    string  `json:"id"`
+	Name  string  `json:"name"`
+	Price float64 `json:"price"`
+}
 
 var textFiles = []string{"py", "txt", "js", "jsx", "json", "css", "go", "html", "edl", "xml", "java", "c", "cpp", "h", "php", "sql", "sh", "bat", "pl", "rb", "swift", "ts", "yaml", "yml", "csv", "R", "r"}
 var imageFiles = []string{"jpg", "jpeg", "png", "gif", "bmp", "tif", "tiff", "webp", "svg", "ico", "heic", "raw"}
@@ -85,15 +97,14 @@ type IndexData struct {
 }
 
 type SearchParams struct {
-	Params     string
-	Like       string
-	Dir        string
-	Keywords   string
-	Limit      int
-	Offset     int
-	QueryParam string
-	Stmt       string
-	// ExplainAnalyze string
+	Params       string
+	Like         string
+	Dir          string
+	Keywords     string
+	Limit        int
+	Offset       int
+	QueryParam   string
+	Stmt         string
 	CounterStmt  string
 	Ext          string
 	Placeholders []any

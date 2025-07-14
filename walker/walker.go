@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"gofiles/models"
-	"gofiles/utils"
+	"gofiles/internal/models"
+	"gofiles/internal/utils"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -53,7 +53,13 @@ func CreateTables() []string {
 	input TEXT,
 	created TIMESTAMPTZ NOT NULL DEFAULT NOW());`
 
-	t = append(t, createExt, createFiles, searchedWords)
+	const indexedDirs = `CREATE TABLE IF NOT EXISTS indexed (
+	id SERIAL PRIMARY KEY,
+	path TEXT NOT NULL UNIQUE,
+	done BOOLEAN NOT NULL DEFAULT FALSE,
+	created TIMESTAMPTZ NOT NULL DEFAULT NOW());`
+
+	t = append(t, createExt, createFiles, searchedWords, indexedDirs)
 
 	return t
 }
@@ -171,6 +177,8 @@ func main() {
 	case 2:
 		c := 2
 		path = os.Args[1]
+		path = strings.TrimSpace(path)
+		path = strings.ReplaceAll(path, "/", "\\")
 		if _, err := os.ReadDir(path); err != nil {
 			os.Exit(c)
 		}
@@ -215,6 +223,29 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err := insertIntoDirs(path); err != nil {
+		fmt.Println("Error inserting into indexed directories: ", err)
+	}
+
+}
+
+func insertIntoDirs(path string) error {
+
+	const insertIntoDirs = `INSERT INTO indexed (path, done)
+	VALUES ($1, $2) ON CONFLICT (path) DO NOTHING;`
+
+	conn, err := utils.PgConn()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	_, err = conn.Exec(insertIntoDirs, path, true)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func writeLog(log *[]string) error {
@@ -226,7 +257,7 @@ func writeLog(log *[]string) error {
 
 	defer f.Close()
 
-	if _, err := f.WriteString(fmt.Sprintf("%v\n", log)); err != nil {
+	if _, err := fmt.Fprintf(f, "%v\n", log); err != nil {
 		return err
 	}
 
