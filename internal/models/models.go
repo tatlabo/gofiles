@@ -14,18 +14,6 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type User struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
-}
-
-type Product struct {
-	ID    string  `json:"id"`
-	Name  string  `json:"name"`
-	Price float64 `json:"price"`
-}
-
 var textFiles = []string{"py", "txt", "js", "jsx", "json", "css", "go", "html", "edl", "xml", "java", "c", "cpp", "h", "php", "sql", "sh", "bat", "pl", "rb", "swift", "ts", "yaml", "yml", "csv", "R", "r"}
 var imageFiles = []string{"jpg", "jpeg", "png", "gif", "bmp", "tif", "tiff", "webp", "svg", "ico", "heic", "raw"}
 var videoFiles = []string{"mp4", "wav", "mp3", "aif", "aiff"}
@@ -53,6 +41,102 @@ type FinfoDetail struct {
 	Title   string
 	Preview string
 	HTML    template.HTML
+}
+
+type IndexedDir struct {
+	Id      int       `db:"id" json:"id"`
+	Path    string    `db:"path" json:"path"`
+	Done    bool      `db:"done" json:"done"`
+	Created time.Time `db:"created" json:"created"`
+}
+
+type IndexedDirs struct {
+	Indexeddirs []IndexedDir `json:"indexedDirs"`
+	Text        string
+	HeaderTitle string
+	Status      bool
+	Params      map[string]string
+	Error       map[string]string
+}
+
+func (p *IndexedDirs) SetParams(c echo.Context) error {
+
+	// Initialize maps if they're nil
+	if p.Params == nil {
+		p.Params = make(map[string]string)
+	}
+	if p.Error == nil {
+		p.Error = make(map[string]string)
+	}
+
+	method := c.Request().Method
+
+	switch method {
+
+	// case http.MethodGet:
+
+	// 	}
+
+	case http.MethodPost:
+		params := c.FormValue("path")
+		p.Params["path"] = utils.CleanInput(params)
+		p.Status = true
+	}
+
+	return nil
+}
+
+func (i *IndexedDirs) List() error {
+	if len(i.Indexeddirs) == 0 {
+		i.Text = "No indexed directories found."
+	}
+
+	query := `SELECT id, path, done, created FROM indexed ORDER BY created DESC;`
+
+	conn, err := utils.PgConn()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	rows, err := conn.Query(query)
+	if err != nil {
+		return fmt.Errorf("failed to query indexed directories: %w", err)
+	}
+
+	for rows.Next() {
+		var dir IndexedDir
+		if err := rows.Scan(&dir.Id, &dir.Path, &dir.Done, &dir.Created); err != nil {
+			return fmt.Errorf("failed to scan indexed directory: %w", err)
+		}
+
+		i.Indexeddirs = append(i.Indexeddirs, dir)
+	}
+
+	return nil
+}
+
+func (i *IndexedDirs) Append() error {
+
+	query := `INSERT INTO indexed (path, done, created) VALUES ($1, $2, $3) RETURNING id, path, done, created;`
+
+	conn, err := utils.PgConn()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	newDir := IndexedDir{}
+	err = conn.QueryRow(query, i.Params["path"], false, time.Now()).Scan(
+		&newDir.Id, &newDir.Path, &newDir.Done, &newDir.Created)
+	if err != nil {
+		return fmt.Errorf("failed to insert into indexed directories: %w", err)
+	}
+
+	// Add the new directory to the slice
+	// i.Indexeddirs = append(i.Indexeddirs, newDir)
+
+	return nil
 }
 
 func (f *Finfo) CheckExtension() error {
@@ -217,6 +301,11 @@ func (s *SearchParams) QueryStmt() error {
 
 func (sp *SearchParams) SetParams(c echo.Context) error {
 
+	// Initialize Error map if it's nil
+	if sp.Error == nil {
+		sp.Error = make(map[string]string)
+	}
+
 	method := c.Request().Method
 
 	switch method {
@@ -224,7 +313,7 @@ func (sp *SearchParams) SetParams(c echo.Context) error {
 	case http.MethodGet:
 
 		if len(c.QueryParam("name")) == 0 {
-			sp.Error = map[string]string{"Error": "No search parameters provided"}
+			sp.Error["Error"] = "No search parameters provided"
 		} else {
 			sp.Params = utils.CleanInput(c.QueryParam("name"))
 
@@ -278,4 +367,34 @@ func (sp *SearchParams) SetParams(c echo.Context) error {
 	}
 
 	return nil
+}
+
+// Constructor functions to ensure maps are initialized
+
+// NewIndexedDirs creates a new IndexedDirs with initialized maps
+func NewIndexedDirs() *IndexedDirs {
+	return &IndexedDirs{
+		Indexeddirs: make([]IndexedDir, 0),
+		Params:      make(map[string]string),
+		Error:       make(map[string]string),
+	}
+}
+
+// NewSearchParams creates a new SearchParams with initialized maps
+func NewSearchParams() *SearchParams {
+	return &SearchParams{
+		Placeholders: make([]any, 0),
+		Error:        make(map[string]string),
+		Limit:        10,
+		Offset:       0,
+	}
+}
+
+// NewIndexData creates a new IndexData with initialized maps
+func NewIndexData() *IndexData {
+	return &IndexData{
+		TC:     make([]Finfo, 0),
+		Params: make(map[string]string),
+		Error:  make(map[string]string),
+	}
 }

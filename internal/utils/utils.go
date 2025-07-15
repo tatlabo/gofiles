@@ -141,7 +141,7 @@ func ConvertBytes(bytes int64) string {
 func CleanInput(input string) string {
 	input = strings.TrimSpace(input)
 	input = strings.ToLower(input)
-	re := regexp.MustCompile(`[^a-zA-Z0-9.,;\-_!$ ]+ `)
+	re := regexp.MustCompile(`[^a-zA-Z0-9.,;\/-_!$ ]+ `)
 	// re := regexp.MustCompile(`[^a-zA-Z0-9.,\-_ ]+`)
 	return re.ReplaceAllString(input, "")
 }

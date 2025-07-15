@@ -14,6 +14,16 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+var limit int
+
+type Template struct {
+	templates *template.Template
+}
+
+func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
+	return t.templates.ExecuteTemplate(w, name, data)
+}
+
 func main() {
 
 	// Initialize Echo framework
@@ -39,6 +49,8 @@ func main() {
 	e.GET("/details/:id", handlers.DetailById)
 	e.GET("/preview/:id", handlers.PreviewById)
 	e.GET("/preview/image/:id", handlers.PreviewImage)
+	e.GET("/add", handlers.AddPath)
+	e.POST("/add", handlers.AddPath)
 
 	// e.GET("/files", findInDb)
 
@@ -52,14 +64,4 @@ func main() {
 
 	e.Logger.Fatal(e.Start(":80"))
 
-}
-
-var limit int
-
-type Template struct {
-	templates *template.Template
-}
-
-func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
-	return t.templates.ExecuteTemplate(w, name, data)
 }
