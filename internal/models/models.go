@@ -398,3 +398,57 @@ func NewIndexData() *IndexData {
 		Error:  make(map[string]string),
 	}
 }
+
+// Delete removes an indexed directory by ID
+func (i *IndexedDirs) Delete(id int) error {
+	query := `DELETE FROM indexed WHERE id = $1;`
+
+	conn, err := utils.PgConn()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	result, err := conn.Exec(query, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete indexed directory: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("no directory found with ID %d", id)
+	}
+
+	return nil
+}
+
+// DeleteByPath removes an indexed directory by path (alternative method)
+func (i *IndexedDirs) DeleteByPath(path string) error {
+	query := `DELETE FROM indexed WHERE path = $1;`
+
+	conn, err := utils.PgConn()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	result, err := conn.Exec(query, path)
+	if err != nil {
+		return fmt.Errorf("failed to delete indexed directory: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("no directory found with path %s", path)
+	}
+
+	return nil
+}

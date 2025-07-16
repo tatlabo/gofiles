@@ -51,6 +51,7 @@ func main() {
 	e.GET("/preview/image/:id", handlers.PreviewImage)
 	e.GET("/add", handlers.AddPath)
 	e.POST("/add", handlers.AddPath)
+	e.DELETE("/delete/:id", handlers.DeleteIndexedDirectory) // New delete route
 
 	// e.GET("/files", findInDb)
 

@@ -26,6 +26,82 @@
         </article>
     </main>
 
+    <script>
+        // Handle delete button clicks
+        document.addEventListener('DOMContentLoaded', function() {
+            const deleteButtons = document.querySelectorAll('.delete');
+            
+            deleteButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    const id = this.getAttribute('data-id');
+                    const path = this.getAttribute('data-name');
+                    
+                    if (confirm(`Are you sure you want to delete "${path}"?`)) {
+                        deleteDirectory(id, this);
+                    }
+                });
+            });
+        });
+
+        async function deleteDirectory(id, buttonElement) {
+            try {
+                const response = await fetch(`/delete/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                if (response.ok) {
+                    // Remove the list item from DOM
+                    const listItem = buttonElement.closest('li');
+                    listItem.remove();
+                    
+                    // Show success message
+                    showMessage('Directory deleted successfully', 'success');
+                } else {
+                    const errorData = await response.json();
+                    showMessage(errorData.error || 'Failed to delete directory', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('An error occurred while deleting', 'error');
+            }
+        }
+
+        function showMessage(message, type) {
+            // Create message element
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${type}`;
+            messageEl.textContent = message;
+            messageEl.style.padding = '10px';
+            messageEl.style.margin = '10px 0';
+            messageEl.style.border = '1px solid';
+            messageEl.style.borderRadius = '4px';
+            
+            if (type === 'success') {
+                messageEl.style.backgroundColor = '#d4edda';
+                messageEl.style.color = '#155724';
+                messageEl.style.borderColor = '#c3e6cb';
+            } else {
+                messageEl.style.backgroundColor = '#f8d7da';
+                messageEl.style.color = '#721c24';
+                messageEl.style.borderColor = '#f5c6cb';
+            }
+            
+            // Insert message at top of main content
+            const main = document.querySelector('main');
+            main.insertBefore(messageEl, main.firstChild);
+            
+            // Remove message after 3 seconds
+            setTimeout(() => {
+                messageEl.remove();
+            }, 3000);
+        }
+    </script>
+
 
 
 </body>
@@ -49,6 +125,8 @@
                 <span class="item-id">
                                {{ .Path }}
                 </span>
+                <button class="delete" data-id="{{ .Id }}" data-name="{{ .Path }}">x</button>
+                <button>Scan</button>
 
                 {{ .Done }}
  
