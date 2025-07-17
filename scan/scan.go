@@ -1,4 +1,4 @@
-package main
+package scan
 
 import (
 	"fmt"
@@ -152,43 +152,9 @@ func main() {
 
 	}
 
-	// create tables
-	if err := SqlMigrations("migrations/001_initial.sql"); err != nil {
-		fmt.Println("Error creating tables: ", err)
+	if err := ScanDir(path); err != nil {
+		fmt.Fprintf(os.Stderr, "invalid path: %v\n", err)
 		os.Exit(1)
-	}
-
-	// walk through the directories
-	err := filepath.WalkDir(path, visit)
-	if err != nil {
-		fmt.Println(err)
-		writeLog(&log)
-	}
-
-	// insert into files
-	stmt := insertItem(fileList)
-	fmt.Println("Count of items: ", len(stmt))
-
-	if err := insertToPostgres(stmt); err != nil {
-		fmt.Println("Error writing to file: ", err)
-	} else {
-		fmt.Printf("There was %d items inserted\n", len(stmt))
-	}
-
-	// update ext, keywords and ext_id
-	if err := SqlMigrations("migrations/002_initial.sql"); err != nil {
-		fmt.Println("Error creating tables: ", err)
-		os.Exit(1)
-	}
-
-	// update files.ext_id
-	if err := SqlMigrations("migrations/003_initial.sql"); err != nil {
-		fmt.Println("Error creating tables: ", err)
-		os.Exit(1)
-	}
-
-	if err := insertIntoDirs(path); err != nil {
-		fmt.Println("Error inserting into indexed directories: ", err)
 	}
 
 }
@@ -196,7 +162,7 @@ func main() {
 func insertIntoDirs(path string) error {
 
 	const insertIntoDirs = `INSERT INTO indexed (path, done)
-	VALUES ($1, $2) ON CONFLICT (path) DO NOTHING;`
+	VALUES ($1, $2) ON CONFLICT (path) DO UPDATE SET done = EXCLUDED.done;`
 
 	conn, err := utils.PgConn()
 	if err != nil {
@@ -302,4 +268,55 @@ func insertItem(f []models.Finfo) [][]interface{} {
 	}
 
 	return params
+}
+
+func ScanDir(dir string) error {
+
+	var path string
+
+	path = strings.TrimSpace(dir)
+	// path = strings.ReplaceAll(path, "/", "\\")
+	if _, err := os.ReadDir(path); err != nil {
+		return fmt.Errorf("invalid path: %s", path)
+
+	}
+
+	// create tables
+	if err := SqlMigrations("migrations/001_initial.sql"); err != nil {
+		return fmt.Errorf("Error: migrations/001_initial.sql creating tables: %w", err)
+	}
+
+	// walk through the directories
+	err := filepath.WalkDir(path, visit)
+	if err != nil {
+		writeLog(&log)
+		return fmt.Errorf("Error walking through directories: %w", err)
+	}
+
+	// insert into files
+	stmt := insertItem(fileList)
+	fmt.Println("Count of items: ", len(stmt))
+
+	if err := insertToPostgres(stmt); err != nil {
+		return fmt.Errorf("Error for insertToPostgres: %w", err)
+	} else {
+		fmt.Printf("There was %d items inserted\n", len(stmt))
+	}
+
+	// update ext, keywords and ext_id
+	if err := SqlMigrations("migrations/002_initial.sql"); err != nil {
+		return fmt.Errorf("Error for: migrations/002_initial.sql: update ext, keywords and ext_id: %w", err)
+	}
+
+	// update files.ext_id
+	if err := SqlMigrations("migrations/003_initial.sql"); err != nil {
+		return fmt.Errorf("Error for: in migrations/003_initial.sql update files.ext_id: %w", err)
+	}
+
+	if err := insertIntoDirs(path); err != nil {
+		return fmt.Errorf("Error inserting into indexed directories: %w", err)
+	}
+
+	return nil
+
 }

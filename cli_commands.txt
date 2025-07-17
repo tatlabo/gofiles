@@ -1,0 +1,20 @@
+# Option 1: Send as form data (matches your current handler)
+$uri = "http://localhost:80/scan"
+$body = @{ path = "F:/adamkowalinfo" }
+
+$response = Invoke-WebRequest -Uri $uri -Method POST -Body $body -ContentType "application/x-www-form-urlencoded"
+$response.Content
+
+# Option 2: Send as JSON with escaped path
+$uri = "http://localhost:80/scan"
+$body = @{ path = "F:\\adamkowalinfo" } | ConvertTo-Json -Depth 10
+
+$response = Invoke-WebRequest -Uri $uri -Method POST -Body $body -ContentType "application/json"
+$response.Content
+
+# Option 3: Alternative JSON with forward slashes (often works on Windows)
+$uri = "http://localhost:80/scan"
+$body = @{ path = "F:/adamkowalinfo" } | ConvertTo-Json -Depth 10
+
+$response = Invoke-WebRequest -Uri $uri -Method POST -Body $body -ContentType "application/json"
+$response.Content

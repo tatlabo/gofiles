@@ -53,7 +53,7 @@ func AddPath(c echo.Context) error {
 		i.Text = "path handler is not implemented yet"
 		i.HeaderTitle = "Add Path To Index"
 
-		if err := c.Render(http.StatusOK, "add", i); err != nil {
+		if err := c.Render(http.StatusOK, "scan", i); err != nil {
 			return c.String(http.StatusInternalServerError, "Error rendering add page: "+err.Error())
 		}
 
@@ -64,7 +64,7 @@ func AddPath(c echo.Context) error {
 
 		i.Text = "path handler is not implemented yet"
 		i.HeaderTitle = "Add Path To Index"
-		err := c.Render(http.StatusOK, "add", i)
+		err := c.Render(http.StatusOK, "scan", i)
 		if err != nil {
 			return c.String(http.StatusInternalServerError, "Error rendering add page: "+err.Error())
 		}

@@ -1,0 +1,10 @@
+$uri = "http://localhost/search?id=2147"
+$headers = @{
+    "Content-Type"  = "application/json"
+}
+$body = @{
+    "name" = "UPDATE FILE NAME"
+    "keywords" = "update file name"
+} | ConvertTo-Json -Depth 10
+
+Invoke-RestMethod -Uri $uri -Method Patch -Headers $headers -Body $body

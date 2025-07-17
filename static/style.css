@@ -407,7 +407,7 @@ nav {
 }
 
 /* Item list styling */
-.item-list {
+/* .item-list {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -422,4 +422,4 @@ nav {
 .item-id {
   flex: 1;
   font-family: monospace;
-}
+} */

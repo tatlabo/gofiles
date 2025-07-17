@@ -12,6 +12,7 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 var limit int
@@ -28,6 +29,10 @@ func main() {
 
 	// Initialize Echo framework
 	e := echo.New()
+
+	// Middleware
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
 
 	t := &Template{
 		templates: template.Must(template.New("").Funcs(template.FuncMap{
@@ -49,11 +54,18 @@ func main() {
 	e.GET("/details/:id", handlers.DetailById)
 	e.GET("/preview/:id", handlers.PreviewById)
 	e.GET("/preview/image/:id", handlers.PreviewImage)
-	e.GET("/add", handlers.AddPath)
-	e.POST("/add", handlers.AddPath)
-	e.DELETE("/delete/:id", handlers.DeleteIndexedDirectory) // New delete route
 
-	// e.GET("/files", findInDb)
+	e.GET("/dirs", handlers.AddPath)
+	e.POST("/dirs", handlers.AddPath)
+
+	e.GET("/test", handlers.TestEndpoint) // Test route
+	e.POST("/scan", handlers.ScanDirectory)
+
+	e.DELETE("/delete/:id", handlers.DeleteDirectory)
+
+	// e.DELETE("/drop/:id", handlers.DropIndexedDirectory) // New delete route
+
+	e.GET("/access", Accessible)
 
 	e.GET("/json/search", handlers.ResponseJson)
 

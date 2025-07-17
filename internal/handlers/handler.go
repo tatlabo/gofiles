@@ -448,7 +448,47 @@ func TxtToChoroma(f models.Finfo) (template.HTML, error) {
 }
 
 // DeleteIndexedDirectory handles DELETE requests to remove indexed directories
-func DeleteIndexedDirectory(c echo.Context) error {
+func DropIndexedDirectory(c echo.Context) error {
+	// Get the ID from URL parameter
+	idParam := c.Param("id")
+	if idParam == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "ID parameter is required",
+		})
+	}
+
+	// Convert ID to integer
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "Invalid ID format",
+		})
+	}
+
+	// Create IndexedDirs instance and delete
+	indexedDirs := models.NewIndexedDirs()
+	err = indexedDirs.Delete(id)
+	if err != nil {
+		if err.Error() == fmt.Sprintf("no directory found with ID %d", id) {
+			return c.JSON(http.StatusNotFound, map[string]string{
+				"error": "Directory not found",
+			})
+		}
+
+		log.Printf("Error deleting directory with ID %d: %v", id, err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to delete directory",
+		})
+	}
+
+	// Return success response
+	return c.JSON(http.StatusOK, map[string]string{
+		"message": "Directory deleted successfully",
+	})
+}
+
+// DeleteIndexedDirectory handles DELETE requests to remove indexed directories
+func DeleteDirectory(c echo.Context) error {
 	// Get the ID from URL parameter
 	idParam := c.Param("id")
 	if idParam == "" {

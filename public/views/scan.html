@@ -1,0 +1,199 @@
+{{ define "scan"}}
+<!DOCTYPE html>
+
+{{ template "header" .HeaderTitle }}
+
+<body>
+    <pre>scan.html</pre>
+    <nav>
+        <button id="theme-toggle">switch theme</button>
+    </nav>
+
+    {{ template "add-path-form" }}
+
+    {{ if .Text }}
+    <p class="text">
+        {{ .Text }}
+
+    </p>
+    {{ end }}
+
+    <main class="">
+        <article id="fileList" class="">
+            <ol id="list" class="file-list" type="1">
+                {{ template "directory_list" . }}
+            </ol>
+        </article>
+    </main>
+
+    <script>
+        // Handle delete button clicks
+        document.addEventListener('DOMContentLoaded', function () {
+            const deleteButtons = document.querySelectorAll('.delete');
+            const scanButtons = document.querySelectorAll('button.scan');
+
+            deleteButtons.forEach(button => {
+                button.addEventListener('click', function (e) {
+                    e.preventDefault();
+
+                    const id = this.getAttribute('data-id');
+                    const path = this.getAttribute('data-name');
+
+                    if (confirm(`Are you sure you want to delete "${path}"?`)) {
+                        deleteDirectory(id, this);
+                    }
+                });
+            });
+
+            scanButtons.forEach(button => {
+                button.addEventListener('click', function (e) {
+                    e.preventDefault();
+
+                    const id = this.getAttribute('data-id');
+                    const path = this.getAttribute('data-path');
+
+                    if (confirm(`Are you sure you want scan "${path}"?`)) {
+                        scanDirectory(id, this);
+                    }
+                });
+            });
+
+
+        });
+
+        async function deleteDirectory(id, buttonElement) {
+            try {
+                const response = await fetch(`/delete/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                if (response.ok) {
+                    // Remove the list item from DOM
+                    const listItem = buttonElement.closest('li');
+                    listItem.remove();
+                    const data = await response.json();
+                    console.log(data);
+
+
+                    // Show success message
+                    showMessage(`Directory deleted successfully: ${data.message}` , 'success');
+                } else {
+                    const errorData = await response.json();
+                    showMessage(errorData.error || 'Failed to delete directory', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('An error occurred while deleting', 'error');
+            }
+        }
+
+
+        async function scanDirectory(id, buttonElement) {
+            try {
+                const response = await fetch(`/scan`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        "path": buttonElement.getAttribute('data-path')
+                    })
+                });
+
+                if (response.ok) {
+                    // Remove the list item from DOM
+                    const listItem = buttonElement.textContent = "Scanned";
+
+                    // Show success message
+                    showMessage('Directory scanned successfully', 'success');
+                } else {
+                    const errorData = await response.json();
+                    showMessage(errorData.error || 'Failed to delete directory', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('An error occurred while deleting', 'error');
+            }
+        }
+
+        function showMessage(message, type) {
+            // Create message element
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${type}`;
+            messageEl.textContent = message;
+            messageEl.style.padding = '10px';
+            messageEl.style.margin = '10px 0';
+            messageEl.style.border = '1px solid';
+            messageEl.style.borderRadius = '4px';
+
+            if (type === 'success') {
+                messageEl.style.backgroundColor = '#d4edda';
+                messageEl.style.color = '#155724';
+                messageEl.style.borderColor = '#c3e6cb';
+            } else {
+                messageEl.style.backgroundColor = '#f8d7da';
+                messageEl.style.color = '#721c24';
+                messageEl.style.borderColor = '#f5c6cb';
+            }
+
+            // Insert message at top of main content
+            const main = document.querySelector('main');
+            main.insertBefore(messageEl, main.firstChild);
+
+            // Remove message after 3 seconds
+            setTimeout(() => {
+                messageEl.remove();
+            }, 3000);
+        }
+    </script>
+
+
+
+</body>
+
+</html>
+{{ end }}
+
+
+
+{{ define "directory_list" }}
+{{ if .Indexeddirs }}
+{{ range .Indexeddirs }}
+<li class="item-list" id="entry" data-id="{{ .Id }}" data-name="{{ .Path }}" data-indexed="{{ .Done}}"
+    data-created="{{ .Created }}">
+    <span class="item-id">
+        {{ .Path }}
+        <button class="delete" data-id="{{ .Id }}" data-name="{{ .Path }}">x</button>
+    </span>
+    <span>
+
+        <button class="scan" data-id="{{ .Id }}" data-path="{{ .Path }}">
+            {{ if .Done }}Rescan{{ else }}Scan{{ end }}
+        </button>
+<!-- 
+        <button class="drop" data-id="{{ .Id }}" data-path="{{ .Path }}">
+            {{ if .Done }}Drop{{ else }}...{{ end }}
+        </button> -->
+
+    </span>
+    <time datetime="{{ .Created | formatDate }}" class="">
+        {{ .Created | formatDate }}
+    </time>
+</li>
+{{ end }}
+{{ else }}
+<li>No directories indexed yet.</li>
+{{ end }}
+{{ end }}
+
+
+
+{{ define "add-path-form" }}
+<form action="/dirs" method="POST" class="form flex column" id="search-form">
+    <input class="" type="text" id="path" name="path" required placeholder="add path">
+    <button class="primary" type="submit" id="submit">Add Path</button>
+</form>
+{{ end }}
