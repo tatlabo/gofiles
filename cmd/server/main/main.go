@@ -25,6 +25,10 @@ func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Con
 	return t.templates.ExecuteTemplate(w, name, data)
 }
 
+func isAdmin(c echo.HandlerFunc) (a echo.HandlerFunc) {
+	return c
+}
+
 func main() {
 
 	// Initialize Echo framework
@@ -32,9 +36,28 @@ func main() {
 
 	// Middleware
 	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
+	// e.Use(middleware.Recover())
 
-	t := &Template{
+	//basic auth
+	/*
+		e.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
+			// Be careful to use constant time comparison to prevent timing attacks
+			if subtle.ConstantTimeCompare([]byte(username), []byte("ice")) == 1 &&
+				subtle.ConstantTimeCompare([]byte(password), []byte("images")) == 1 {
+				return true, nil
+			}
+			return false, nil
+		}))
+	*/
+
+	// e.Use(echojwt.WithConfig(echojwt.Config{
+	// 	SigningKey: []byte("secret"),
+	// }))
+
+	e.Static("/static", "static")
+	e.Static("/media", "media")
+
+	e.Renderer = &Template{
 		templates: template.Must(template.New("").Funcs(template.FuncMap{
 			"formatDate": utils.FormatDate, // Register the custom function
 			"not":        utils.Not,
@@ -42,10 +65,6 @@ func main() {
 			"notequals":  utils.Notequals,
 		}).ParseGlob("public/views/*.html")),
 	}
-
-	e.Static("/static", "static")
-	e.Static("/media", "media")
-	e.Renderer = t
 
 	e.GET("/", handlers.StartPage)
 	e.GET("/search", handlers.SearchInDb) // FindForm
@@ -55,8 +74,8 @@ func main() {
 	e.GET("/preview/:id", handlers.PreviewById)
 	e.GET("/preview/image/:id", handlers.PreviewImage)
 
-	e.GET("/dirs", handlers.AddPath)
-	e.POST("/dirs", handlers.AddPath)
+	e.GET("/dirs", handlers.AddPath, isAdmin)
+	e.POST("/dirs", handlers.AddPath, isAdmin)
 
 	e.GET("/test", handlers.TestEndpoint) // Test route
 	e.POST("/scan", handlers.ScanDirectory)
