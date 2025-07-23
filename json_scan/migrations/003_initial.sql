@@ -1,0 +1,1 @@
+UPDATE files SET ext_id = ext.id FROM ext WHERE files.ext = ext.ext AND files.is_dir = FALSE;
