@@ -175,7 +175,9 @@ ol.file-list li {
   color: var(--text-1);
 }
 
-
+.navbar {
+  height: 3rem;
+}
 
 
 
@@ -200,7 +202,12 @@ ol.file-list>li::before {
   padding-block: var(--size-fluid-2);
 }
 
-
+main.search-page {
+  height: calc(100vh - 3rem);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 /* body * {
   border: 1px red dotted;
 } */

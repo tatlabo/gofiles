@@ -4,21 +4,20 @@
 {{ template "header" .HeaderTitle }}
 
 <body>
-    <pre>index.html</pre>
-    <nav>
+    <nav  class="navbar">
         <button id="theme-toggle">switch theme</button>
     </nav>
-        {{ if equals .Params.NotFound "true" }}
-        <main class="search-page">
-            <main class="startpage">
-                {{ if notequals .Params.StartPage "true" }}
-                    <p class="">Nothing was found: <strong>{{ .Params.Name }}</strong></p>
-                {{ end }}
-                    {{ template "form" .Params }}
-                </main>
-        </main>
+    {{ if equals .Params.NotFound "true" }}
+    <main class="search-page">
+        {{ if notequals .Params.StartPage "true" }}
+        <p class="">Nothing was found: <strong>{{ .Params.Name }}</strong></p>
+        {{ end }}
+        {{ template "form" .Params }}
+        <!-- <main class="startpage">
+        </main> -->
+    </main>
     {{ else }}
-
+    
     <main class="">
         <article id="fileList" class="" data-counter="{{ .Counter }}" data-name="{{ .Params.Name }}"
             data-offset="{{ .Params.Offset }}">
