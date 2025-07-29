@@ -4,16 +4,14 @@ go 1.24.0
 
 require (
 	github.com/alecthomas/chroma/v2 v2.17.2
+	github.com/golang-jwt/jwt/v5 v5.2.2
+	github.com/labstack/echo-jwt/v4 v4.3.1
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/lib/pq v1.10.9
 )
 
 require (
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
-	github.com/golang-jwt/jwt/v5 v5.2.2 // indirect
-	github.com/labstack/echo v3.3.10+incompatible // indirect
-	github.com/labstack/echo-jwt/v4 v4.3.1 // indirect
 	github.com/labstack/gommon v0.4.2 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
