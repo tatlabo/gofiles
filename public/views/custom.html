@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom element</title>
+</head>
+<body>
+    <my-element id="customElement" class="custom-element">
+        <h1>Custom Element Example</h1>
+        <p>This is a custom element that can be reused.</p>
+    </my-element>
+
+    <template id="custom-template">
+        <style>
+            .custom-element {
+                color: rgb(0, 65, 16);
+                border: 1px solid #ccc;
+                padding: 10px;
+                margin: 10px;
+                background-color: #f9f9f9;
+            }
+        </style>
+        <div class="custom-element">
+            <h2>Custom Element Content</h2>
+            <p>This content is part of the custom element.</p>
+        </div>
+    </template>
+
+    <script>
+        class MyElement extends HTMLElement {
+            constructor() {
+                super();
+                this.attachShadow({ mode: 'open' });
+            }
+
+            listElements(args, listType = 'ol') {
+                // This method allows adding content dynamically to the custom element
+                const list = document.createElement(listType);
+                const fragment = document.createDocumentFragment();
+                
+                for (let i = 0; i < args.length; i++) {
+                    const newContent = document.createElement('li');
+                    newContent.textContent = args[i];
+                    fragment.appendChild(newContent);
+                }
+                list.appendChild(fragment);
+                this.shadowRoot.appendChild(list);
+                }
+
+            showTemplate(id) {
+                const template = document.getElementById(id);
+                const templateContent = template.content.cloneNode(true);
+                this.shadowRoot.appendChild(templateContent);
+            }
+
+            }
+
+        
+
+        const CustomEl = customElements.define('my-element', MyElement);
+        const myElement = document.getElementById('customElement');
+        myElement.showTemplate(id='custom-template');
+        myElement.listElements(["Added content to custom element!", 'Another piece of content.', 'And one more!'], 'ul');
+
+
+        const htmlString = `
+        <div>
+            <h1>Hello, DOMParser!</h1>
+            <p>This is a sample paragraph.</p>
+        </div>
+        `;
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlString, 'text/html');
+        const content = doc.body.firstChild;
+
+        // Now you can access elements as you would with any DOM document
+        const heading = doc.querySelector('h1');
+        console.log(heading.textContent); // Ou
+
+    </script>
+</body>
+
+</html>
