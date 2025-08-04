@@ -150,6 +150,7 @@ func main() {
 	}
 
 	// Public routes (no JWT required)
+
 	e.POST("/login", login)
 	e.GET("/", handlers.StartPage)
 	e.GET("/search", handlers.SearchInDb)
@@ -201,5 +202,7 @@ func main() {
 	}()
 
 	e.Logger.Fatal(e.Start(":80"))
+
+	// log.Fatal(http.ListenAndServe("localhost:8000", nil))
 
 }

@@ -16,6 +16,11 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+func IndexPage(w http.ResponseWriter, r *http.Request) error {
+	fmt.Fprintf(w, "Welcome to the file search application!")
+	return nil
+}
+
 func StartPage(c echo.Context) error {
 	c.Render(http.StatusOK, "startpage", nil)
 	return nil
