@@ -23,15 +23,7 @@
             data-offset="{{ .Params.Offset }}">
 
             {{ template "form" .Params }}
-            {{ if .Params.Like }}
-                <span class="search-like">Like: {{ .Params.Like }}</span> 
-            {{ end}}
-                {{ if .Params.Dir }}
-                <span class="search-like">Dir: {{ .Params.Dir }}</span> 
-            {{ end}}
-            {{ if .Params.Keywords }}
-                <span class="search-like">Keywords: {{ .Params.Keywords }}</span> 
-            {{ end}}
+
             <ul id="list-headers" class="file-list headers">
                 <li id="sort-name" data-sort-type="name" data-ascending="true">name</li>
                 <li id="sort-size" data-sort-type="size" data-ascending="true">size</li>
