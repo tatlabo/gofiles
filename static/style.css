@@ -8,6 +8,7 @@
 
 :root {
   --surface-30: rgb(222, 226, 230, .68);
+  --nav-height: 4rem;
 }
 
 
@@ -53,7 +54,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100vh;
+  height: calc(100vh - var(--nav-height, 3rem));
   background-color: var(--color-background);
   flex-direction: column;
   gap: var(--size-fluid-2);
@@ -305,7 +306,14 @@ nav {
   justify-content: end;
   align-items: center;
   padding-right: var(--size-fluid-1);
+  position: sticky;
+  inset: 1rem 1rem auto auto;
+  height: var(--nav-height, 3rem);
 }
+
+
+
+
 
 /* nav button {
   border: none;
