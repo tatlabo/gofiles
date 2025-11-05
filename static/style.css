@@ -79,6 +79,14 @@ body {
   flex-direction: row;
 }
 
+.close-btn {
+  background-color: var(--red-6);
+  color: var(--red-0);
+}
+
+.close-btn:hover {
+  background-color: var(--pink-7);
+}
 
 
 /* file-list */
@@ -136,6 +144,10 @@ ol.file-list li::marker {
 ol.file-list {
   counter-reset: item;
   padding-left: 0;
+}
+
+.file-list * {
+    word-wrap: break-word;
 }
 
 
@@ -213,17 +225,43 @@ main.search-page {
   border: 1px red dotted;
 } */
 
-@media screen and (max-width: 600px) {
+.column {
+    flex-direction: column;
+}
+
+.gap-1 {
+  gap: 1em;
+}
+
+.gap-2 {
+  gap: 2em;
+}
+
+.gap-3 {
+  gap: 3em;
+}
+
+.gap-4 {
+  gap: 4em;
+}
+
+.gap-5 {
+  gap: 5em;
+}
 
 
-  ol.file-list li {
-    max-width: unset;
+
+@media  (width < 578px) {
+
+
+  .file-list li {
+    max-width: 100%;
 
   }
 
   .item-list,
   .file-list {
-    width: 100vw;
+    width: 100svw;
     padding: 0;
   }
 
@@ -313,7 +351,14 @@ nav {
 
 
 
+.grid-container {
+  display: grid;
+  grid-template-columns: 5vw 1fr 5vw;
+}
 
+.grid-container>* {
+  grid-column: 2;
+}
 
 /* nav button {
   border: none;

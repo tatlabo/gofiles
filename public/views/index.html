@@ -8,7 +8,7 @@
         <button id="theme-toggle">switch theme</button>
     </nav>
     {{ if equals .Params.NotFound "true" }}
-    <main class="search-page">
+    <main class="search-page column gap-3">
         {{ if notequals .Params.StartPage "true" }}
         <p class="">Nothing was found: <strong>{{ .Params.Name }}</strong></p>
         {{ end }}
@@ -18,8 +18,8 @@
     </main>
     {{ else }}
     
-    <main class="">
-        <article id="fileList" class="" data-counter="{{ .Counter }}" data-name="{{ .Params.Name }}"
+    <main class="main">
+        <article id="fileList" class="grid-container" data-counter="{{ .Counter }}" data-name="{{ .Params.Name }}"
             data-offset="{{ .Params.Offset }}">
 
             {{ template "form" .Params }}
@@ -45,7 +45,7 @@
 
     <article class="preview-wrapper" id="preview-section">
         <section class="preview">
-            <button type="button" class="primary" id="hidePreview" onClick="() => hidePreview()">x</button>
+            <button type="button" class="primary close-btn" id="hidePreview" onClick="() => hidePreview()">x</button>
             {{ template "preview-content" . }}
         </section>
     </article>
