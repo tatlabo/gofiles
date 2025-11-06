@@ -16,12 +16,21 @@ import (
 
 const outputFile = "output.txt"
 
+var directory string
+var directoryId int
+
+//go:embed migrations/*.sql
+var migrations embed.FS
+
 var skipDirectories = []string{".git", "node_modules", "tmp", "temp", ".vscode", ".idea", "vendor", "build", "dist", "__pycache__", ",bin", ".vite", "$SysReset", "$Windows.~WS", "OneDriveTemp", "AppData"}
 var skipFiles = []string{".DS_Store", ".gitignore", ".gitattributes", ".gitmodules", "package-lock.json", "yarn.lock", "dpx", ".gitignore"}
 
-var query = `INSERT INTO files (path, name, ext, is_dir, size, mod_time) 
+var query = `INSERT INTO files (directory, name, ext, is_dir, size, mod_time) 
 VALUES ($1, $2, $3, $4, $5, $6)
-ON CONFLICT (path, name, ext, is_dir) DO UPDATE SET size = EXCLUDED.size, mod_time = EXCLUDED.mod_time;`
+ON CONFLICT (directory, name, ext, is_dir) DO UPDATE SET size = EXCLUDED.size, mod_time = EXCLUDED.mod_time;`
+
+var sqlInsertReturn = `INSERT INTO directory (name)
+VALUES ($1) ON CONFLICT (name) DO NOTHING RETURNING id;`
 
 var fileList = []models.Finfo{}
 
@@ -62,22 +71,48 @@ func SqlMigrations(path string) error {
 	return nil
 }
 
-func VanillaSql(xs []byte) error {
+func VanillaSqlReturn(q string, param string) (int, error) {
 
-	db, err := utils.PgConn()
-	if err != nil {
-		return (err)
+	var e error
+	var sqlReturning int
+
+	db, e := utils.PgConn()
+	if e != nil {
+		return 0, e
 	}
 	defer db.Close()
 
-	tx, err := db.Begin()
-	if err != nil {
-		return err
+	tx, e := db.Begin()
+	if e != nil {
+		return 0, e
 	}
-	if _, err := tx.Exec(string(xs)); err != nil {
-		return err
+	if e := tx.QueryRow(fmt.Sprintf(`%s`, q), param).Scan(&sqlReturning); e != nil {
+		return 0, e
+	}
+	tx.Commit()
+
+	return sqlReturning, nil
+}
+
+func VanillaSql(xs []byte) error {
+
+	var e error
+
+	db, e := utils.PgConn()
+	if e != nil {
+		return e
+	}
+	defer db.Close()
+
+	tx, e := db.Begin()
+	if e != nil {
+		return e
+	}
+	if _, e = tx.Exec(string(xs)); e != nil {
+		return e
 	}
 	return tx.Commit()
+
 }
 
 func visit(path string, d fs.DirEntry, err error) error {
@@ -130,12 +165,10 @@ func visit(path string, d fs.DirEntry, err error) error {
 	return nil
 }
 
-//go:embed migrations/*.sql
-var migrations embed.FS
-
 func main() {
 
 	var path string
+
 	switch len(os.Args) {
 	case 1:
 		c := 1
@@ -146,6 +179,7 @@ func main() {
 		path = os.Args[1]
 		path = strings.TrimSpace(path)
 		path = strings.ReplaceAll(path, "/", "\\")
+		directory = path
 		if _, err := os.ReadDir(path); err != nil {
 			os.Exit(c)
 		}
@@ -263,6 +297,7 @@ func insertItem(f []models.Finfo) [][]interface{} {
 			f[i].IsDir,
 			f[i].Size,
 			f[i].ModTime,
+			directoryId,
 		})
 
 	}
@@ -284,6 +319,10 @@ func ScanDir(dir string) error {
 	// create tables
 	if err := SqlMigrations("migrations/001_initial.sql"); err != nil {
 		return fmt.Errorf("Error: migrations/001_initial.sql creating tables: %w", err)
+	}
+
+	if &directoryId, err := VanillaSqlReturn(sqlInsertReturn, fmt.Sprintf("'%s'", path)); err != nil {
+		return fmt.Errorf("Error inserting and/or returning value into directory table: %w", err)
 	}
 
 	// walk through the directories
