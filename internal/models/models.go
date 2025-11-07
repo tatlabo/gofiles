@@ -19,21 +19,21 @@ var imageFiles = []string{"jpg", "jpeg", "png", "gif", "bmp", "tif", "tiff", "we
 var videoFiles = []string{"mp4", "wav", "mp3", "aif", "aiff"}
 
 type Finfo struct {
-	Id       int          `db:"id" json:"id"`
-	ParentId int          `db:"parent_id" json:"parentId"`
-	Path     string       `db:"path" json:"path"`
-	Name     string       `db:"name" json:"name"`
-	Ext      string       `db:"ext" json:"ext"`
-	IsDir    bool         `db:"is_dir" json:"isDir"`
-	Size     int64        `db:"size" json:"size"`
-	SizeStr  string       `json:"sizeStr"`
-	ModTime  time.Time    `db:"modTime"`
-	IsImage  bool         `json:"isImage"`
-	IsText   bool         `json:"isText"`
-	IsVideo  bool         `json:"isVideo"`
-	Link     string       `json:"link"`
-	Src      template.URL `json:"src"`
-	TsRank   float64      `db:"ts_rank" json:"tsRank"` // For full-text search ranking
+	Id          int          `db:"id" json:"id"`
+	DirectoryId int          `db:"directory_id" json:"parentId"`
+	Directory   string       `db:"directory" json:"directory"`
+	Name        string       `db:"name" json:"name"`
+	Ext         string       `db:"ext" json:"ext"`
+	IsDir       bool         `db:"is_dir" json:"isDir"`
+	Size        int64        `db:"size" json:"size"`
+	SizeStr     string       `json:"sizeStr"`
+	ModTime     time.Time    `db:"modTime"`
+	IsImage     bool         `json:"isImage"`
+	IsText      bool         `json:"isText"`
+	IsVideo     bool         `json:"isVideo"`
+	Link        string       `json:"link"`
+	Src         template.URL `json:"src"`
+	TsRank      float64      `db:"ts_rank" json:"tsRank"` // For full-text search ranking
 }
 
 type FinfoDetail struct {
@@ -91,7 +91,7 @@ func (i *IndexedDirs) List() error {
 		i.Text = "No indexed directories found."
 	}
 
-	query := `SELECT id, path, done, created FROM indexed ORDER BY created DESC;`
+	query := `SELECT id, directory, done, created FROM indexed ORDER BY created DESC;`
 
 	conn, err := utils.PgConn()
 	if err != nil {
@@ -106,7 +106,7 @@ func (i *IndexedDirs) List() error {
 
 	for rows.Next() {
 		var dir IndexedDir
-		if err := rows.Scan(&dir.Id, &dir.Path, &dir.Done, &dir.Created); err != nil {
+		if err := rows.Scan(&dir.Id, &dir.Directory, &dir.Done, &dir.Created); err != nil {
 			return fmt.Errorf("failed to scan indexed directory: %w", err)
 		}
 
@@ -118,7 +118,7 @@ func (i *IndexedDirs) List() error {
 
 func (i *IndexedDirs) Append() error {
 
-	query := `INSERT INTO indexed (path, done, created) VALUES ($1, $2, $3) RETURNING id, path, done, created;`
+	query := `INSERT INTO indexed (directory, done, created) VALUES ($1, $2, $3) RETURNING id, directory, done, created;`
 
 	conn, err := utils.PgConn()
 	if err != nil {
@@ -142,25 +142,25 @@ func (i *IndexedDirs) Append() error {
 func (f *Finfo) CheckExtension() error {
 
 	if f.IsDir {
-		fSrc := strings.ReplaceAll(f.Path+"\\"+f.Name, "\\", "/")
+		fSrc := strings.ReplaceAll(f.Directory+"\\"+f.Name, "\\", "/")
 		f.Src = template.URL(fSrc)
 		return nil
 	}
 
 	if slices.Contains(textFiles, f.Ext) {
 		f.IsText = true
-		f.Link = fmt.Sprintf("%s\\%s.%v", f.Path, f.Name, f.Ext)
+		f.Link = fmt.Sprintf("%s\\%s.%v", f.Directory, f.Name, f.Ext)
 
 	} else if slices.Contains(imageFiles, f.Ext) {
 		f.IsImage = true
-		f.Link = fmt.Sprintf("file:///%s\\%s.%v", f.Path, f.Name, f.Ext)
+		f.Link = fmt.Sprintf("file:///%s\\%s.%v", f.Directory, f.Name, f.Ext)
 	} else if slices.Contains(videoFiles, f.Ext) {
 		f.IsVideo = true
-		f.Link = fmt.Sprintf("file:///%s\\%s.%v", f.Path, f.Name, f.Ext)
+		f.Link = fmt.Sprintf("file:///%s\\%s.%v", f.Directory, f.Name, f.Ext)
 	}
 
 	f.Link = strings.ReplaceAll(f.Link, "\\", "/")
-	fSrc := fmt.Sprintf("%s\\%s.%v", f.Path, f.Name, f.Ext)
+	fSrc := fmt.Sprintf("%s\\%s.%v", f.Directory, f.Name, f.Ext)
 	fSrc = strings.ReplaceAll(fSrc, "\\", "/")
 	f.Src = template.URL(fSrc)
 
@@ -168,7 +168,7 @@ func (f *Finfo) CheckExtension() error {
 }
 
 func (f *Finfo) String() string {
-	return fmt.Sprintf("%s, %s, %s, %T\n", f.Path, f.Name, f.Ext, f.IsDir)
+	return fmt.Sprintf("%s, %s, %s, %T\n", f.Directory, f.Name, f.Ext, f.IsDir)
 }
 
 type IndexData struct {
@@ -229,7 +229,7 @@ func (s *SearchParams) QueryStmt() error {
 
 		// column = keywords
 		s.Stmt = fmt.Sprintf(`
-		SELECT id, name, ext, is_dir, path, size, mod_time,
+		SELECT id, name, ext, is_dir, directory, size, mod_time,
 		ts_rank_cd( to_tsvector(%[1]s, keywords), websearch_to_tsquery(%[1]s, $1) ) as ts_rank
 		FROM files
 		WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords)
@@ -244,7 +244,7 @@ func (s *SearchParams) QueryStmt() error {
 		s.QueryParam = "^" + s.QueryParam
 		// column = "name"
 		s.Stmt = `
-		SELECT id, name, ext, is_dir, path, size, mod_time FROM files
+		SELECT id, name, ext, is_dir, directory, size, mod_time FROM files
 		WHERE LOWER(name) ~ LOWER($1)
 		ORDER BY mod_time DESC LIMIT $2 OFFSET $3;`
 
@@ -254,7 +254,7 @@ func (s *SearchParams) QueryStmt() error {
 		// column = "files.keywords"
 
 		s.Stmt = fmt.Sprintf(`
-		SELECT id, name, ext, is_dir, path, size, mod_time FROM files
+		SELECT id, name, ext, is_dir, directory, size, mod_time FROM files
 		WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, files.keywords)
 		AND is_dir=true
 		ORDER BY mod_time DESC LIMIT $2 OFFSET $3;`, language)
@@ -268,7 +268,7 @@ func (s *SearchParams) QueryStmt() error {
 		s.QueryParam = "^" + s.QueryParam
 
 		s.Stmt = `
-		SELECT id, name, ext, is_dir, path, size, mod_time FROM files
+		SELECT id, name, ext, is_dir, directory, size, mod_time FROM files
 		WHERE LOWER(name) ~ LOWER($1) AND is_dir=true
 		ORDER BY mod_time DESC LIMIT $2 OFFSET $3;`
 		s.CounterStmt = `SELECT COUNT(*) FROM files WHERE LOWER(name) ~ LOWER($1) AND is_dir=true;`
@@ -278,7 +278,7 @@ func (s *SearchParams) QueryStmt() error {
 
 	if len(s.Ext) > 0 {
 
-		s.Stmt = fmt.Sprintf(`SELECT files.id, name, files.ext, is_dir, path, size, mod_time,
+		s.Stmt = fmt.Sprintf(`SELECT files.id, name, files.ext, is_dir, directory, size, mod_time,
 		ts_rank( to_tsvector(%[1]s, keywords), websearch_to_tsquery(%[1]s, $1) ) as ts_rank
 		FROM files
 		JOIN ext ON files.ext_id = ext.id

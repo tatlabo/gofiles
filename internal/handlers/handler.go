@@ -258,7 +258,7 @@ func PreviewImage(c echo.Context) error {
 	defer conn.Close()
 
 	finfo := models.Finfo{}
-	stmt := (`SELECT id, name, ext, is_dir, path, size, mod_time FROM files WHERE id = $1;`)
+	stmt := (`SELECT id, name, ext, is_dir, directory, size, mod_time FROM files WHERE id = $1;`)
 
 	err = conn.QueryRow(stmt, id).Scan(
 		&finfo.Id,
@@ -351,7 +351,7 @@ func DetailById(c echo.Context) error {
 	defer conn.Close()
 
 	finfo := models.Finfo{}
-	stmt := `SELECT id, name, ext, is_dir, path, size, mod_time FROM files WHERE id = $1;`
+	stmt := `SELECT id, name, ext, is_dir, directory, size, mod_time FROM files WHERE id = $1;`
 
 	err = conn.QueryRow(stmt, id).Scan(
 		&finfo.Id,
@@ -398,7 +398,7 @@ func PreviewById(c echo.Context) error {
 	defer conn.Close()
 
 	finfo := models.Finfo{}
-	stmt := `SELECT id, name, ext, is_dir, path, size, mod_time FROM files WHERE id = $1;`
+	stmt := `SELECT id, name, ext, is_dir, directory, size, mod_time FROM files WHERE id = $1;`
 
 	err = conn.QueryRow(stmt, id).Scan(
 		&finfo.Id,

@@ -9,8 +9,8 @@ created TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 updated TIMESTAMPTZ NOT NULL DEFAULT NOW());
 
 
-CREATE TABLE IF NOT EXISTS files 
-(id SERIAL PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS files (
+id SERIAL PRIMARY KEY,
 directory_id INTEGER, FOREIGN KEY(directory_id) REFERENCES directory(id) ON DELETE CASCADE,
 directory TEXT NOT NULL,
 name TEXT NOT NULL,
@@ -20,7 +20,7 @@ is_dir BOOLEAN NOT NULL DEFAULT FALSE,
 size BIGINT,
 keywords TEXT,
 mod_time TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-UNIQUE (path, name, ext, is_dir));
+UNIQUE (directory, name, ext, is_dir));
 
 CREATE TABLE IF NOT EXISTS search
 (id SERIAL PRIMARY KEY,

@@ -25,8 +25,8 @@ var migrations embed.FS
 var skipDirectories = []string{".git", "node_modules", "tmp", "temp", ".vscode", ".idea", "vendor", "build", "dist", "__pycache__", ",bin", ".vite", "$SysReset", "$Windows.~WS", "OneDriveTemp", "AppData"}
 var skipFiles = []string{".DS_Store", ".gitignore", ".gitattributes", ".gitmodules", "package-lock.json", "yarn.lock", "dpx", ".gitignore"}
 
-var query = `INSERT INTO files (directory, name, ext, is_dir, size, mod_time) 
-VALUES ($1, $2, $3, $4, $5, $6)
+var query = `INSERT INTO files (directory, name, ext, is_dir, size, mod_time, directory_id) 
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 ON CONFLICT (directory, name, ext, is_dir) DO UPDATE SET size = EXCLUDED.size, mod_time = EXCLUDED.mod_time;`
 
 var sqlInsertReturn = `INSERT INTO directory (name)
@@ -71,27 +71,26 @@ func SqlMigrations(path string) error {
 	return nil
 }
 
-func VanillaSqlReturn(q string, param string) (int, error) {
+func VanillaSqlReturn(q string, param string) error {
 
 	var e error
-	var sqlReturning int
 
 	db, e := utils.PgConn()
 	if e != nil {
-		return 0, e
+		return e
 	}
 	defer db.Close()
 
 	tx, e := db.Begin()
 	if e != nil {
-		return 0, e
+		return e
 	}
-	if e := tx.QueryRow(fmt.Sprintf(`%s`, q), param).Scan(&sqlReturning); e != nil {
-		return 0, e
+	if e := tx.QueryRow(fmt.Sprintf(`%s`, q), param).Scan(&directoryId); e != nil {
+		return e
 	}
 	tx.Commit()
 
-	return sqlReturning, nil
+	return nil
 }
 
 func VanillaSql(xs []byte) error {
@@ -241,30 +240,6 @@ func insertToPostgres(stmt [][]interface{}) error {
 		// quantity = 100
 	)
 
-	// for {
-
-	// 	if s < quantity {
-
-	// 		if _, err = db.Exec(query, stmt[counter:]); err != nil {
-	// 			panic(err)
-	// 		}
-
-	// 		fmt.Printf("Insetred %d : %d items\n", counter, s)
-	// 		break
-
-	// 	} else {
-	// 		if _, err := db.Exec(strings.Join(stmt[counter:counter+quantity], " ")); err != nil {
-	// 			fmt.Println("Error writing to database: ", err)
-	// 			fmt.Printf("%v", strings.Join(stmt[counter:counter+quantity], " "))
-	// 			os.Exit(1)
-	// 		}
-
-	// 		s -= quantity
-	// 		counter += quantity
-
-	// 	}
-	// }
-
 	for _, p := range stmt {
 		_, err := db.Exec(query, p...)
 		if err != nil {
@@ -321,7 +296,7 @@ func ScanDir(dir string) error {
 		return fmt.Errorf("Error: migrations/001_initial.sql creating tables: %w", err)
 	}
 
-	if &directoryId, err := VanillaSqlReturn(sqlInsertReturn, fmt.Sprintf("'%s'", path)); err != nil {
+	if err := VanillaSqlReturn(sqlInsertReturn, fmt.Sprintf("'%s'", path)); err != nil {
 		return fmt.Errorf("Error inserting and/or returning value into directory table: %w", err)
 	}
 
