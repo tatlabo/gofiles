@@ -14,7 +14,7 @@
             {{ .SizeStr }}; {{ .ModTime }}
         </p>
         <p>
-            {{ .Path }}\{{ .Name }}.{{ .Ext }}
+            {{ .Directory }}\{{ .Name }}.{{ .Ext }}
         </p>
 
         <!-- 
@@ -53,42 +53,6 @@
         {{ else }}
         <p>File is not readable</p>
         {{ end }}
-        <pre>
-Id:   
-{{	.Id       }}
-ParentId 
-{{	.ParentId }}
-Path:     
-{{	.Path     }}
-Name:     
-{{	.Name     }}
-Ext:      
-{{	.Ext      }}
-Size     
-{{	.Size     }}
-IsDir:    
-{{	.IsDir    }}
-SizeStr:  
-{{	.SizeStr  }}
-ModTime:  
-{{	.ModTime  }}
-IsImage:  
-{{	.IsImage  }}
-IsText:   
-{{	.IsText   }}
-IsVideo:  
-{{	.IsVideo  }}
-Link:    
-{{	.Link     }}
-Src:      
-{{	.Src      }}
-Title:   
-{{	.Title   }}
-Preview: 
-{{	.Preview }}
-HTML:    
-{{	.HTML    }}
-            </pre>
     </main>
 
 

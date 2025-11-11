@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
 
@@ -19,8 +20,8 @@ var imageFiles = []string{"jpg", "jpeg", "png", "gif", "bmp", "tif", "tiff", "we
 var videoFiles = []string{"mp4", "wav", "mp3", "aif", "aiff"}
 
 type Finfo struct {
-	Id          int          `db:"id" json:"id"`
-	DirectoryId int          `db:"directory_id" json:"parentId"`
+	Id          uuid.UUID    `db:"id" json:"id"`
+	DirectoryId uuid.UUID    `db:"directory_id" json:"directoryId"`
 	Directory   string       `db:"directory" json:"directory"`
 	Name        string       `db:"name" json:"name"`
 	Ext         string       `db:"ext" json:"ext"`
@@ -44,10 +45,11 @@ type FinfoDetail struct {
 }
 
 type IndexedDir struct {
-	Id      int       `db:"id" json:"id"`
-	Path    string    `db:"path" json:"path"`
+	Id      uuid.UUID `db:"id" json:"id"`
+	Name    string    `db:"name" json:"name"`
 	Done    bool      `db:"done" json:"done"`
 	Created time.Time `db:"created" json:"created"`
+	Updated time.Time `db:"updated" json:"updated"`
 }
 
 type IndexedDirs struct {
@@ -69,29 +71,16 @@ func (p *IndexedDirs) SetParams(c echo.Context) error {
 		p.Error = make(map[string]string)
 	}
 
-	method := c.Request().Method
-
-	switch method {
-
-	// case http.MethodGet:
-
-	// 	}
-
-	case http.MethodPost:
-		params := c.FormValue("path")
-		p.Params["path"] = utils.CleanInput(params)
-		p.Status = true
-	}
+	params := c.FormValue("path")
+	p.Params["path"] = utils.CleanInput(params)
+	p.Status = true
 
 	return nil
 }
 
 func (i *IndexedDirs) List() error {
-	if len(i.Indexeddirs) == 0 {
-		i.Text = "No indexed directories found."
-	}
 
-	query := `SELECT id, directory, done, created FROM indexed ORDER BY created DESC;`
+	query := `SELECT id, name, done, created FROM directory ORDER BY created DESC;`
 
 	conn, err := utils.PgConn()
 	if err != nil {
@@ -106,11 +95,15 @@ func (i *IndexedDirs) List() error {
 
 	for rows.Next() {
 		var dir IndexedDir
-		if err := rows.Scan(&dir.Id, &dir.Directory, &dir.Done, &dir.Created); err != nil {
+		if err := rows.Scan(&dir.Id, &dir.Name, &dir.Done, &dir.Created); err != nil {
 			return fmt.Errorf("failed to scan indexed directory: %w", err)
 		}
 
 		i.Indexeddirs = append(i.Indexeddirs, dir)
+	}
+
+	if len(i.Indexeddirs) == 0 {
+		i.Text = "No indexed directories found."
 	}
 
 	return nil
@@ -118,7 +111,7 @@ func (i *IndexedDirs) List() error {
 
 func (i *IndexedDirs) Append() error {
 
-	query := `INSERT INTO indexed (directory, done, created) VALUES ($1, $2, $3) RETURNING id, directory, done, created;`
+	query := `INSERT INTO directory (name, done, created) VALUES ($1, $2, $3) RETURNING id, name, done, created;`
 
 	conn, err := utils.PgConn()
 	if err != nil {
@@ -128,13 +121,13 @@ func (i *IndexedDirs) Append() error {
 
 	newDir := IndexedDir{}
 	err = conn.QueryRow(query, i.Params["path"], false, time.Now()).Scan(
-		&newDir.Id, &newDir.Path, &newDir.Done, &newDir.Created)
+		&newDir.Id, &newDir.Name, &newDir.Done, &newDir.Created)
 	if err != nil {
 		return fmt.Errorf("failed to insert into indexed directories: %w", err)
 	}
 
 	// Add the new directory to the slice
-	// i.Indexeddirs = append(i.Indexeddirs, newDir)
+	i.Indexeddirs = append(i.Indexeddirs, newDir)
 
 	return nil
 }
@@ -293,8 +286,6 @@ func (s *SearchParams) QueryStmt() error {
 		s.Placeholders = []any{s.Placeholders[0], s.Ext, s.Placeholders[1], s.Placeholders[2]}
 	}
 
-	// s.ExplainAnalyze = fmt.Sprintf(`EXPLAIN ANALYZE %s`, s.Stmt)
-
 	return nil
 
 }
@@ -400,8 +391,9 @@ func NewIndexData() *IndexData {
 }
 
 // Delete removes an indexed directory by ID
-func (i *IndexedDirs) Delete(id int) error {
-	query := `DELETE FROM indexed WHERE id = $1;`
+func (i *IndexedDirs) Delete(id string) error {
+
+	query := `DELETE FROM directory WHERE id = $1;`
 
 	conn, err := utils.PgConn()
 	if err != nil {
@@ -409,7 +401,7 @@ func (i *IndexedDirs) Delete(id int) error {
 	}
 	defer conn.Close()
 
-	result, err := conn.Exec(query, id)
+	result, err := conn.Exec(fmt.Sprintf(`%s, %s;`, query, id))
 	if err != nil {
 		return fmt.Errorf("failed to delete indexed directory: %w", err)
 	}
@@ -420,7 +412,7 @@ func (i *IndexedDirs) Delete(id int) error {
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf("no directory found with ID %d", id)
+		return fmt.Errorf("no directory found with ID %v", id)
 	}
 
 	return nil

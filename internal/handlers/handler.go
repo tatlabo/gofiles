@@ -95,47 +95,11 @@ func findInDb(c echo.Context) (models.IndexData, error) {
 	log.Println(searchParams.Stmt, searchParams.Placeholders)
 
 	go func() {
-
-		conn, err := utils.PgConn()
-		if err != nil {
-			log.Println("Error connecting to the database for search words:", err)
-			return
-		}
-		defer conn.Close()
-		explainAnalyze := fmt.Sprintf("EXPLAIN ANALYZE %s", searchParams.Stmt)
-		explainRows, err := conn.Query(explainAnalyze, searchParams.Placeholders...)
-		if err != nil {
-			log.Println("Error running EXPLAIN ANALYZE:", err)
-		}
-		defer explainRows.Close()
-		for explainRows.Next() {
-			var line string
-			if err := explainRows.Scan(&line); err != nil {
-				log.Println("Error scanning EXPLAIN ANALYZE line:", err)
-				continue
-			}
-			log.Println(line)
-		}
-		if err := explainRows.Err(); err != nil {
-			log.Println("Error iterating EXPLAIN ANALYZE rows:", err)
-		}
+		explainAnalyze(searchParams.Stmt, searchParams.Placeholders...)
 	}()
 
-	const addSearchWords = `INSERT INTO search (input) VALUES ($1);`
 	go func() {
-		conn, err := utils.PgConn()
-		if err != nil {
-			log.Println("Error connecting to the database for search words:", err)
-			return
-		}
-		defer conn.Close()
-		log.Println("Inserting search words into the database:", searchParams.Params)
-		// Insert the search parameters into the search table
-		_, err = conn.Exec(addSearchWords, searchParams.Params)
-		if err != nil {
-			log.Println("Error inserting search words:", err)
-		}
-
+		insertSearchedWord(searchParams.Params)
 	}()
 
 	counter := 0
@@ -158,14 +122,14 @@ func findInDb(c echo.Context) (models.IndexData, error) {
 				&finfo.Name,
 				&finfo.Ext,
 				&finfo.IsDir,
-				&finfo.Path,
+				&finfo.Directory,
 				&finfo.Size,
 				&finfo.ModTime,
 				&finfo.TsRank,
 			)
 
 			if err != nil {
-				return indexData, c.String(http.StatusInternalServerError, "Error scanning result")
+				return indexData, c.String(http.StatusInternalServerError, err.Error())
 			}
 		} else {
 			err := rows.Scan(
@@ -173,13 +137,13 @@ func findInDb(c echo.Context) (models.IndexData, error) {
 				&finfo.Name,
 				&finfo.Ext,
 				&finfo.IsDir,
-				&finfo.Path,
+				&finfo.Directory,
 				&finfo.Size,
 				&finfo.ModTime,
 			)
 
 			if err != nil {
-				return indexData, c.String(http.StatusInternalServerError, "Error scanning result")
+				return indexData, c.String(http.StatusInternalServerError, err.Error())
 			}
 		}
 		// Scan the current row into variables
@@ -190,7 +154,6 @@ func findInDb(c echo.Context) (models.IndexData, error) {
 			return indexData, c.String(http.StatusInternalServerError, "Error iterating over rows")
 		}
 
-		// finfo.Path = strings.ReplaceAll(finfo.Path, "\\", "/")
 		finfo.SizeStr = utils.ConvertBytes(finfo.Size)
 
 		_ = finfo.CheckExtension()
@@ -245,41 +208,15 @@ func ResponseJson(c echo.Context) error {
 
 func PreviewImage(c echo.Context) error {
 
-	idStr := c.Param("id")
-	id, err := strconv.Atoi(idStr)
+	id := c.Param("id")
+
+	finfo, err := SelectFinfoById(id)
 	if err != nil {
-		return c.String(http.StatusBadRequest, "Invalid ID")
+		return c.String(http.StatusInternalServerError, "Error executing query by id in\n PreviewImage "+err.Error())
 	}
 
-	conn, err := utils.PgConn()
-	if err != nil {
-		return c.String(http.StatusInternalServerError, "Error connecting to the database")
-	}
-	defer conn.Close()
-
-	finfo := models.Finfo{}
-	stmt := (`SELECT id, name, ext, is_dir, directory, size, mod_time FROM files WHERE id = $1;`)
-
-	err = conn.QueryRow(stmt, id).Scan(
-		&finfo.Id,
-		&finfo.Name,
-		&finfo.Ext,
-		&finfo.IsDir,
-		&finfo.Path,
-		&finfo.Size,
-		&finfo.ModTime,
-	)
-
-	if err != nil {
-		return c.String(http.StatusInternalServerError, "Error executing query")
-	}
-
-	srcPath := fmt.Sprintf("%s/%s.%v", finfo.Path, finfo.Name, finfo.Ext)
-	// srcPath = strings.ReplaceAll(srcPath, "\\", "/")
+	srcPath := fmt.Sprintf("%s/%s.%v", finfo.Directory, finfo.Name, finfo.Ext)
 	destPath := fmt.Sprintf("media/images/%s.%v", finfo.Name, finfo.Ext)
-	// destPath = strings.ReplaceAll(destPath, "\\", "/")
-
-	_ = finfo.CheckExtension()
 
 	// Ensure the destination directory exists
 	if err := os.MkdirAll("media/images", os.ModePerm); err != nil {
@@ -338,36 +275,12 @@ func copyImageFile(srcPath, destPath string) error {
 
 func DetailById(c echo.Context) error {
 
-	idStr := c.Param("id")
-	id, err := strconv.Atoi(idStr)
+	id := c.Param("id")
+
+	finfo, err := SelectFinfoById(id)
 	if err != nil {
-		return c.String(http.StatusBadRequest, "Invalid ID")
+		return c.String(http.StatusInternalServerError, "Error executing query by id in\n DetailById "+err.Error())
 	}
-
-	conn, err := utils.PgConn()
-	if err != nil {
-		return c.String(http.StatusInternalServerError, "Error connecting to the database")
-	}
-	defer conn.Close()
-
-	finfo := models.Finfo{}
-	stmt := `SELECT id, name, ext, is_dir, directory, size, mod_time FROM files WHERE id = $1;`
-
-	err = conn.QueryRow(stmt, id).Scan(
-		&finfo.Id,
-		&finfo.Name,
-		&finfo.Ext,
-		&finfo.IsDir,
-		&finfo.Path,
-		&finfo.Size,
-		&finfo.ModTime,
-	)
-
-	if err != nil {
-		return c.String(http.StatusInternalServerError, "Error executing query")
-	}
-
-	_ = finfo.CheckExtension()
 
 	finfo.SizeStr = utils.ConvertBytes(finfo.Size)
 
@@ -385,38 +298,11 @@ func DetailById(c echo.Context) error {
 
 func PreviewById(c echo.Context) error {
 
-	idStr := c.Param("id")
-	id, err := strconv.Atoi(idStr)
+	id := c.Param("id")
+
+	finfo, err := SelectFinfoById(id)
 	if err != nil {
-		return c.String(http.StatusBadRequest, "Invalid ID")
-	}
-
-	conn, err := utils.PgConn()
-	if err != nil {
-		return c.String(http.StatusInternalServerError, "Error connecting to the database")
-	}
-	defer conn.Close()
-
-	finfo := models.Finfo{}
-	stmt := `SELECT id, name, ext, is_dir, directory, size, mod_time FROM files WHERE id = $1;`
-
-	err = conn.QueryRow(stmt, id).Scan(
-		&finfo.Id,
-		&finfo.Name,
-		&finfo.Ext,
-		&finfo.IsDir,
-		&finfo.Path,
-		&finfo.Size,
-		&finfo.ModTime,
-	)
-
-	if err != nil {
-		return c.String(http.StatusInternalServerError, "Error executing query")
-	}
-
-	err = finfo.CheckExtension()
-	if err != nil {
-		return c.String(http.StatusInternalServerError, "Error checking extension item")
+		return c.String(http.StatusInternalServerError, "Error executing query by id in\n PreviewById "+err.Error())
 	}
 
 	finfodetail := models.FinfoDetail{
@@ -427,14 +313,14 @@ func PreviewById(c echo.Context) error {
 		finfodetail.HTML, _ = TxtToChoroma(finfo)
 	}
 
-	wrap := fmt.Sprintf("<div><h3>%s.%s</h3><p>%s</p>%s</div>", finfodetail.Name, finfodetail.Ext, finfodetail.Path, string(finfodetail.HTML))
+	wrap := fmt.Sprintf("<div><h3>%s.%s</h3><p>%s</p>%s</div>", finfodetail.Name, finfodetail.Ext, finfodetail.Directory, string(finfodetail.HTML))
 
 	return c.String(http.StatusOK, wrap)
 }
 
 func TxtToChoroma(f models.Finfo) (template.HTML, error) {
 
-	address := fmt.Sprintf("%s\\%s.%v", f.Path, f.Name, f.Ext)
+	address := fmt.Sprintf("%s\\%s.%v", f.Directory, f.Name, f.Ext)
 	fin, err := os.Open(address)
 
 	if err != nil {
@@ -455,24 +341,11 @@ func TxtToChoroma(f models.Finfo) (template.HTML, error) {
 // DeleteIndexedDirectory handles DELETE requests to remove indexed directories
 func DropIndexedDirectory(c echo.Context) error {
 	// Get the ID from URL parameter
-	idParam := c.Param("id")
-	if idParam == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "ID parameter is required",
-		})
-	}
-
-	// Convert ID to integer
-	id, err := strconv.Atoi(idParam)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Invalid ID format",
-		})
-	}
+	id := c.Param("id")
 
 	// Create IndexedDirs instance and delete
 	indexedDirs := models.NewIndexedDirs()
-	err = indexedDirs.Delete(id)
+	err := indexedDirs.Delete(id)
 	if err != nil {
 		if err.Error() == fmt.Sprintf("no directory found with ID %d", id) {
 			return c.JSON(http.StatusNotFound, map[string]string{
@@ -480,7 +353,7 @@ func DropIndexedDirectory(c echo.Context) error {
 			})
 		}
 
-		log.Printf("Error deleting directory with ID %d: %v", id, err)
+		log.Printf("Error deleting directory with ID %v: %v", id, err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Failed to delete directory",
 		})
@@ -494,40 +367,113 @@ func DropIndexedDirectory(c echo.Context) error {
 
 // DeleteIndexedDirectory handles DELETE requests to remove indexed directories
 func DeleteDirectory(c echo.Context) error {
-	// Get the ID from URL parameter
-	idParam := c.Param("id")
-	if idParam == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "ID parameter is required",
-		})
-	}
 
-	// Convert ID to integer
-	id, err := strconv.Atoi(idParam)
+	id := c.Param("id")
+
+	query := `DELETE FROM directory WHERE id = $1;`
+
+	conn, err := utils.PgConn()
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Invalid ID format",
-		})
+		return err
 	}
+	defer conn.Close()
 
-	// Create IndexedDirs instance and delete
-	indexedDirs := models.NewIndexedDirs()
-	err = indexedDirs.Delete(id)
+	_, err = conn.Exec(query, id)
+	fmt.Printf(`%v %v`, query, id)
 	if err != nil {
-		if err.Error() == fmt.Sprintf("no directory found with ID %d", id) {
-			return c.JSON(http.StatusNotFound, map[string]string{
-				"error": "Directory not found",
-			})
-		}
-
-		log.Printf("Error deleting directory with ID %d: %v", id, err)
+		log.Printf("Error deleting directory with ID %v: %v", id, err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Failed to delete directory",
 		})
 	}
 
-	// Return success response
+	// d := models.IndexedDirs{}
+	// err := d.Delete(id)
+	// if err != nil {
+	// 	if err.Error() == fmt.Sprintf("no directory found with ID %d", id) {
+	// 		return c.JSON(http.StatusNotFound, map[string]string{
+	// 			"error": "Directory not found",
+	// 		})
+	// 	}
+
+	// 	log.Printf("Error deleting directory with ID %v: %v", id, err)
+	// 	return c.JSON(http.StatusInternalServerError, map[string]string{
+	// 		"error": "Failed to delete directory",
+	// 	})
+	// }
+
 	return c.JSON(http.StatusOK, map[string]string{
 		"message": "Directory deleted successfully",
 	})
+	// Return success response
+}
+
+func explainAnalyze(stmt string, placeholders ...interface{}) {
+	conn, err := utils.PgConn()
+	if err != nil {
+		log.Println("Error connecting to the database for search words:", err)
+		return
+	}
+	defer conn.Close()
+	explainAnalyze := fmt.Sprintf("EXPLAIN ANALYZE %s", stmt)
+	explainRows, err := conn.Query(explainAnalyze, placeholders...)
+	if err != nil {
+		log.Println("Error running EXPLAIN ANALYZE:", err)
+	}
+	defer explainRows.Close()
+	for explainRows.Next() {
+		var line string
+		if err := explainRows.Scan(&line); err != nil {
+			log.Println("Error scanning EXPLAIN ANALYZE line:", err)
+			continue
+		}
+		log.Println(line)
+	}
+	if err := explainRows.Err(); err != nil {
+		log.Println("Error iterating EXPLAIN ANALYZE rows:", err)
+	}
+}
+
+func insertSearchedWord(word string) {
+	const addSearchWords = `INSERT INTO search (input) VALUES ($1);`
+	conn, err := utils.PgConn()
+	if err != nil {
+		log.Println("Error connecting to the database for search words:", err)
+		return
+	}
+	defer conn.Close()
+	log.Println("Inserting search words into the database:", word)
+	_, err = conn.Exec(addSearchWords, word)
+	if err != nil {
+		log.Println("Error inserting search words:", err)
+	}
+}
+
+func SelectFinfoById(id string) (models.Finfo, error) {
+	f := models.Finfo{}
+	stmt := `SELECT id, name, ext, is_dir, directory, size, mod_time FROM files WHERE id = $1;`
+
+	conn, err := utils.PgConn()
+	if err != nil {
+		return f, err
+	}
+	defer conn.Close()
+
+	err = conn.QueryRow(stmt, id).Scan(
+		&f.Id,
+		&f.Name,
+		&f.Ext,
+		&f.IsDir,
+		&f.Directory,
+		&f.Size,
+		&f.ModTime,
+	)
+
+	if err != nil {
+		return f, fmt.Errorf("failed to select file info by ID: %w", err)
+	}
+
+	_ = f.CheckExtension()
+
+	return f, nil
 }

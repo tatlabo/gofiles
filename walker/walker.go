@@ -147,7 +147,7 @@ func visit(path string, d fs.DirEntry, err error) error {
 		s.Name = strings.ReplaceAll(s.Name, "'", "''")
 
 		s.IsDir = d.IsDir()
-		s.Path = filepath.Dir(path) // Handle errors accessing a path}
+		s.Directory = filepath.Dir(path) // Handle errors accessing a path}
 		if len(extension) > 0 {
 			extension = extension[1:]
 		}
@@ -327,7 +327,7 @@ func insertItem(f []models.Finfo) [][]interface{} {
 	for i := range len(f) {
 
 		params = append(params, []interface{}{
-			f[i].Path,
+			f[i].Directory,
 			fileList[i].Name,
 			f[i].Ext,
 			f[i].IsDir,

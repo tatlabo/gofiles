@@ -1,10 +1,10 @@
 package main
 
 import (
+	"crypto/subtle"
 	"gofiles/internal/utils"
 	"html/template"
 	"io"
-	"log"
 	"net/http"
 	"time"
 
@@ -13,7 +13,6 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/golang-jwt/jwt/v5"
-	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -125,17 +124,19 @@ func main() {
 	e := echo.New()
 
 	// Middleware
-	e.Use(middleware.Logger())
+	// e.Use(middleware.Logger())
 	e.Use(middleware.CORS())
 	e.Use(middleware.Recover())
 
-	// JWT Config
-	jwtConfig := echojwt.Config{
-		NewClaimsFunc: func(c echo.Context) jwt.Claims {
-			return new(JWTCustomClaims)
-		},
-		SigningKey: jwtSecret,
-	}
+	protected := e.Group("", middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
+		// Be careful to use constant time comparison to prevent timing attacks
+		if subtle.ConstantTimeCompare([]byte(username), []byte("admin")) == 1 &&
+			subtle.ConstantTimeCompare([]byte(password), []byte("secret")) == 1 {
+			return true, nil
+		}
+		e.GET("/", handlers.StartPage)
+		return false, nil
+	}))
 
 	e.Static("/static", "static")
 	e.Static("/media", "media")
@@ -149,8 +150,6 @@ func main() {
 		}).ParseGlob("public/views/*.html")),
 	}
 
-	// Public routes (no JWT required)
-
 	e.POST("/login", login)
 	e.GET("/", handlers.StartPage)
 	e.GET("/search", handlers.SearchInDb)
@@ -163,16 +162,14 @@ func main() {
 	e.GET("/append", handlers.ResponseAppend)
 	e.GET("/access", Accessible)
 
-	// Protected routes group
-	protected := e.Group("/admin")
-	protected.Use(echojwt.WithConfig(jwtConfig))
+	protected.GET("/dirs", handlers.AddPath)
+	protected.POST("/dirs", handlers.AddPath)
+	protected.POST("/scan", handlers.ScanDirectory)
+	protected.DELETE("/dirs/delete/:id", handlers.DeleteDirectory)
+	protected.GET("/test", handlers.TestEndpoint)
+	// // Protected routes group
 
 	// Admin-only routes
-	e.GET("/dirs", handlers.AddPath)
-	e.POST("/dirs", handlers.AddPath)
-	e.POST("/scan", handlers.ScanDirectory)
-	e.DELETE("/delete/:id", handlers.DeleteDirectory)
-	e.GET("/test", handlers.TestEndpoint)
 
 	// protected.GET("/dirs", handlers.AddPath, isAdmin)
 	// protected.POST("/dirs", handlers.AddPath, isAdmin)
@@ -181,15 +178,6 @@ func main() {
 	// protected.GET("/test", handlers.TestEndpoint, isAdmin)
 
 	// JWT protected route example
-	protected.GET("/profile", func(c echo.Context) error {
-		token := c.Get("user").(*jwt.Token)
-		claims := token.Claims.(*JWTCustomClaims)
-		return c.JSON(http.StatusOK, map[string]interface{}{
-			"name":    claims.Name,
-			"admin":   claims.Admin,
-			"message": "This is a protected route",
-		})
-	})
 
 	// Alternative: Apply JWT to specific routes individually
 	// e.GET("/dirs", handlers.AddPath, echojwt.WithConfig(jwtConfig), isAdmin)
@@ -197,11 +185,13 @@ func main() {
 	// e.POST("/scan", handlers.ScanDirectory, echojwt.WithConfig(jwtConfig), isAdmin)
 	// e.DELETE("/delete/:id", handlers.DeleteDirectory, echojwt.WithConfig(jwtConfig), isAdmin)
 
-	go func() {
-		log.Println(http.ListenAndServe("localhost:6060", nil))
-	}()
+	// go func() {
+	// 	log.Println(http.ListenAndServe("localhost:6060", nil))
+	// }()
 
-	e.Logger.Fatal(e.Start(":8080"))
+	// e.Logger.Fatal(
+	// )
+	e.Start(":8080")
 
 	// log.Fatal(http.ListenAndServe("localhost:8000", nil))
 

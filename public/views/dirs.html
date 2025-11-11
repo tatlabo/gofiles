@@ -1,26 +1,24 @@
-{{ define "scan"}}
+{{ define "dirs"}}
 <!DOCTYPE html>
 
 {{ template "header" .HeaderTitle }}
 
 <body>
-    <pre>scan.html</pre>
     <nav>
         <button id="theme-toggle">switch theme</button>
     </nav>
+    <main>
+        <article id="fileList" class="grid-container gap-y-m">
+    
+            {{ template "add-path-form" }}
+            
+            {{ if .Text }}
+            <p class="text">
+                {{ .Text }}
+            </p>
+            {{ end }}
 
-    {{ template "add-path-form" }}
-
-    {{ if .Text }}
-    <p class="text">
-        {{ .Text }}
-
-    </p>
-    {{ end }}
-
-    <main class="">
-        <article id="fileList" class="">
-            <ol id="list" class="file-list" type="1">
+            <ol id="list" class="dirs-list" type="1">
                 {{ template "directory_list" . }}
             </ol>
         </article>
@@ -63,7 +61,7 @@
 
         async function deleteDirectory(id, buttonElement) {
             try {
-                const response = await fetch(`/delete/${id}`, {
+                const response = await fetch(`/dirs/delete/${id}`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
@@ -161,34 +159,26 @@
 
 {{ define "directory_list" }}
 {{ if .Indexeddirs }}
-{{ range .Indexeddirs }}
-<li class="item-list" id="entry" data-id="{{ .Id }}" data-name="{{ .Path }}" data-indexed="{{ .Done}}"
-    data-created="{{ .Created }}">
-    <span class="item-id">
-        {{ .Path }}
-        <button class="delete" data-id="{{ .Id }}" data-name="{{ .Path }}">x</button>
-    </span>
-    <span>
-
-        <button class="scan" data-id="{{ .Id }}" data-path="{{ .Path }}">
+    {{ .Text }}
+    {{ range .Indexeddirs }}
+    <li class="dir-item" id="entry" data-id="{{ .Id }}">
+        <span class="item-id">
+            {{ .Name }}
+            {{ .Id }}
+        </span>
+        <button class="delete" data-id="{{ .Id }}" data-name="{{ .Name }}">x</button>
+        <button class="scan" data-id="{{ .Id }}" data-path="{{ .Name }}">
             {{ if .Done }}Rescan{{ else }}Scan{{ end }}
         </button>
-<!-- 
-        <button class="drop" data-id="{{ .Id }}" data-path="{{ .Path }}">
-            {{ if .Done }}Drop{{ else }}...{{ end }}
-        </button> -->
-
-    </span>
-    <time datetime="{{ .Created | formatDate }}" class="">
-        {{ .Created | formatDate }}
-    </time>
-</li>
-{{ end }}
+        <time datetime="{{ .Created | formatDate }}" class="">
+            {{ .Created | formatDate }}
+        </time>
+    </li>
+    {{ end }}
 {{ else }}
-<li>No directories indexed yet.</li>
+    <li>No directories indexed yet.</li>
 {{ end }}
 {{ end }}
-
 
 
 {{ define "add-path-form" }}
@@ -197,3 +187,4 @@
     <button class="primary" type="submit" id="submit">Add Path</button>
 </form>
 {{ end }}
+

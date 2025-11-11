@@ -11,13 +11,14 @@ import (
 
 	"embed"
 
+	"github.com/google/uuid"
 	_ "github.com/lib/pq"
 )
 
 const outputFile = "output.txt"
 
 var directory string
-var directoryId int
+var directoryId uuid.UUID
 
 //go:embed migrations/*.sql
 var migrations embed.FS
@@ -30,7 +31,7 @@ VALUES ($1, $2, $3, $4, $5, $6, $7)
 ON CONFLICT (directory, name, ext, is_dir) DO UPDATE SET size = EXCLUDED.size, mod_time = EXCLUDED.mod_time;`
 
 var sqlInsertReturn = `INSERT INTO directory (name)
-VALUES ($1) ON CONFLICT (name) DO NOTHING RETURNING id;`
+VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id;`
 
 var fileList = []models.Finfo{}
 
@@ -145,7 +146,7 @@ func visit(path string, d fs.DirEntry, err error) error {
 		s.Name = strings.ReplaceAll(s.Name, "'", "''")
 
 		s.IsDir = d.IsDir()
-		s.Path = filepath.Dir(path) // Handle errors accessing a path}
+		s.Directory = filepath.Dir(path) // Handle errors accessing a path}
 		if len(extension) > 0 {
 			extension = extension[1:]
 		}
@@ -171,7 +172,7 @@ func main() {
 	switch len(os.Args) {
 	case 1:
 		c := 1
-		fmt.Println("Please provide a path")
+		fmt.Println("Main case", c, "needs a path argument")
 		os.Exit(c)
 	case 2:
 		c := 2
@@ -180,7 +181,8 @@ func main() {
 		path = strings.ReplaceAll(path, "/", "\\")
 		directory = path
 		if _, err := os.ReadDir(path); err != nil {
-			os.Exit(c)
+			fmt.Fprintf(os.Stderr, "Main case %d invalid path: %v\n", c, err)
+			os.Exit(1)
 		}
 
 	}
@@ -194,8 +196,8 @@ func main() {
 
 func insertIntoDirs(path string) error {
 
-	const insertIntoDirs = `INSERT INTO indexed (path, done)
-	VALUES ($1, $2) ON CONFLICT (path) DO UPDATE SET done = EXCLUDED.done;`
+	const insertIntoDirs = `INSERT INTO directory (name, done)
+	VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET done = EXCLUDED.done;`
 
 	conn, err := utils.PgConn()
 	if err != nil {
@@ -266,7 +268,7 @@ func insertItem(f []models.Finfo) [][]interface{} {
 	for i := range len(f) {
 
 		params = append(params, []interface{}{
-			f[i].Path,
+			f[i].Directory,
 			fileList[i].Name,
 			f[i].Ext,
 			f[i].IsDir,
@@ -288,7 +290,6 @@ func ScanDir(dir string) error {
 	// path = strings.ReplaceAll(path, "/", "\\")
 	if _, err := os.ReadDir(path); err != nil {
 		return fmt.Errorf("invalid path: %s", path)
-
 	}
 
 	// create tables
@@ -296,7 +297,7 @@ func ScanDir(dir string) error {
 		return fmt.Errorf("Error: migrations/001_initial.sql creating tables: %w", err)
 	}
 
-	if err := VanillaSqlReturn(sqlInsertReturn, fmt.Sprintf("'%s'", path)); err != nil {
+	if err := VanillaSqlReturn(sqlInsertReturn, fmt.Sprintf("%s", path)); err != nil {
 		return fmt.Errorf("Error inserting and/or returning value into directory table: %w", err)
 	}
 
@@ -328,7 +329,7 @@ func ScanDir(dir string) error {
 	}
 
 	if err := insertIntoDirs(path); err != nil {
-		return fmt.Errorf("Error inserting into indexed directories: %w", err)
+		return fmt.Errorf("Error inserting into directory: %w", err)
 	}
 
 	return nil

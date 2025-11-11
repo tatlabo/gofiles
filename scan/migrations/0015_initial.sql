@@ -1,2 +1,0 @@
-INSERT INTO directory (name)
-VALUES ($1) ON CONFLICT (name) DO NOTHING RETURNING id;
