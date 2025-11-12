@@ -83,7 +83,12 @@ SELECT * FROM polish_stopwords;
 -- SELECT to_tsvector('polish', 'Na moście granicznym w Słubicach pojawiły się osoby, które legitymują cudzoziemców i kontrolują ich dokumenty.');
 
 
-https://www.pg4e.com/lessons/week5#
+-- https://www.pg4e.com/lessons/week5#
 
 
 CREATE INDEX idx_keywords_gin ON keywords_gin USING GIN (to_tsvector('polish', keyword));
+
+-- add keywords
+UPDATE files
+SET keywords = keywords || to_tsvector('polish', 'new keyword text')
+WHERE id = 'some-uuid';
