@@ -26,13 +26,6 @@ var migrations embed.FS
 var skipDirectories = []string{".git", "node_modules", "tmp", "temp", ".vscode", ".idea", "vendor", "build", "dist", "__pycache__", ",bin", ".vite", "$SysReset", "$Windows.~WS", "OneDriveTemp", "AppData"}
 var skipFiles = []string{".DS_Store", ".gitignore", ".gitattributes", ".gitmodules", "package-lock.json", "yarn.lock", "dpx", ".gitignore"}
 
-var query = `INSERT INTO files (directory, name, ext, is_dir, size, mod_time, directory_id) 
-VALUES ($1, $2, $3, $4, $5, $6, $7)
-ON CONFLICT (directory, name, ext, is_dir) DO UPDATE SET size = EXCLUDED.size, mod_time = EXCLUDED.mod_time;`
-
-var sqlInsertReturn = `INSERT INTO directory (name)
-VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id;`
-
 var fileList = []models.Finfo{}
 
 var log = []string{}
@@ -89,9 +82,8 @@ func VanillaSqlReturn(q string, param string) error {
 	if e := tx.QueryRow(fmt.Sprintf(`%s`, q), param).Scan(&directoryId); e != nil {
 		return e
 	}
-	tx.Commit()
 
-	return nil
+	return tx.Commit()
 }
 
 func VanillaSql(xs []byte) error {
@@ -230,6 +222,11 @@ func writeLog(log *[]string) error {
 }
 
 func insertToPostgres(stmt [][]interface{}) error {
+
+	var query = `INSERT INTO files (directory, name, ext, is_dir, size, mod_time, directory_id) 
+	VALUES ($1, $2, $3, $4, $5, $6, $7)
+	ON CONFLICT (directory, name, ext, is_dir) DO UPDATE SET size = EXCLUDED.size, mod_time = EXCLUDED.mod_time;`
+
 	db, err := utils.PgConn()
 	if err != nil {
 		panic(err)
@@ -284,15 +281,18 @@ func insertItem(f []models.Finfo) [][]interface{} {
 
 func ScanDir(dir string) error {
 
+	var sqlInsertReturn = `INSERT INTO directory (name)
+	VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id;`
+
 	var path string
 
 	path = strings.TrimSpace(dir)
-	// path = strings.ReplaceAll(path, "/", "\\")
 	if _, err := os.ReadDir(path); err != nil {
 		return fmt.Errorf("invalid path: %s", path)
 	}
 
 	// create tables
+	// use init/table_init.go SqlMigrations
 	if err := SqlMigrations("migrations/001_initial.sql"); err != nil {
 		return fmt.Errorf("Error: migrations/001_initial.sql creating tables: %w", err)
 	}

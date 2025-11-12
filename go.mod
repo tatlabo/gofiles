@@ -5,7 +5,6 @@ go 1.24.0
 require (
 	github.com/alecthomas/chroma/v2 v2.17.2
 	github.com/golang-jwt/jwt/v5 v5.2.2
-	github.com/labstack/echo-jwt/v4 v4.3.1
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/lib/pq v1.10.9
 )

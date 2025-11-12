@@ -347,7 +347,7 @@ func DropIndexedDirectory(c echo.Context) error {
 	indexedDirs := models.NewIndexedDirs()
 	err := indexedDirs.Delete(id)
 	if err != nil {
-		if err.Error() == fmt.Sprintf("no directory found with ID %d", id) {
+		if err.Error() == fmt.Sprintf("no directory found with ID %v", id) {
 			return c.JSON(http.StatusNotFound, map[string]string{
 				"error": "Directory not found",
 			})

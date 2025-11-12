@@ -109,7 +109,7 @@ func visit(path string, d fs.DirEntry, err error) error {
 		s.Name = strings.ReplaceAll(s.Name, "'", "''")
 
 		s.IsDir = d.IsDir()
-		s.Path = filepath.Dir(path) // Handle errors accessing a path}
+		s.Directory = filepath.Dir(path) // Handle errors accessing a path}
 		if len(extension) > 0 {
 			extension = extension[1:]
 		}
@@ -232,7 +232,7 @@ func insertItem(f []models.Finfo) []string {
 			"ext":   "%s",
 			"is_dir": "%v",
 			"size":  "%d",
-			"mod_time": "%s"}'`, strings.ReplaceAll(f[i].Path, "\\", "/"), f[i].Name, f[i].Ext, f[i].IsDir, f[i].Size, f[i].ModTime))
+			"mod_time": "%s"}'`, strings.ReplaceAll(f[i].Directory, "\\", "/"), f[i].Name, f[i].Ext, f[i].IsDir, f[i].Size, f[i].ModTime))
 
 	}
 

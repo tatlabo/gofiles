@@ -61,6 +61,12 @@ type IndexedDirs struct {
 	Error       map[string]string
 }
 
+type User struct {
+	Id       uuid.UUID `db:"id" json:"id"`
+	Username string    `db:"username" json:"username"`
+	Password string    `db:"password" json:"-"`
+}
+
 func (p *IndexedDirs) SetParams(c echo.Context) error {
 
 	// Initialize maps if they're nil
