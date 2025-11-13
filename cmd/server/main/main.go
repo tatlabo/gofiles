@@ -2,11 +2,14 @@ package main
 
 import (
 	"crypto/subtle"
+	"fmt"
 	"gofiles/internal/utils"
 	"html/template"
 	"io"
+	"log"
 
 	"gofiles/internal/handlers"
+	"gofiles/internal/passwords"
 
 	_ "net/http/pprof"
 
@@ -26,18 +29,28 @@ func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Con
 
 func main() {
 
+	certPath := "C:/Users/ice/Documents/go_files_search/certs/localhost+2.pem"
+	keyPath := "C:/Users/ice/Documents/go_files_search/certs/localhost+2-key.pem"
+
 	// Initialize Echo framework
 	e := echo.New()
+
+	//security
+	// e.AutoTLSManager.HostPolicy = autocert.HostWhitelist("<DOMAIN>")
+	// Cache certificates to avoid issues with rate limits (https://letsencrypt.org/docs/rate-limits)
 
 	// Middleware
 	// e.Use(middleware.Logger())
 	e.Use(middleware.CORS())
 	e.Use(middleware.Recover())
 
+	user := passwords.NewUser()
+
 	protected := e.Group("", middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
 		// Be careful to use constant time comparison to prevent timing attacks
-		if subtle.ConstantTimeCompare([]byte(username), []byte("admin")) == 1 &&
-			subtle.ConstantTimeCompare([]byte(password), []byte("secret")) == 1 {
+		if subtle.ConstantTimeCompare([]byte(username), []byte(user.Username)) == 1 &&
+			subtle.ConstantTimeCompare([]byte(password), []byte(user.Password)) == 1 &&
+			subtle.ConstantTimeCompare([]byte("true"), []byte(fmt.Sprintf("%v", user.Active))) == 1 {
 			return true, nil
 		}
 		e.GET("/", handlers.StartPage)
@@ -73,6 +86,7 @@ func main() {
 	protected.DELETE("/dirs/delete/:id", handlers.DeleteDirectory)
 	protected.GET("/test", handlers.TestEndpoint)
 
-	e.Logger.Fatal(e.Start(":80"))
+	log.Println("Starting HTTPS server on https://localhost:8443")
+	e.Logger.Fatal(e.StartTLS(":8443", certPath, keyPath)) // e.Logger.Fatal(e.Start(":80"))
 
 }
