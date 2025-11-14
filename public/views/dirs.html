@@ -162,8 +162,10 @@
     {{ .Text }}
     {{ range .Indexeddirs }}
     <li class="dir-item" id="entry" data-id="{{ .Id }}">
-        <span class="item-id">
+        <span class="item-name">
             {{ .Name }}
+        </span>
+        <span class="item-id">
             {{ .Id }}
         </span>
         <button class="delete" data-id="{{ .Id }}" data-name="{{ .Name }}">x</button>

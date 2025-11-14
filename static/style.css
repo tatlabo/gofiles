@@ -5,6 +5,8 @@
 @import "./theme.light.switch.min.css";
 @import "./theme.dark.switch.min.css";
 
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=Noto+Sans+JP:wght@100..900&display=swap');
+
 
 :root {
   --surface-30: rgb(222, 226, 230, .68);
@@ -46,6 +48,7 @@ html[data-theme="dark"] {
 
 body {
   font-family: var(--font-industrial);
+  font-family: "IBM Plex Sans", sans-serif; 
   font-weight: var(--font-weight-3);
   font-size: var(--size-3)
 }
@@ -462,7 +465,7 @@ nav {
   border-radius: 4px;
   cursor: pointer;
   font-size: 12px;
-  margin-left: 10px;
+  margin: .5em;
   transition: background-color 0.2s;
 }
 
@@ -537,15 +540,20 @@ nav {
 
 .dir-item {
   display: grid;
-  grid-template-columns: 2rem 1fr 2rem 10rem 20rem;
+  grid-template-columns: max-content 1fr max-content min-content max-content max-content;
   column-gap: 1em;
   align-items: center;
 }
 
 .dirs-list li {
   max-inline-size: revert;
+  padding-block: 1em;
 }
 
+
+.dirs-list li:not(:last-child) {
+  border-bottom: 1px solid var(--surface-30);
+}
 
 .dirs-list li::before {
   counter-increment: counter;
@@ -558,9 +566,19 @@ nav {
 .dirs-list {
   counter-reset: counter;
   counter-increment: item;
+  padding-left: 0;
 }
 
 
 time {
   justify-self: end;
+}
+
+.dir-item *:first-child {
+  font-weight: 700;
+}
+
+.dir-item *:nth-child(2),
+.dir-item *:last-child {
+  font-size: var(--size-3);
 }
