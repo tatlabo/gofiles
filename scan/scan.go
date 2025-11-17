@@ -23,7 +23,7 @@ var directoryId uuid.UUID
 //go:embed migrations/*.sql
 var migrations embed.FS
 
-var skipDirectories = []string{".git", "node_modules", "tmp", "temp", ".vscode", ".idea", "vendor", "build", "dist", "__pycache__", ",bin", ".vite", "$SysReset", "$Windows.~WS", "OneDriveTemp", "AppData"}
+var skipDirectories = []string{".git", "node_modules", "tmp", "temp", ".vscode", ".idea", "vendor", "build", "dist", "__pycache__", ",bin", ".vite", "$SysReset", "$Windows.~WS", "OneDriveTemp", "AppData", "Windows", "AppData", ".cargo", ".conda", ".config"}
 var skipFiles = []string{".DS_Store", ".gitignore", ".gitattributes", ".gitmodules", "package-lock.json", "yarn.lock", "dpx", ".gitignore"}
 
 var fileList = []models.Finfo{}
@@ -221,7 +221,7 @@ func writeLog(log *[]string) error {
 	return nil
 }
 
-func insertToPostgres(stmt [][]interface{}) error {
+func insertToPostgres(stmt [][]any) error {
 
 	var query = `INSERT INTO files (directory, name, ext, is_dir, size, mod_time, directory_id) 
 	VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -258,13 +258,13 @@ func insertToPostgres(stmt [][]interface{}) error {
 	return nil
 }
 
-func insertItem(f []models.Finfo) [][]interface{} {
+func insertItem(f []models.Finfo) [][]any {
 
-	params := [][]interface{}{}
+	params := [][]any{}
 
 	for i := range len(f) {
 
-		params = append(params, []interface{}{
+		params = append(params, []any{
 			f[i].Directory,
 			fileList[i].Name,
 			f[i].Ext,

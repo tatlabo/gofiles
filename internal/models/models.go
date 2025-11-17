@@ -20,15 +20,15 @@ var imageFiles = []string{"jpg", "jpeg", "png", "gif", "bmp", "tif", "tiff", "we
 var videoFiles = []string{"mp4", "wav", "mp3", "aif", "aiff"}
 
 type Finfo struct {
-	Id          uuid.UUID    `db:"id" json:"id"`
-	DirectoryId uuid.UUID    `db:"directory_id" json:"directoryId"`
-	Directory   string       `db:"directory" json:"directory"`
-	Name        string       `db:"name" json:"name"`
-	Ext         string       `db:"ext" json:"ext"`
-	IsDir       bool         `db:"is_dir" json:"isDir"`
-	Size        int64        `db:"size" json:"size"`
+	Id          uuid.UUID    `json:"id"`
+	DirectoryId uuid.UUID    `json:"directoryId"`
+	Directory   string       `json:"directory"`
+	Name        string       `json:"name"`
+	Ext         string       `json:"ext"`
+	IsDir       bool         `json:"isDir"`
+	Size        int64        `json:"size"`
 	SizeStr     string       `json:"sizeStr"`
-	ModTime     time.Time    `db:"modTime"`
+	ModTime     time.Time    `json:"modTime"`
 	IsImage     bool         `json:"isImage"`
 	IsText      bool         `json:"isText"`
 	IsVideo     bool         `json:"isVideo"`
