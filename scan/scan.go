@@ -13,6 +13,8 @@ import (
 
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
+
+	"encoding/json"
 )
 
 const outputFile = "output.txt"
@@ -155,6 +157,8 @@ func visit(path string, d fs.DirEntry, err error) error {
 		s.Size = info.Size()
 		s.ModTime = info.ModTime()
 
+		s.DirectoryId = directoryId
+
 		fileList = append(fileList, s)
 	}
 
@@ -225,27 +229,9 @@ func writeLog(log *[]string) error {
 	return nil
 }
 
-func insertToPostgres(stmt [][]any) error {
+func insertToPostgres(flist *[]models.Finfo) error {
 
-	query := `INSERT INTO files (directory_id, data) 
-    VALUES ($7, jsonb_build_object(
-        'directory', $1,
-        'name', $2,
-        'ext', $3,
-        'is_dir', $4,
-        'size', $5,
-        'mod_time', $6
-    ));`
-
-	queryDir := `INSERT INTO files (directory_id, data) 
-    VALUES ($7, jsonb_build_object(
-        'directory', $1,
-        'name', $2,
-        'ext', $3,
-        'is_dir', $4,
-        'size', $5,
-        'mod_time', $6
-    ));`
+	query := `INSERT INTO files (directory_id, data) VALUES ($1, $2);`
 
 	db, err := utils.PgConn()
 	if err != nil {
@@ -259,19 +245,22 @@ func insertToPostgres(stmt [][]any) error {
 	}
 
 	var (
-		s = len(stmt)
+		s = len(*flist)
 		// counter  int
 		// quantity = 100
 	)
 
 	j := 0
-	for index := range stmt {
+	for _, obj := range *flist {
+
+		objJSON := obj.ToJSON()
+		data, _ := json.Marshal(objJSON)
 		j++
 		if j < 5 {
-			fmt.Printf("%v %v", query, stmt[index])
+			fmt.Printf("%v %v %v", query, obj.DirectoryId, obj)
 			fmt.Println()
 		}
-		if _, err := tx.Exec(query, stmt[index]...); err != nil {
+		if _, err := tx.Exec(query, obj.DirectoryId, data); err != nil {
 			tx.Rollback()
 			return fmt.Errorf("error inserting file: %w", err)
 		}
@@ -281,14 +270,7 @@ func insertToPostgres(stmt [][]any) error {
 		return fmt.Errorf("error committing: %w", err)
 	}
 
-	if s == 0 {
-		fmt.Println("No items to insert")
-		os.Exit(1)
-	} else if s < 5 {
-		fmt.Println(stmt)
-	} else {
-		fmt.Println(stmt[s-3:])
-	}
+	fmt.Printf("Inserted %d of %d items\n", len(*flist), s)
 
 	return nil
 }
@@ -345,13 +327,22 @@ func ScanDir(dir string) error {
 		return fmt.Errorf("Error walking through directories: %w", err)
 	}
 
-	stmt := insertItem(fileList)
-	fmt.Println("Count of items: ", len(stmt))
+	// stmt := insertItem(fileList)
+	// fmt.Println("Count of items: ", len(stmt))
 
-	if err := insertToPostgres(stmt); err != nil {
+	fmt.Printf("%#v", fileList[:5])
+
+	for i := 0; i < 5; i++ {
+		obj := fileList[i]
+		m, err := json.Marshal(obj)
+
+		fmt.Println(string(m), err)
+	}
+
+	if err := insertToPostgres(&fileList); err != nil {
 		return fmt.Errorf("Error for insertToPostgres: %w", err)
 	} else {
-		fmt.Printf("There was %d items inserted\n", len(stmt))
+		fmt.Printf("There was %d items inserted\n", len(fileList))
 	}
 
 	// if err := SqlMigrations("migrations/002_initial.sql"); err != nil {

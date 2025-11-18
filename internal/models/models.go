@@ -20,7 +20,7 @@ var imageFiles = []string{"jpg", "jpeg", "png", "gif", "bmp", "tif", "tiff", "we
 var videoFiles = []string{"mp4", "wav", "mp3", "aif", "aiff"}
 
 type Finfo struct {
-	Id          uuid.UUID    `json:"id"`
+	Id          uuid.UUID    `db:"id"`
 	DirectoryId uuid.UUID    `json:"directoryId"`
 	Directory   string       `json:"directory"`
 	Name        string       `json:"name"`
@@ -35,6 +35,27 @@ type Finfo struct {
 	Link        string       `json:"link"`
 	Src         template.URL `json:"src"`
 	TsRank      float64      `db:"ts_rank" json:"tsRank"` // For full-text search ranking
+}
+
+type FinfoJSON struct {
+	Directory string    `json:"directory"`
+	Name      string    `json:"name"`
+	Ext       string    `json:"ext"`
+	IsDir     bool      `json:"isDir"`
+	Size      int64     `json:"size"`
+	ModTime   time.Time `json:"modTime"`
+}
+
+// ToJSON converts Finfo to FinfoJSON
+func (f *Finfo) ToJSON() FinfoJSON {
+	return FinfoJSON{
+		Directory: f.Directory,
+		Name:      f.Name,
+		Ext:       f.Ext,
+		IsDir:     f.IsDir,
+		Size:      f.Size,
+		ModTime:   f.ModTime,
+	}
 }
 
 type FinfoDetail struct {
