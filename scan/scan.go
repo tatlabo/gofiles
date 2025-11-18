@@ -1,4 +1,4 @@
-package scan
+package main
 
 import (
 	"fmt"
@@ -78,9 +78,12 @@ func VanillaSqlReturn(q string, param string) error {
 	tx, e := db.Begin()
 	if e != nil {
 		return e
+
 	}
-	if e := tx.QueryRow(fmt.Sprintf(`%s`, q), param).Scan(&directoryId); e != nil {
-		return e
+	err := tx.QueryRow(q, param).Scan(&directoryId)
+	if err != nil {
+		tx.Rollback() // Rollback on error
+		return fmt.Errorf("failed to insert and scan: %w", err)
 	}
 
 	return tx.Commit()
@@ -139,6 +142,7 @@ func visit(path string, d fs.DirEntry, err error) error {
 
 		s.IsDir = d.IsDir()
 		s.Directory = filepath.Dir(path) // Handle errors accessing a path}
+		s.Directory = strings.ReplaceAll(s.Directory, "\\", "/")
 		if len(extension) > 0 {
 			extension = extension[1:]
 		}
@@ -170,7 +174,7 @@ func main() {
 		c := 2
 		path = os.Args[1]
 		path = strings.TrimSpace(path)
-		path = strings.ReplaceAll(path, "/", "\\")
+		path = strings.ReplaceAll(path, "\\", "/")
 		directory = path
 		if _, err := os.ReadDir(path); err != nil {
 			fmt.Fprintf(os.Stderr, "Main case %d invalid path: %v\n", c, err)
@@ -223,9 +227,25 @@ func writeLog(log *[]string) error {
 
 func insertToPostgres(stmt [][]any) error {
 
-	var query = `INSERT INTO files (directory, name, ext, is_dir, size, mod_time, directory_id) 
-	VALUES ($1, $2, $3, $4, $5, $6, $7)
-	ON CONFLICT (directory, name, ext, is_dir) DO UPDATE SET size = EXCLUDED.size, mod_time = EXCLUDED.mod_time;`
+	query := `INSERT INTO files (directory_id, data) 
+    VALUES ($7, jsonb_build_object(
+        'directory', $1,
+        'name', $2,
+        'ext', $3,
+        'is_dir', $4,
+        'size', $5,
+        'mod_time', $6
+    ));`
+
+	queryDir := `INSERT INTO files (directory_id, data) 
+    VALUES ($7, jsonb_build_object(
+        'directory', $1,
+        'name', $2,
+        'ext', $3,
+        'is_dir', $4,
+        'size', $5,
+        'mod_time', $6
+    ));`
 
 	db, err := utils.PgConn()
 	if err != nil {
@@ -233,17 +253,32 @@ func insertToPostgres(stmt [][]any) error {
 	}
 	defer db.Close()
 
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
 	var (
 		s = len(stmt)
 		// counter  int
 		// quantity = 100
 	)
 
-	for _, p := range stmt {
-		_, err := db.Exec(query, p...)
-		if err != nil {
-			// handle error
+	j := 0
+	for index := range stmt {
+		j++
+		if j < 5 {
+			fmt.Printf("%v %v", query, stmt[index])
+			fmt.Println()
 		}
+		if _, err := tx.Exec(query, stmt[index]...); err != nil {
+			tx.Rollback()
+			return fmt.Errorf("error inserting file: %w", err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("error committing: %w", err)
 	}
 
 	if s == 0 {
@@ -266,7 +301,7 @@ func insertItem(f []models.Finfo) [][]any {
 
 		params = append(params, []any{
 			f[i].Directory,
-			fileList[i].Name,
+			f[i].Name,
 			f[i].Ext,
 			f[i].IsDir,
 			f[i].Size,
@@ -281,9 +316,7 @@ func insertItem(f []models.Finfo) [][]any {
 
 func ScanDir(dir string) error {
 
-	var sqlInsertReturn = `INSERT INTO directory (name)
-	VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id;`
-
+	var sqlInsertReturn = `INSERT INTO directory (json) VALUES ($1::jsonb) RETURNING id;`
 	var path string
 
 	path = strings.TrimSpace(dir)
@@ -293,22 +326,25 @@ func ScanDir(dir string) error {
 
 	// create tables
 	// use init/table_init.go SqlMigrations
-	if err := SqlMigrations("migrations/001_initial.sql"); err != nil {
-		return fmt.Errorf("Error: migrations/001_initial.sql creating tables: %w", err)
-	}
+	// if err := SqlMigrations("migrations/001_initial.sql"); err != nil {
+	// 	return fmt.Errorf("Error: migrations/001_initial.sql creating tables: %w", err)
+	// }
 
-	if err := VanillaSqlReturn(sqlInsertReturn, fmt.Sprintf("%s", path)); err != nil {
+	var pathJson = `{"path": "` + path + `"}`
+
+	fmt.Println(sqlInsertReturn, fmt.Sprintf("%s", pathJson))
+
+	if err := VanillaSqlReturn(sqlInsertReturn, pathJson); err != nil {
 		return fmt.Errorf("Error inserting and/or returning value into directory table: %w", err)
 	}
 
-	// walk through the directories
+	// visit function = main scan logic
 	err := filepath.WalkDir(path, visit)
 	if err != nil {
 		writeLog(&log)
 		return fmt.Errorf("Error walking through directories: %w", err)
 	}
 
-	// insert into files
 	stmt := insertItem(fileList)
 	fmt.Println("Count of items: ", len(stmt))
 
@@ -318,19 +354,17 @@ func ScanDir(dir string) error {
 		fmt.Printf("There was %d items inserted\n", len(stmt))
 	}
 
-	// update ext, keywords and ext_id
-	if err := SqlMigrations("migrations/002_initial.sql"); err != nil {
-		return fmt.Errorf("Error for: migrations/002_initial.sql: update ext, keywords and ext_id: %w", err)
-	}
+	// if err := SqlMigrations("migrations/002_initial.sql"); err != nil {
+	// 	return fmt.Errorf("Error for: migrations/002_initial.sql: update ext, keywords and ext_id: %w", err)
+	// }
 
-	// update files.ext_id
-	if err := SqlMigrations("migrations/003_initial.sql"); err != nil {
-		return fmt.Errorf("Error for: in migrations/003_initial.sql update files.ext_id: %w", err)
-	}
+	// if err := SqlMigrations("migrations/003_initial.sql"); err != nil {
+	// 	return fmt.Errorf("Error for: in migrations/003_initial.sql update files.ext_id: %w", err)
+	// }
 
-	if err := insertIntoDirs(path); err != nil {
-		return fmt.Errorf("Error inserting into directory: %w", err)
-	}
+	// if err := insertIntoDirs(path); err != nil {
+	// 	return fmt.Errorf("Error inserting into directory: %w", err)
+	// }
 
 	return nil
 
