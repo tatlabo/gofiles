@@ -313,6 +313,13 @@ func (s *SearchParams) QueryStmt() error {
 		s.Placeholders = []any{s.Placeholders[0], s.Ext, s.Placeholders[1], s.Placeholders[2]}
 	}
 
+	s.Stmt = fmt.Sprintf(`
+	SELECT id, data, ts_rank_cd( to_tsvector(%[1]s, keywords), websearch_to_tsquery(%[1]s, $1) ) as ts_rank
+	FROM files
+	WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords)
+	ORDER BY ts_rank DESC
+	LIMIT $2 OFFSET $3;`, "polish")
+
 	return nil
 
 }

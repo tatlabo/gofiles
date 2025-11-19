@@ -18,7 +18,7 @@ type Stmt []string
 type Filename map[int]string
 type FileNames []Filename
 
-const connStr = "user=golang password=golang dbname=go host=localhost sslmode=disable"
+const connStr = "user=golang password=golang dbname=json host=localhost sslmode=disable"
 
 var stmt = Stmt{}
 var filenameList = FileNames{}

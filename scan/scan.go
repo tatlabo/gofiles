@@ -5,6 +5,7 @@ import (
 	"gofiles/internal/models"
 	"gofiles/internal/utils"
 	"io/fs"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -30,7 +31,7 @@ var skipFiles = []string{".DS_Store", ".gitignore", ".gitattributes", ".gitmodul
 
 var fileList = []models.Finfo{}
 
-var log = []string{}
+var logMessage = []string{}
 
 func CommitSql(sql []string) error {
 
@@ -115,7 +116,7 @@ func VanillaSql(xs []byte) error {
 func visit(path string, d fs.DirEntry, err error) error {
 
 	if err != nil {
-		log = append(log, fmt.Sprintf("Error accessing path %s: %v", path, err))
+		logMessage = append(logMessage, fmt.Sprintf("Error accessing path %s: %v", path, err))
 		return nil // Handle errors accessing a path
 	} else {
 		// Check if the directory is in the skip list
@@ -134,7 +135,7 @@ func visit(path string, d fs.DirEntry, err error) error {
 		}
 
 		if extension == "" && !d.IsDir() {
-			log = append(log, fmt.Sprintf("File has no extension: %s\n", path))
+			logMessage = append(logMessage, fmt.Sprintf("File has no extension: %s\n", path))
 			return nil
 		}
 
@@ -213,16 +214,16 @@ func insertIntoDirs(path string) error {
 	return nil
 }
 
-func writeLog(log *[]string) error {
+func writelogMessage(logMessage *[]string) error {
 
-	f, err := os.Create("log.txt")
+	f, err := os.Create("logMessage .txt")
 	if err != nil {
 		return err
 	}
 
 	defer f.Close()
 
-	if _, err := fmt.Fprintf(f, "%v\n", log); err != nil {
+	if _, err := fmt.Fprintf(f, "%v\n", logMessage); err != nil {
 		return err
 	}
 
@@ -320,24 +321,16 @@ func ScanDir(dir string) error {
 		return fmt.Errorf("Error inserting and/or returning value into directory table: %w", err)
 	}
 
-	// visit function = main scan logic
+	// visit function = main scan logMessage ic
 	err := filepath.WalkDir(path, visit)
 	if err != nil {
-		writeLog(&log)
+		writelogMessage(&logMessage)
 		return fmt.Errorf("Error walking through directories: %w", err)
 	}
 
-	// stmt := insertItem(fileList)
-	// fmt.Println("Count of items: ", len(stmt))
-
-	fmt.Printf("%#v", fileList[:5])
-
-	for i := 0; i < 5; i++ {
-		obj := fileList[i]
-		m, err := json.Marshal(obj)
-
-		fmt.Println(string(m), err)
-	}
+	log.Println("There is: ")
+	log.Print(len(fileList))
+	log.Printf("in the filelist, parent directory is: %s", directory)
 
 	if err := insertToPostgres(&fileList); err != nil {
 		return fmt.Errorf("Error for insertToPostgres: %w", err)
