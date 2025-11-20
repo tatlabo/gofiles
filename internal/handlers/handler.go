@@ -87,6 +87,8 @@ func findInDb(c echo.Context) (models.IndexData, error) {
 
 	rows, err := conn.Query(searchParams.Stmt, searchParams.Placeholders...)
 
+	log.Print(searchParams.Stmt, searchParams.Placeholders)
+
 	if err != nil {
 		log.Println("Error running EXPLAIN ANALYZE:", err)
 		// handle error

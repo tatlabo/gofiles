@@ -1,15 +1,12 @@
 package main
 
 import (
-	"crypto/subtle"
-	"fmt"
 	"gofiles/internal/utils"
 	"html/template"
 	"io"
 	"log"
 
 	"gofiles/internal/handlers"
-	"gofiles/internal/passwords"
 
 	_ "net/http/pprof"
 
@@ -44,7 +41,7 @@ func main() {
 	e.Use(middleware.CORS())
 	e.Use(middleware.Recover())
 
-	user := passwords.NewUser()
+	// user := passwords.NewUser()
 
 	e.Static("/static", "static")
 	e.Static("/media", "media")
@@ -68,22 +65,22 @@ func main() {
 	e.GET("/json/search", handlers.ResponseJson)
 	e.GET("/append", handlers.ResponseAppend)
 
-	protected := e.Group("", middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
-		// Be careful to use constant time comparison to prevent timing attacks
-		if subtle.ConstantTimeCompare([]byte(username), []byte(user.Username)) == 1 &&
-			subtle.ConstantTimeCompare([]byte(password), []byte(user.Password)) == 1 &&
-			subtle.ConstantTimeCompare([]byte("true"), []byte(fmt.Sprintf("%v", user.Active))) == 1 {
-			return true, nil
-		}
-		e.GET("/", handlers.StartPage)
-		return false, nil
-	}))
+	// protected := e.Group("", middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
+	// 	// Be careful to use constant time comparison to prevent timing attacks
+	// 	if subtle.ConstantTimeCompare([]byte(username), []byte(user.Username)) == 1 &&
+	// 		subtle.ConstantTimeCompare([]byte(password), []byte(user.Password)) == 1 &&
+	// 		subtle.ConstantTimeCompare([]byte("true"), []byte(fmt.Sprintf("%v", user.Active))) == 1 {
+	// 		return true, nil
+	// 	}
+	// 	e.GET("/", handlers.StartPage)
+	// 	return false, nil
+	// }))
 
-	protected.GET("/dirs", handlers.AddPath)
-	protected.POST("/dirs", handlers.AddPath)
-	protected.POST("/scan", handlers.ScanDirectory)
-	protected.DELETE("/dirs/delete/:id", handlers.DeleteDirectory)
-	protected.GET("/test", handlers.TestEndpoint)
+	// protected.GET("/dirs", handlers.AddPath)
+	// protected.POST("/dirs", handlers.AddPath)
+	// protected.POST("/scan", handlers.ScanDirectory)
+	// protected.DELETE("/dirs/delete/:id", handlers.DeleteDirectory)
+	// protected.GET("/test", handlers.TestEndpoint)
 
 	// Start HTTPS server
 	log.Println("Starting HTTPS server on https://localhost:8443")

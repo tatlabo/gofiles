@@ -224,14 +224,14 @@ func (s *SearchParams) QueryStmt() error {
 		switcher += 1
 	}
 
-	if slices.Contains(isOn, s.Dir) {
-		switcher += 100
-	}
+	// if slices.Contains(isOn, s.Dir) {
+	// 	switcher += 100
+	// }
 
-	language := "'polish'"
-	if len(s.Keywords) > 0 {
-		language = "'english'"
-	}
+	// language := "'polish'"
+	// if len(s.Keywords) > 0 {
+	// 	language = "'english'"
+	// }
 
 	s.QueryParam = s.Params
 
@@ -244,55 +244,64 @@ func (s *SearchParams) QueryStmt() error {
 		s.Ext = parts[1]
 	}
 
-	switch switcher {
-	case 0:
+	s.Stmt = fmt.Sprintf(`
+	SELECT id, data, ts_rank_cd( to_tsvector(%[1]s, keywords), websearch_to_tsquery(%[1]s, $1) ) as ts_rank
+	FROM files
+	WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords)
+	ORDER BY ts_rank DESC
+	LIMIT $2 OFFSET $3;`, "polish")
 
-		// column = keywords
-		s.Stmt = fmt.Sprintf(`
-		SELECT id, name, ext, is_dir, directory, size, mod_time,
-		ts_rank_cd( to_tsvector(%[1]s, keywords), websearch_to_tsquery(%[1]s, $1) ) as ts_rank
-		FROM files
-		WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords)
-		ORDER BY ts_rank DESC
-		LIMIT $2 OFFSET $3;`, language)
+	return nil
 
-		s.CounterStmt = fmt.Sprintf(`
-		SELECT COUNT(id) FROM files
-		WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords);`, language)
+	// switch switcher {
+	// case 0:
 
-	case 1:
-		s.QueryParam = "^" + s.QueryParam
-		// column = "name"
-		s.Stmt = `
-		SELECT id, name, ext, is_dir, directory, size, mod_time FROM files
-		WHERE LOWER(name) ~ LOWER($1)
-		ORDER BY mod_time DESC LIMIT $2 OFFSET $3;`
+	// 	// column = keywords
+	// 	s.Stmt = fmt.Sprintf(`
+	// 	SELECT id, name, ext, is_dir, directory, size, mod_time,
+	// 	ts_rank_cd( to_tsvector(%[1]s, keywords), websearch_to_tsquery(%[1]s, $1) ) as ts_rank
+	// 	FROM files
+	// 	WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords)
+	// 	ORDER BY ts_rank DESC
+	// 	LIMIT $2 OFFSET $3;`, language)
 
-		s.CounterStmt = `SELECT COUNT(*) FROM files WHERE LOWER(name) ~ LOWER($1);`
-	case 100:
+	// 	s.CounterStmt = fmt.Sprintf(`
+	// 	SELECT COUNT(id) FROM files
+	// 	WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords);`, language)
 
-		// column = "files.keywords"
+	// case 1:
+	// 	s.QueryParam = "^" + s.QueryParam
+	// 	// column = "name"
+	// 	s.Stmt = `
+	// 	SELECT id, name, ext, is_dir, directory, size, mod_time FROM files
+	// 	WHERE LOWER(name) ~ LOWER($1)
+	// 	ORDER BY mod_time DESC LIMIT $2 OFFSET $3;`
 
-		s.Stmt = fmt.Sprintf(`
-		SELECT id, name, ext, is_dir, directory, size, mod_time FROM files
-		WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, files.keywords)
-		AND is_dir=true
-		ORDER BY mod_time DESC LIMIT $2 OFFSET $3;`, language)
+	// 	s.CounterStmt = `SELECT COUNT(*) FROM files WHERE LOWER(name) ~ LOWER($1);`
+	// case 100:
 
-		s.CounterStmt = fmt.Sprintf(`
-		SELECT COUNT(*) FROM files 
-		WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, files.keywords)
-		AND is_dir=true;`, language)
+	// 	// column = "files.keywords"
 
-	case 101:
-		s.QueryParam = "^" + s.QueryParam
+	// 	s.Stmt = fmt.Sprintf(`
+	// 	SELECT id, name, ext, is_dir, directory, size, mod_time FROM files
+	// 	WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, files.keywords)
+	// 	AND is_dir=true
+	// 	ORDER BY mod_time DESC LIMIT $2 OFFSET $3;`, language)
 
-		s.Stmt = `
-		SELECT id, name, ext, is_dir, directory, size, mod_time FROM files
-		WHERE LOWER(name) ~ LOWER($1) AND is_dir=true
-		ORDER BY mod_time DESC LIMIT $2 OFFSET $3;`
-		s.CounterStmt = `SELECT COUNT(*) FROM files WHERE LOWER(name) ~ LOWER($1) AND is_dir=true;`
-	}
+	// 	s.CounterStmt = fmt.Sprintf(`
+	// 	SELECT COUNT(*) FROM files
+	// 	WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, files.keywords)
+	// 	AND is_dir=true;`, language)
+
+	// case 101:
+	// 	s.QueryParam = "^" + s.QueryParam
+
+	// 	s.Stmt = `
+	// 	SELECT id, name, ext, is_dir, directory, size, mod_time FROM files
+	// 	WHERE LOWER(name) ~ LOWER($1) AND is_dir=true
+	// 	ORDER BY mod_time DESC LIMIT $2 OFFSET $3;`
+	// 	s.CounterStmt = `SELECT COUNT(*) FROM files WHERE LOWER(name) ~ LOWER($1) AND is_dir=true;`
+	// }
 
 	s.Placeholders = []any{s.QueryParam, s.Limit, s.Offset}
 
@@ -312,15 +321,6 @@ func (s *SearchParams) QueryStmt() error {
 		AND ext.ext = $2;`, language)
 		s.Placeholders = []any{s.Placeholders[0], s.Ext, s.Placeholders[1], s.Placeholders[2]}
 	}
-
-	s.Stmt = fmt.Sprintf(`
-	SELECT id, data, ts_rank_cd( to_tsvector(%[1]s, keywords), websearch_to_tsquery(%[1]s, $1) ) as ts_rank
-	FROM files
-	WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords)
-	ORDER BY ts_rank DESC
-	LIMIT $2 OFFSET $3;`, "polish")
-
-	return nil
 
 }
 
