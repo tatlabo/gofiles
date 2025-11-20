@@ -228,7 +228,7 @@ func (s *SearchParams) QueryStmt() error {
 	// 	switcher += 100
 	// }
 
-	// language := "'polish'"
+	language := "'polish'"
 	// if len(s.Keywords) > 0 {
 	// 	language = "'english'"
 	// }
@@ -236,7 +236,6 @@ func (s *SearchParams) QueryStmt() error {
 	s.QueryParam = s.Params
 
 	if strings.Contains(s.Params, ".") {
-		// Regex: split on dot, comma, semicolon, or any whitespace
 		re := regexp.MustCompile(`[.,;]+`)
 		parts := re.Split(s.Params, -1)
 		s.QueryParam = parts[0]
@@ -321,7 +320,7 @@ func (s *SearchParams) QueryStmt() error {
 		AND ext.ext = $2;`, language)
 		s.Placeholders = []any{s.Placeholders[0], s.Ext, s.Placeholders[1], s.Placeholders[2]}
 	}
-
+	return nil
 }
 
 func (sp *SearchParams) SetParams(c echo.Context) error {

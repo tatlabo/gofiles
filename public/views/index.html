@@ -1,28 +1,60 @@
-{{ define "index"}}
 <!DOCTYPE html>
+<html lang="en">
 
-{{ template "header" .HeaderTitle }}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ .Title }}</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/main.js" defer></script>
+    <script src="/static/utils.js" defer></script>
 
 <body>
-    <nav  class="navbar">
+    <!-- {{ range .Body }}
+        <p>{{ . }}</p>
+    {{ end }} -->
+    <nav class="navbar">
         <button id="theme-toggle">switch theme</button>
     </nav>
-    {{ if equals .Params.NotFound "true" }}
-    <main class="search-page column gap-y-l">
-        {{ if notequals .Params.StartPage "true" }}
-        <p class="">Nothing was found: <strong>{{ .Params.Name }}</strong></p>
-        {{ end }}
-        {{ template "form" .Params }}
-        <!-- <main class="startpage">
-        </main> -->
-    </main>
-    {{ else }}
-    
     <main class="main">
-        <article id="fileList" class="grid-container" data-counter="{{ .Counter }}" data-name="{{ .Params.Name }}"
-            data-offset="{{ .Params.Offset }}">
+        <article id="fileList" class="grid-container">
+            <form action="/search" method="POST" class="form flex column gap-3" id="search-form">
+                <input class="" type="text" id="name" name="name" required placeholder="search">
+                <div>
+        </article>
 
-            {{ template "form" .Params }}
+        </div>
+        <button class="primary" type="submit" id="submit">Submit</button>
+        </form>
+        <article id="fileList" class="grid-container">
+
+            {{ range .Body }}
+            <p>{{ . }}</p>
+            {{ end }}
+
+
+            {{ if .ListOfItems }}
+            {{ range .ListOfItems }}    
+            <p>{{ .Name }}</p>
+            {{ end }}
+            {{ end }}
+            <!-- <form>
+            <label for="like" class="">
+                <input type="checkbox" id="like" name="like"/>
+                Like 
+            </label class="">
+            <label for="dir">
+                <input type="checkbox" id="dir" name="dir"/>
+                Dir
+            </label>
+            <label for="keywords">
+                <input type="checkbox" id="keywords" name="keywords"/>
+                Keywords
+            </label>
+            </div>
+            <button class="primary" type="submit" id="submit">Submit</button>
+        </form> -->
+
 
             <ul id="list-headers" class="file-list headers">
                 <li id="sort-name" data-sort-type="name" data-ascending="true">name</li>
@@ -31,131 +63,18 @@
             </ul>
             <!-- <p>{{ .Params }}</p> -->
             <ol id="list" class="file-list" type="1">
-                {{ template "list" . }}
+
             </ol>
             <div id="button-container" class="button-container">
                 <button class="primary" type="button"
                     hx-get="/append?name={{ .Params.Name }}&like={{ .Params.Like }}&limit={{ .Params.Limit }}&offset={{ .Params.Limit }}&dir={{ .Params.Dir }}&keywords={{ .Params.Keywords }}"
-                    hx-target="#list" hx-swap="beforeend" hx-boost="true" hx-trigger="click" id="next">There is {{
-                    .Counter }} results.
+                    hx-target="#list" hx-swap="beforeend" hx-boost="true" hx-trigger="click" id="next">
                 </button>
             </div>
         </article>
     </main>
 
-    <article class="preview-wrapper" id="preview-section">
-        <section class="preview">
-            <button type="button" class="primary close-btn" id="hidePreview" onClick="() => hidePreview()">x</button>
-            {{ template "preview-content" . }}
-        </section>
-    </article>
-    {{ end }}
-
-    <script>
-
-
-
-        const previewSectionEl = document.getElementById("preview-section");
-        const fileListEl = document.getElementById("fileList");
-        previewSectionEl.style.display = "none";
-
-
-        document.addEventListener("DOMContentLoaded", function () {
-
-
-            const nextBtn = document.getElementById("next");
-            const list = document.getElementById("list");
-            const limit = parseInt("{{ .Params.Limit }}") || 10;
-            let offset = limit
-            const nameParam = "{{ .Params.Name }}";
-            const buttonContainer = document.getElementById("button-container");
-            const counter = parseInt("{{ .Counter }}") || 0;
-
-
-            if (counter <= limit && nextBtn) {
-                nextBtn.disabled = true; // Disable the button
-                nextBtn.innerHTML = `There is ${counter} results`// Update button text
-            }
-
-            if (buttonContainer) {
-
-                buttonContainer.addEventListener("click", function (event) {
-
-                    offset += limit
-
-                    // let like = `{{ .Params.Like }}` === `on` ? true : false
-                    // let dir = `{{ .Params.Dir }}` === `on` ? true : false
-
-
-                    let jsonURL = `/append?name=${nameParam}&limit=${limit}&offset=${offset}`
-
-
-                    if ("{{ .Params.Dir }}" === "on") {
-                        jsonURL += `&dir=on`;
-                    }
-
-                    if ("{{ .Params.Like }}" === "on") {
-                        jsonURL += `&like=on`;
-                    }
-
-                    if ("{{ .Params.Keywords }}" === "on") {
-                        jsonURL += `&keywords=on`;
-                    }
-
-                    console.log("jsonURL", jsonURL)
-
-                    nextBtn.innerHTML = `There is ${counter} results`;
-
-                    nextBtn.setAttribute("hx-get", jsonURL);
-
-                    if (offset >= counter) {
-                        nextBtn.disabled = true; // Disable the button
-                        nextBtn.innerHTML = `There is ${counter} results` // Update button text
-                    }
-                    htmx.process(nextBtn)
-
-                })
-            }
-
-
-
-
-            let listContainer = document.getElementById("list"); // The parent container of the list items
-            if (listContainer) {
-                let listItems = Array.from(listContainer.querySelectorAll("li.item-list")); // Get all list items
-                const sortObject = {
-                    name: true,
-                    size: true,
-                    date: true
-                };
-                let nameAsc = true; // Flag for ascending/descending order
-                let sizeAsc = true; // Flag for ascending/descending order
-                let dateAsc = true; // Flag for ascending/descending order
-
-                document.getElementById("sort-size").addEventListener("click", (event) => handleSortClick(event))
-                document.getElementById("sort-name").addEventListener("click", (event) => handleSortClick(event))
-                document.getElementById("sort-date").addEventListener("click", (event) => handleSortClick(event))
-            }
-
-
-
-
-
-
-
-
-        })
-
-    </script>
 
 </body>
 
 </html>
-{{ end }}
-
-
-<!-- {{ block "preview-content" . }}
-<div id="preview">
-    {{ .Text | html }}
-</div>
-{{ end }} -->

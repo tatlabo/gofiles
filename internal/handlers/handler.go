@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"gofiles/chroma"
 	"gofiles/internal/models"
@@ -12,6 +13,8 @@ import (
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/labstack/echo/v4"
 )
@@ -56,6 +59,119 @@ func SearchInDb(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Error rendering template"+fmt.Sprint(err))
 	}
 	return nil
+}
+
+type Template struct {
+	templates *template.Template
+}
+
+func (t *Template) Render(w io.Writer, name string, data any) error {
+	return t.templates.ExecuteTemplate(w, name, data)
+}
+
+type IndexData struct {
+	Title       string
+	Body        []string
+	ListOfItems []models.FinfoJSON
+}
+
+func HandleJSON(w http.ResponseWriter, r *http.Request) {
+
+	tmpl := Template{}
+	idxData := IndexData{}
+	tmpl.templates = template.Must(template.New("").ParseGlob("public/views/*.html"))
+
+	switch r.Method {
+	case http.MethodGet:
+		{
+			idxData.Title = "My Title"
+			idxData.Body = []string{"This is the body", "Second Line"}
+			tmpl.Render(w, "index.html", idxData)
+		}
+	case http.MethodPost:
+		{
+			r.ParseForm()
+			keywords := r.FormValue("name")
+
+			data, err := GetSearchList(keywords)
+
+			fmt.Println(idxData.ListOfItems)
+			if err != nil {
+				fmt.Println("Error getting search list: ", err)
+				tmpl.Render(w, "index.html", IndexData{Title: "My Title", Body: []string{"Error retrieving search results"}})
+				return
+			}
+
+			// rawData := []string{}
+			// for _, item := range data {
+			// 	rawData = append(rawData, fmt.Sprintf("%s/%s.%s", item.Directory, item.Name, item.Ext))
+			// }
+
+			if keywords != "" {
+				tmpl.Render(w, "index.html", IndexData{Title: "My Title", Body: []string{"data"}, ListOfItems: data})
+			} else {
+				tmpl.Render(w, "index.html", IndexData{Title: "My Title", Body: []string{"This is the body", "Second Line"}})
+			}
+		}
+	}
+}
+
+type fileData struct {
+	Finfo models.Finfo `json:"finfo"`
+	Id    string       `json:"id"`
+	Error string       `json:"error"`
+}
+
+func GetSearchList(name string) (fjson []models.FinfoJSON, err error) {
+
+	stmt := fmt.Sprintf(`
+	SELECT id, data, ts_rank_cd( to_tsvector(%[1]s, keywords), websearch_to_tsquery(%[1]s, $1) ) as ts_rank
+	FROM files
+	WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords)
+	ORDER BY ts_rank DESC
+	LIMIT $2 OFFSET $3;`, "'polish'")
+
+	fmt.Printf("%s %s %d %d \n", stmt, name, 10, 0)
+	fmt.Println()
+
+	conn, err := utils.PgConn()
+	if err != nil {
+		return fjson, err
+	}
+	defer conn.Close()
+
+	rows, err := conn.Query(stmt, name, 10, 0)
+	if err != nil {
+		return fjson, err
+	}
+
+	var tsRank float64
+	data := models.FinfoJSON{}
+
+	for rows.Next() {
+
+		var id uuid.UUID
+		rawData := []byte{}
+
+		err := rows.Scan(
+			&id,
+			&rawData,
+			&tsRank,
+		)
+
+		err = json.Unmarshal(rawData, &data)
+		if err != nil {
+			return []models.FinfoJSON{}, err
+		}
+		// err = json.Unmarshal(id, &dataJ.Id)
+		if err != nil {
+			return fjson, err
+		}
+
+		fjson = append(fjson, data)
+	}
+
+	return fjson, nil
 }
 
 func findInDb(c echo.Context) (models.IndexData, error) {

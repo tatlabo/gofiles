@@ -1,17 +1,12 @@
 package main
 
 import (
-	"gofiles/internal/utils"
+	"gofiles/internal/handlers"
 	"html/template"
 	"io"
 	"log"
-
-	"gofiles/internal/handlers"
-
+	"net/http"
 	_ "net/http/pprof"
-
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 )
 
 var limit int
@@ -20,71 +15,84 @@ type Template struct {
 	templates *template.Template
 }
 
-func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
+func (t *Template) Render(w io.Writer, name string, data any) error {
 	return t.templates.ExecuteTemplate(w, name, data)
 }
 
 func main() {
 
-	certPath := "C:/Users/adam/gofiles/certs/localhost+2.pem"
-	keyPath := "C:/Users/adam/gofiles/certs/localhost+2-key.pem"
+	// Serve static files (CSS, JS, images)
+	fs := http.FileServer(http.Dir("static"))
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
+
+	h2 := func(w http.ResponseWriter, _ *http.Request) {
+		io.WriteString(w, "Hello from a HandleFunc #2!\n")
+	}
+
+	type IndexData struct {
+		Title string
+		Body  []string
+	}
+
+	// handleJSON := func(w http.ResponseWriter, r *http.Request) {
+	// 	switch r.Method {
+	// 	case http.MethodGet:
+	// 		{
+	// 			tmpl.Render(w, "index.html", IndexData{Title: "My Title", Body: []string{"This is the body", "Second Line"}})
+	// 		}
+	// 	case http.MethodPost:
+	// 		{
+	// 			r.ParseForm()
+	// 			name := r.FormValue("name")
+
+	// 			if name != "" {
+	// 				tmpl.Render(w, "index.html", IndexData{Title: "My Title", Body: []string{"You searched for: " + name}})
+	// 			} else {
+	// 				tmpl.Render(w, "index.html", IndexData{Title: "My Title", Body: []string{"This is the body", "Second Line"}})
+	// 			}
+	// 		}
+	// 	}
+
+	// }
+
+	http.HandleFunc("/endpoint", h2)
+	http.HandleFunc("/search", handlers.HandleJSON)
+
+	log.Fatal(http.ListenAndServe(":80", nil))
+
+	// certPath := "C:/Users/adam/gofiles/certs/localhost+2.pem"
+	// keyPath := "C:/Users/adam/gofiles/certs/localhost+2-key.pem"
 
 	// Initialize Echo framework
-	e := echo.New()
+	// e := echo.New()
 
-	//security
-	// e.AutoTLSManager.HostPolicy = autocert.HostWhitelist("<DOMAIN>")
-	// Cache certificates to avoid issues with rate limits (https://letsencrypt.org/docs/rate-limits)
+	// e.Use(middleware.CORS())
+	// e.Use(middleware.Recover())
 
-	// Middleware
-	// e.Use(middleware.Logger())
-	e.Use(middleware.CORS())
-	e.Use(middleware.Recover())
+	// e.Static("/static", "static")
+	// e.Static("/media", "media")
 
-	// user := passwords.NewUser()
+	// e.Renderer = &Template{
+	// 	templates: template.Must(template.New("").Funcs(template.FuncMap{
+	// 		"formatDate": utils.FormatDate,
+	// 		"not":        utils.Not,
+	// 		"equals":     utils.Equals,
+	// 		"notequals":  utils.Notequals,
+	// 	}).ParseGlob("public/views/*.html")),
+	// }
 
-	e.Static("/static", "static")
-	e.Static("/media", "media")
+	// e.GET("/", handlers.StartPage)
+	// e.GET("/search", handlers.SearchInDb)
+	// e.POST("/search", handlers.SearchInDb)
+	// e.GET("/detail/:id", handlers.DetailById)
+	// e.GET("/details/:id", handlers.DetailById)
+	// e.GET("/preview/:id", handlers.PreviewById)
+	// e.GET("/preview/image/:id", handlers.PreviewImage)
+	// e.GET("/json/search", handlers.ResponseJson)
+	// e.GET("/append", handlers.ResponseAppend)
 
-	e.Renderer = &Template{
-		templates: template.Must(template.New("").Funcs(template.FuncMap{
-			"formatDate": utils.FormatDate, // Register the custom function
-			"not":        utils.Not,
-			"equals":     utils.Equals,
-			"notequals":  utils.Notequals,
-		}).ParseGlob("public/views/*.html")),
-	}
-
-	e.GET("/", handlers.StartPage)
-	e.GET("/search", handlers.SearchInDb)
-	e.POST("/search", handlers.SearchInDb)
-	e.GET("/detail/:id", handlers.DetailById)
-	e.GET("/details/:id", handlers.DetailById)
-	e.GET("/preview/:id", handlers.PreviewById)
-	e.GET("/preview/image/:id", handlers.PreviewImage)
-	e.GET("/json/search", handlers.ResponseJson)
-	e.GET("/append", handlers.ResponseAppend)
-
-	// protected := e.Group("", middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
-	// 	// Be careful to use constant time comparison to prevent timing attacks
-	// 	if subtle.ConstantTimeCompare([]byte(username), []byte(user.Username)) == 1 &&
-	// 		subtle.ConstantTimeCompare([]byte(password), []byte(user.Password)) == 1 &&
-	// 		subtle.ConstantTimeCompare([]byte("true"), []byte(fmt.Sprintf("%v", user.Active))) == 1 {
-	// 		return true, nil
-	// 	}
-	// 	e.GET("/", handlers.StartPage)
-	// 	return false, nil
-	// }))
-
-	// protected.GET("/dirs", handlers.AddPath)
-	// protected.POST("/dirs", handlers.AddPath)
-	// protected.POST("/scan", handlers.ScanDirectory)
-	// protected.DELETE("/dirs/delete/:id", handlers.DeleteDirectory)
-	// protected.GET("/test", handlers.TestEndpoint)
-
-	// Start HTTPS server
-	log.Println("Starting HTTPS server on https://localhost:8443")
-	if err := e.StartTLS(":8443", certPath, keyPath); err != nil {
-		e.Logger.Fatal(err)
-	}
+	// log.Println("Starting HTTPS server on https://localhost:8443")
+	// if err := e.StartTLS(":8443", certPath, keyPath); err != nil {
+	// 	e.Logger.Fatal(err)
+	// }
 }
