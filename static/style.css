@@ -155,7 +155,6 @@ ol.file-list {
 
 
 
-ol.file-list li,
 .file-list.headers {
   display: grid;
   grid-template-columns: auto 5rem 11rem;
@@ -581,4 +580,11 @@ time {
 .dir-item *:nth-child(2),
 .dir-item *:last-child {
   font-size: var(--size-3);
+}
+
+
+
+:where(.item-list) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, 20rem);
 }

@@ -1,0 +1,19 @@
+{{ template "header" .Title }}
+<main class="main">
+    <article id="fileList" class="grid-container">
+        <form action="/search" method="POST" class="form flex column gap-3" id="search-form">
+            <input class="" type="text" id="name" name="name" required placeholder="search">
+            <div>
+
+            </div>
+            <button class="primary" type="submit" id="submit">Submit</button>
+        </form>
+    </article>
+
+    <ul id="list-headers" class="file-list headers">
+        {{ .Body }}
+    </ul>
+    </article>
+</main>
+
+{{ template "footer" }}

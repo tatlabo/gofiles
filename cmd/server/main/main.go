@@ -2,22 +2,23 @@ package main
 
 import (
 	"gofiles/internal/handlers"
-	"html/template"
 	"io"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
+
+	"github.com/gorilla/mux"
 )
 
 var limit int
 
-type Template struct {
-	templates *template.Template
-}
+// type Template struct {
+// 	templates *template.Template
+// }
 
-func (t *Template) Render(w io.Writer, name string, data any) error {
-	return t.templates.ExecuteTemplate(w, name, data)
-}
+// func (t *Template) Render(w io.Writer, name string, data any) error {
+// 	return t.templates.ExecuteTemplate(w, name, data)
+// }
 
 func main() {
 
@@ -34,29 +35,11 @@ func main() {
 		Body  []string
 	}
 
-	// handleJSON := func(w http.ResponseWriter, r *http.Request) {
-	// 	switch r.Method {
-	// 	case http.MethodGet:
-	// 		{
-	// 			tmpl.Render(w, "index.html", IndexData{Title: "My Title", Body: []string{"This is the body", "Second Line"}})
-	// 		}
-	// 	case http.MethodPost:
-	// 		{
-	// 			r.ParseForm()
-	// 			name := r.FormValue("name")
-
-	// 			if name != "" {
-	// 				tmpl.Render(w, "index.html", IndexData{Title: "My Title", Body: []string{"You searched for: " + name}})
-	// 			} else {
-	// 				tmpl.Render(w, "index.html", IndexData{Title: "My Title", Body: []string{"This is the body", "Second Line"}})
-	// 			}
-	// 		}
-	// 	}
-
-	// }
+	r := mux.NewRouter()
 
 	http.HandleFunc("/endpoint", h2)
 	http.HandleFunc("/search", handlers.HandleJSON)
+	r.HandleFunc("/detail/{id}", handlers.JsonDetailById).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":80", nil))
 

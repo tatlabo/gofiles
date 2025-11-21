@@ -46,6 +46,42 @@ type FinfoJSON struct {
 	ModTime   time.Time `json:"modTime"`
 }
 
+type FileData struct {
+	FinfoJSON   `json:"finfo"`
+	Id          uuid.UUID `json:"id"`
+	DirectoryId uuid.UUID `json:"directoryId"`
+	Error       string    `json:"error"`
+	Keywords    string    `json:"keywords"`
+}
+
+func (f *FileData) GetById(id uuid.UUID) error {
+
+	conn, err := utils.PgConn()
+	if err != nil {
+		return fmt.Errorf("Error connecting to database:\n%v", err)
+	}
+	defer conn.Close()
+
+	stmt := `SELECT data, FROM files WHERE id = $1;`
+
+	data := FinfoJSON{}
+
+	err = conn.QueryRow(stmt, id).Scan(&data, &f.Keywords, &f.DirectoryId)
+
+	f.FinfoJSON = data
+
+	if err != nil {
+		return fmt.Errorf("Error retrieving file by ID:\n%v", err)
+	}
+
+	return nil
+}
+
+// type FilesDataList struct {
+// 	List  []FileData
+// 	Count int
+// }
+
 // ToJSON converts Finfo to FinfoJSON
 func (f *Finfo) ToJSON() FinfoJSON {
 	return FinfoJSON{
