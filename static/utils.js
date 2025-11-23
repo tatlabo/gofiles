@@ -1,25 +1,50 @@
 
 // On page load, set theme from localStorage if available
-document.addEventListener("DOMContentLoaded", function () {
-    const savedTheme = localStorage.getItem("theme");
-    const themeForm = document.getElementById("theme");
+
+const savedTheme = localStorage.getItem("theme");
+const themeForm = document.getElementById("theme");
 
 
-    if (savedTheme && themeForm) {
-        document.documentElement.setAttribute("data-theme", savedTheme);
-        // Set the radio button as checked
-        const radio = themeForm.querySelector(`input[name="theme"][value="${savedTheme}"]`);
-        if (radio) radio.checked = true;
-    }
+if (savedTheme && themeForm) {
+    document.documentElement.setAttribute("data-theme", savedTheme);
+    // Set the radio button as checked
+    const radio = themeForm.querySelector(`input[name="theme"][value="${savedTheme}"]`);
+    if (radio) radio.checked = true;
+}
 
-    if (themeForm) {
-        themeForm.oninput = function (e) {
-            const value = e.target.value;
-            document.documentElement.setAttribute("data-theme", value);
-            localStorage.setItem("theme", value);
-        };
-    }
-});
+if (themeForm) {
+    themeForm.oninput = function (e) {
+        const value = e.target.value;
+        document.documentElement.setAttribute("data-theme", value);
+        localStorage.setItem("theme", value);
+    };
+}
+
+const previewSectionEl = document.getElementById("preview-section");
+
+function hidePreview() {
+    previewSectionEl .style.display = "none";
+}
+
+function showPreview() {
+    previewSectionEl.style.display = "block";
+}
+
+
+hidePreview(previewSectionEl);
+
+
+
+
+document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" || event.key === "Esc") {
+                if (typeof previewSectionEl !== "undefined" && previewSectionEl.style.display !== "none") {
+                        hidePreview();
+                    }
+                }
+            });
+            
+            
 
 // theme.oninput = e => {
 //     document.firstElementChild.setAttribute('data-theme', e.target.value)
@@ -111,6 +136,11 @@ function sortList(parameter, ascending = true) {
 
 
 
+
+
+
+
+
 function handleSortClick(event) {
 
     listContainer = document.getElementById("list")
@@ -127,29 +157,4 @@ function handleSortClick(event) {
 
     // Toggle the ascending/descending flag
     target.setAttribute("data-ascending", !ascending);
-}
-
-
-function hidePreview() {
-    previewSectionEl.style.display = "none";
-}
-
-document.addEventListener("keydown", function (event) {
-    if (event.key === "Escape" || event.key === "Esc") {
-        if (typeof previewSectionEl !== "undefined" && previewSectionEl.style.display !== "none") {
-            hidePreview();
-        }
-    }
-});
-
-function showPreview() {
-    if (previewSectionEl.style.display === "none") {
-        previewSectionEl.style.display = "";
-    }
-
-    if (previewSectionEl.style.display !== "none") {
-        const hidePreviewBtn = document.getElementById("hidePreview");
-        hidePreviewBtn.addEventListener("click", hidePreview);
-
-    }
 }

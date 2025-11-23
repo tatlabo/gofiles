@@ -9,11 +9,31 @@
             <button class="primary" type="submit" id="submit">Submit</button>
         </form>
     </article>
+    {{ .Body }}
+    <ul id="list-headers" class="detail-list">
 
-    <ul id="list-headers" class="file-list headers">
-        {{ .Body }}
+        <li>
+            {{ .FileData.DirectoryId }}
+        </li>
+        <li>
+            {{ .FileData.Name }}
+        </li>
+        <li>
+            {{ .FileData.Size }} bytes
+        </li>
+        <li>
+            {{ .FileData.Ext }} 
+                </li>
+        <li id="keywords">
+            {{ .FileData.Keywords }}
+        </li>
+
     </ul>
     </article>
 </main>
 
 {{ template "footer" }}
+
+
+
+

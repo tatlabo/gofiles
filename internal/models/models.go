@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"fmt"
 	"gofiles/internal/utils"
 	"html/template"
@@ -62,15 +63,30 @@ func (f *FileData) GetById(id uuid.UUID) error {
 	}
 	defer conn.Close()
 
-	stmt := `SELECT data, FROM files WHERE id = $1;`
+	stmt := `SELECT data, directory_id, keywords FROM files WHERE id=$1;`
+
+	raw := []byte{}
+	dirId := uuid.UUID{}
+	keywords := ""
+
+	err = conn.QueryRow(stmt, id).Scan(&raw, &dirId, &keywords)
+	if err != nil {
+		return fmt.Errorf("Error querying database for file by ID:\n%v", err)
+	}
 
 	data := FinfoJSON{}
 
-	err = conn.QueryRow(stmt, id).Scan(&data, &f.Keywords, &f.DirectoryId)
+	err = json.Unmarshal(raw, &data)
 
 	f.FinfoJSON = data
+	f.Id = id
+	f.DirectoryId = dirId
+	f.Keywords = keywords
+
+	fmt.Printf("Retrieved file: %+v\n", f)
 
 	if err != nil {
+		f.Error = fmt.Sprintf("Error retrieving file by ID: %v", err)
 		return fmt.Errorf("Error retrieving file by ID:\n%v", err)
 	}
 

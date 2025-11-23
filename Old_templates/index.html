@@ -43,7 +43,7 @@
         </article>
     </main>
 
-    <article class="preview-wrapper" id="preview-section">
+    <article class="preview-wrapper" id="preview-section" style="display: none;">
         <section class="preview">
             <button type="button" class="primary close-btn" id="hidePreview" onClick="() => hidePreview()">x</button>
             {{ template "preview-content" . }}
@@ -52,9 +52,6 @@
     {{ end }}
 
     <script>
-
-
-
         const previewSectionEl = document.getElementById("preview-section");
         const fileListEl = document.getElementById("fileList");
         previewSectionEl.style.display = "none";
@@ -154,8 +151,8 @@
 {{ end }}
 
 
-<!-- {{ block "preview-content" . }}
+{{ block "preview-content" . }}
 <div id="preview">
     {{ .Text | html }}
 </div>
-{{ end }} -->
+{{ end }}

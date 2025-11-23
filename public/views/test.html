@@ -1,4 +1,9 @@
+{{ template "header" .Title }}
 
 
-    {{ .Body }}
+    {{ range .Body }}   
+        <p>{{ . }}</p>
+    {{ end }}
 
+
+{{ template "footer" }}

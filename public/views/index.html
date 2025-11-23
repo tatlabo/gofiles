@@ -1,32 +1,27 @@
 
 {{ template "header" .Title }}
-    <main class="main">
-        <article id="fileList" class="grid-container">
+<main class="main">
+    <p>
+        {{ .Body.message }}
+    </p>
+    <article id="fileList" class="grid-container">
             <form action="/search" method="POST" class="form flex column gap-3" id="search-form">
                 <input class="" type="text" id="name" name="name" required placeholder="search">
                 <div>
-
                 </div>
                 <button class="primary" type="submit" id="submit">Submit</button>
             </form>
-        </article>
 
-        <ul id="list-headers" class="file-list headers">
-            <li id="sort-name" data-sort-type="name" data-ascending="true">name</li>
-            <li id="sort-size" data-sort-type="size" data-ascending="true">size</li>
-            <li id="sort-date" data-sort-type="moddate" data-ascending="true">date</li>
-        </ul>
-        <article id="fileList" class="grid-container">
 
-            {{ range .Body }}
-            <p>{{ . }}</p>
-            {{ end }}
+            <ul id="list-headers" class="file-list headers">
+                <li id="sort-name" data-sort-type="name" data-ascending="true">name</li>
+                <li id="sort-size" data-sort-type="size" data-ascending="true">size</li>
+                <li id="sort-date" data-sort-type="moddate" data-ascending="true">date</li>
+            </ul>
 
             {{ if .FilesDataList.List }}
             <ol id="list" class="file-list" type="1">
-                {{ range .FilesDataList.List}}
                 {{ template "list" . }}
-                {{ end }}
             </ol>
             {{ end }}
             <p> 
@@ -34,55 +29,47 @@
                     {{ .FilesDataList.Count }}
                 {{end}} results found.
             </p>
-            <!-- <form>
-            <label for="like" class="">
-                <input type="checkbox" id="like" name="like"/>
-                Like 
-            </label class="">
-            <label for="dir">
-                <input type="checkbox" id="dir" name="dir"/>
-                Dir
-            </label>
-            <label for="keywords">
-                <input type="checkbox" id="keywords" name="keywords"/>
-                Keywords
-            </label>
+            <div>
+                {{ if .SearchParams }}
+                  <p> {{ .SearchParams.keywords }}</p>
+                  <p> {{ .SearchParams.limit }}</p>
+                  <p> {{ .SearchParams.offset }}</p>
+                {{ end }}
             </div>
-            <button class="primary" type="submit" id="submit">Submit</button>
-        </form> -->
-
-
-            <!-- <p>{{ .Params }}</p> -->
-            <ol id="list" class="file-list" type="1">
-            </ol>
+            
             <div id="button-container" class="button-container">
                 <button class="primary" type="button"
-                    hx-get="/append?name={{ .Params.Name }}&like={{ .Params.Like }}&limit={{ .Params.Limit }}&offset={{ .Params.Limit }}&dir={{ .Params.Dir }}&keywords={{ .Params.Keywords }}"
-                    hx-target="#list" hx-swap="beforeend" hx-boost="true" hx-trigger="click" id="next">
-                </button>
-            </div>
+                data-keywords="{{ .SearchParams.keywords }}"
+                data-limit="{{ .SearchParams.limit }}"
+                data-offset="{{ .SearchParams.offset }}"
+                data-counter="{{ .FilesDataList.Count }}"
+                hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.limit }}&offset={{ .SearchParams.offset }}"
+                hx-target="#list" hx-swap="beforeend" hx-boost="true" hx-trigger="click" id="next">
+                
+            </button>
+        </div>
+
+        
+        
+    </article>
+    
+</main>
+
+        <article class="preview-wrapper" id="preview-section">
+            <section class="preview">
+                <button type="button" class="primary close-btn" id="hidePreview" onClick="() => hidePreview()">x</button>
+                {{ template "preview-content" . }}
+            </section>
         </article>
-    </main>
+
+</body>
+</html>
 
 
-    {{ template "footer" }} 
-
-{{ define "list" }}
-    <li class="item-list">
-        <span>
-            <a href="/detail/{{.Id}}" class="strong" hx-get="/detail/{{.Id}}" hx-target="#preview"
-                hx-swap="innerHTML" hx-boost="true" onClick="showPreview()">
-                {{ .Name }}.{{ if .Ext }}{{ .Ext }}{{ end }}
-            </a>
-        </span>
-        <span class="item-id">
-            <a href="/detail/{{ .Id }}">
-                {{ .Id }}
-            </a>
-        </span>
-
-        <time datetime="{{ .ModTime  }}" class="">
-            {{ .ModTime }}
-        </time>
-    </li>
+{{ block "preview-content" . }}
+<div id="preview">
+    {{ .Text | html }}
+</div>
 {{ end }}
+
+

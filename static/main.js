@@ -1,65 +1,47 @@
 document.addEventListener("DOMContentLoaded", function () {
     
-    const previewSectionEl = document.getElementById("preview-section");
-    const fileListEl = document.getElementById("fileList");
-    previewSectionEl.style.display = "none";
-
-
-    const nextBtn = document.getElementById("next");
-    const list = document.getElementById("list");
-    const limit = parseInt("{{ .Params.Limit }}") || 10;
-    let offset = limit
-    const nameParam = "{{ .Params.Name }}";
+    
     const buttonContainer = document.getElementById("button-container");
-    const counter = parseInt("{{ .Counter }}") || 0;
+    const fileListEl = document.getElementById("fileList");
 
 
-    if (counter <= limit && nextBtn) {
-        nextBtn.disabled = true; // Disable the button
-        nextBtn.innerHTML = `There is ${counter} results`// Update button text
+    const btn = document.querySelector("#next");
+
+
+    const keywords = btn.getAttribute("data-keywords");
+    const limit = parseInt(btn.getAttribute("data-limit"))
+    const counter = parseInt(btn.getAttribute("data-counter"));
+    let offset = parseInt(btn.getAttribute("data-offset"));
+
+    
+    if (counter <= limit && btn) {
+        btn.disabled = true; // Disable the button
+        btn.innerHTML = `There is ${counter} results`// Update button text
     }
+    
+    offset = offset + limit
+
+    changeAtt()
 
     if (buttonContainer) {
-
         buttonContainer.addEventListener("click", function (event) {
-
-            offset += limit
-
-            // let like = `{{ .Params.Like }}` === `on` ? true : false
-            // let dir = `{{ .Params.Dir }}` === `on` ? true : false
-
-
-            let jsonURL = `/append?name=${nameParam}&limit=${limit}&offset=${offset}`
-
-
-            if ("{{ .Params.Dir }}" === "on") {
-                jsonURL += `&dir=on`;
-            }
-
-            if ("{{ .Params.Like }}" === "on") {
-                jsonURL += `&like=on`;
-            }
-
-            if ("{{ .Params.Keywords }}" === "on") {
-                jsonURL += `&keywords=on`;
-            }
-
-            console.log("jsonURL", jsonURL)
-
-            nextBtn.innerHTML = `There is ${counter} results`;
-
-            nextBtn.setAttribute("hx-get", jsonURL);
-
+            offset = offset + limit
             if (offset >= counter) {
-                nextBtn.disabled = true; // Disable the button
-                nextBtn.innerHTML = `There is ${counter} results` // Update button text
+                btn.disabled = true; // Disable the button
+                return
             }
-            htmx.process(nextBtn)
-
+            changeAtt()
         })
     }
-
-
+    
+    
+    function changeAtt() {
+        let jsonURL = `/append?keywords=${keywords}&limit=${limit}&offset=${offset}`;
+        // btn.innerHTML = jsonURL;
+        btn.setAttribute("hx-get", jsonURL);
+        btn.innerHTML = `There is ${counter} results` // Update button text
+        htmx.process(btn)
+    }
 
 
     let listContainer = document.getElementById("list"); // The parent container of the list items
@@ -79,5 +61,4 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("sort-date").addEventListener("click", (event) => handleSortClick(event))
     }
 
-})
-
+});

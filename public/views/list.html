@@ -1,0 +1,24 @@
+{{ define "list" }}
+    {{ range .FilesDataList.List }}
+    <li class="item-list"
+        data-size="{{ .Size }}"
+        data-name="{{ .Name }}{{ .Ext }}"
+        data-moddate="{{ .ModTime }}">
+        <span>
+            <a href="/detail/{{.Id}}" class="strong" hx-get="/detail/{{.Id}}" hx-target="#preview"
+                hx-swap="innerHTML" hx-boost="true" onClick="showPreview()">
+                {{ .Name }}.{{ if .Ext }}{{ .Ext }}{{ end }}
+            </a>
+        </span>
+        <span class="item-id">
+            <a href="/detail/{{ .Id }}">
+                {{ .Id }}
+            </a>
+        </span>
+
+        <time datetime="{{ .ModTime  }}" class="">
+            {{ .ModTime }}
+        </time>
+    </li>
+    {{ end }}
+{{ end }}

@@ -6,8 +6,6 @@ import (
 	"log"
 	"net/http"
 	_ "net/http/pprof"
-
-	"github.com/gorilla/mux"
 )
 
 var limit int
@@ -35,11 +33,10 @@ func main() {
 		Body  []string
 	}
 
-	r := mux.NewRouter()
-
 	http.HandleFunc("/endpoint", h2)
 	http.HandleFunc("/search", handlers.HandleJSON)
-	r.HandleFunc("/detail/{id}", handlers.JsonDetailById).Methods("GET")
+	http.HandleFunc("/append", handlers.HandleAppend)
+	http.HandleFunc("/detail/{id}", handlers.DetailsId)
 
 	log.Fatal(http.ListenAndServe(":80", nil))
 
