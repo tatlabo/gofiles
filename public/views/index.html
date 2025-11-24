@@ -1,63 +1,52 @@
 
 {{ template "header" .Title }}
 <main class="main">
-    <p>
-        {{ .Body.message }}
-    </p>
     <article id="fileList" class="grid-container">
-            <form action="/search" method="POST" class="form flex column gap-3" id="search-form">
-                <input class="" type="text" id="name" name="name" required placeholder="search">
-                <div>
-                </div>
-                <button class="primary" type="submit" id="submit">Submit</button>
-            </form>
-
-
-            <ul id="list-headers" class="file-list headers">
-                <li id="sort-name" data-sort-type="name" data-ascending="true">name</li>
-                <li id="sort-size" data-sort-type="size" data-ascending="true">size</li>
-                <li id="sort-date" data-sort-type="moddate" data-ascending="true">date</li>
-            </ul>
-
-            {{ if .FilesDataList.List }}
-            <ol id="list" class="file-list" type="1">
-                {{ template "list" . }}
-            </ol>
-            {{ end }}
-            <p> 
-                {{ if .FilesDataList.Count }}
-                    {{ .FilesDataList.Count }}
-                {{end}} results found.
-            </p>
+        {{ if .FilesDataList.Count }}
+        <h4> 
+            {{ .FilesDataList.Count }}
+            results founded
+        </h4>
+        {{end}}
+        <form action="/search" method="POST" class="form flex column gap-3" id="search-form">
+            <input class="" type="text" id="name" name="name" required 
+                {{ if .SearchParams.keywords }} placeholder="{{ .SearchParams.keywords }}" {{ else }}placeholder="search"{{ end }}
+                {{ if .SearchParams.keywords }} value="{{ .SearchParams.keywords }}" {{ else }}placeholder="search"{{ end }}>
             <div>
-                {{ if .SearchParams }}
-                  <p> {{ .SearchParams.keywords }}</p>
-                  <p> {{ .SearchParams.limit }}</p>
-                  <p> {{ .SearchParams.offset }}</p>
-                {{ end }}
             </div>
-            
-            <div id="button-container" class="button-container">
-                <button class="primary" type="button"
-                data-keywords="{{ .SearchParams.keywords }}"
-                data-limit="{{ .SearchParams.limit }}"
-                data-offset="{{ .SearchParams.offset }}"
-                data-counter="{{ .FilesDataList.Count }}"
-                hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.limit }}&offset={{ .SearchParams.offset }}"
-                hx-target="#list" hx-swap="beforeend" hx-boost="true" hx-trigger="click" id="next">
-                
+            <button class="primary" type="submit" id="submit">Submit</button>
+        </form>
+        
+
+        <ul id="list-headers" class="file-list headers">
+            <li id="sort-name" data-sort-type="name" data-ascending="true">name</li>
+            <li id="sort-size" data-sort-type="size" data-ascending="true">size</li>
+            <li id="sort-date" data-sort-type="moddate" data-ascending="true">date</li>
+        </ul>
+
+        {{ if .FilesDataList.List }}
+        <ol id="list" class="file-list" type="1">
+            {{ template "list" . }}
+        </ol>
+        {{ end }}
+        
+        <div id="button-container" class="button-container">
+            <button class="primary" type="button"
+            data-keywords="{{ .SearchParams.keywords }}"
+            data-limit="{{ .SearchParams.limit }}"
+            data-offset="{{ .SearchParams.offset }}"
+            data-counter="{{ .FilesDataList.Count }}"
+            hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.limit }}&offset={{ .SearchParams.offset }}"
+            hx-target="#list" hx-swap="beforeend" hx-boost="true" hx-trigger="click" id="next">
             </button>
         </div>
-
-        
         
     </article>
     
 </main>
-
-        <article class="preview-wrapper" id="preview-section">
+        <article class="preview-wrapper" id="preview-section" style="display: none;">
             <section class="preview">
-                <button type="button" class="primary close-btn" id="hidePreview" onClick="() => hidePreview()">x</button>
+                <button type="button" class="primary close-btn" id="hidePreview" onClick="hidePreview()">x</button>
                 {{ template "preview-content" . }}
             </section>
         </article>

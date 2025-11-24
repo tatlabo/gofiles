@@ -140,6 +140,11 @@ ol.file-list li::marker {
   padding-left: var(--size-fluid-2);
 }
 
+.item-directory,
+.item-id {
+  grid-column: 1/-1;
+  justify-self: left;
+}
 
 
 
@@ -155,17 +160,11 @@ ol.file-list {
 
 
 
-.file-list.headers {
-  display: grid;
-  grid-template-columns: auto 5rem 11rem;
-  align-items: center;
-}
-
-.headers li:not(:first-child),
+/* .headers li:not(:first-child),
 .file-list li span:not(:first-child),
 .file-list time {
   justify-self: end;
-}
+} */
 
 .file-list li span:last-child {
   justify-self: start;
@@ -207,7 +206,7 @@ ol.file-list>li::before {
 
 }
 
-.file-list.headers {
+.headers {
   display: grid;
   list-style: none;
 }
@@ -346,7 +345,7 @@ main.search-page {
     left: var(--size-fluid-0);
   }
 
-  .file-list.headers,
+  .headers,
   ol.file-list li {
     margin-left: 0
   }
@@ -583,8 +582,8 @@ time {
 }
 
 
-
+:where(.headers),
 :where(.item-list) {
   display: grid;
-  grid-template-columns: repeat(auto-fit, 20rem);
+  grid-template-columns: repeat(auto-fit, 33%);
 }

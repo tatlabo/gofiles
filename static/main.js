@@ -1,12 +1,7 @@
-document.addEventListener("DOMContentLoaded", function () {
-    
-    
     const buttonContainer = document.getElementById("button-container");
     const fileListEl = document.getElementById("fileList");
 
-
     const btn = document.querySelector("#next");
-
 
     const keywords = btn.getAttribute("data-keywords");
     const limit = parseInt(btn.getAttribute("data-limit"))
@@ -22,6 +17,10 @@ document.addEventListener("DOMContentLoaded", function () {
     offset = offset + limit
 
     changeAtt()
+    // if (btn !== null) {
+        
+    // }
+ 
 
     if (buttonContainer) {
         buttonContainer.addEventListener("click", function (event) {
@@ -61,4 +60,4 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("sort-date").addEventListener("click", (event) => handleSortClick(event))
     }
 
-});
+

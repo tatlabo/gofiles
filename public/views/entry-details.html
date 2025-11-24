@@ -1,0 +1,22 @@
+{{ define "entry-details"  }}
+<div id="entry-details-section" class="section">
+    <h2>Entry Details</h2>
+    <ul id="list-headers" class="detail-list">`
+        <li>
+            {{ .DirectoryId }}
+        </li>
+        <li>
+            {{ .Name }}
+        </li>
+        <li>
+            {{ .Size }} bytes
+        </li>
+        <li>
+            {{ .Ext }} 
+                </li>
+        <li id="keywords">
+            {{ .Keywords }}
+        </li>
+    </ul>
+</div>
+{{ end}}

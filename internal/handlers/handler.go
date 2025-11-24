@@ -7,10 +7,14 @@ import (
 	"gofiles/internal/utils"
 	"html/template"
 	"io"
+	"log"
 	"net/http"
+	"os"
 	"strconv"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/labstack/echo/v4"
 )
 
 type Template struct {
@@ -112,14 +116,15 @@ type FilesDataList struct {
 
 func (flist *FilesDataList) GetList(name string, limit int, offset int) error {
 
-	stmt := fmt.Sprintf(`
-	SELECT id, data, ts_rank_cd( to_tsvector(%[1]s, keywords), websearch_to_tsquery(%[1]s, $1) ) as ts_rank
+	language := "'polish'"
+	query := `
+	SELECT DISTINCT(id), data, ts_rank_cd( to_tsvector(%[1]s, keywords), websearch_to_tsquery(%[1]s, $1) ) as ts_rank
 	FROM files
 	WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords)
-	ORDER BY ts_rank DESC
-	LIMIT $2 OFFSET $3;`, "'polish'")
+	ORDER BY ts_rank DESC, id ASC
+	LIMIT $2 OFFSET $3;`
 
-	fmt.Printf("%s %s %d %d \n", stmt, name, limit, offset)
+	stmt := fmt.Sprintf(query, language)
 
 	conn, err := utils.PgConn()
 	if err != nil {
@@ -131,6 +136,8 @@ func (flist *FilesDataList) GetList(name string, limit int, offset int) error {
 	if err != nil {
 		return err
 	}
+
+	go explain(stmt, name, limit, offset)
 
 	for rows.Next() {
 
@@ -156,6 +163,9 @@ func (flist *FilesDataList) GetList(name string, limit int, offset int) error {
 			Id:        id,
 		}
 
+		dataWithId.Keywords = name
+		dataWithId.SimplifyDetails()
+
 		if err != nil {
 			return err
 		}
@@ -169,7 +179,7 @@ func (flist *FilesDataList) GetList(name string, limit int, offset int) error {
 func (flist *FilesDataList) GetCount(name string) error {
 
 	stmt := fmt.Sprintf(`
-	SELECT COUNT(*) FROM files
+	SELECT COUNT(DISTINCT id) FROM files
 	WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords);`, "'polish'")
 
 	conn, err := utils.PgConn()
@@ -177,6 +187,8 @@ func (flist *FilesDataList) GetCount(name string) error {
 		return err
 	}
 	defer conn.Close()
+
+	go explain(stmt, name)
 
 	err = conn.QueryRow(stmt, name).Scan(&flist.Count)
 
@@ -188,29 +200,51 @@ func (flist *FilesDataList) GetCount(name string) error {
 }
 
 func Details(w http.ResponseWriter, r *http.Request) {
-
 	tmpl.Render(w, "detail.html", IndexData{Title: "Details", Body: map[string]string{"message": "DetailPage"}})
+}
+
+func ItemDetailsId(w http.ResponseWriter, r *http.Request) {
+
+	body, err := getItemById(w, r)
+	if err != nil {
+		http.Error(w, "Error retrieving file details (ItemDetailsId / getItemById)", http.StatusInternalServerError)
+		return
+	}
+	tmpl.Render(w, "simple-entry-details.html", body)
 
 }
 
 func DetailsId(w http.ResponseWriter, r *http.Request) {
 
-	// io.WriteString(w, "Hello from a HandleFunc #2!\n")
+	body, err := getItemById(w, r)
+	if err != nil {
+		http.Error(w, "Error retrieving file details (DetailsId / getItemById)", http.StatusInternalServerError)
+		return
+	}
+
+	tmpl.Render(w, "detail.html", body)
+
+}
+
+func getItemById(w http.ResponseWriter, r *http.Request) (IndexData, error) {
 
 	idStr := r.PathValue("id")
+
 	id, err := uuid.Parse(idStr)
 
 	if err != nil {
 		http.Error(w, "Invalid ID", http.StatusBadRequest)
-		return
+		return IndexData{}, err
 	}
 
 	fileData := models.FileData{}
 
 	if err := fileData.GetById(id); err != nil {
-		http.Error(w, "Error retrieving file details", http.StatusInternalServerError)
-		return
+		http.Error(w, "Error retrieving file details in method GetById", http.StatusInternalServerError)
+		return IndexData{}, err
 	}
+
+	fileData.SimplifyDetails()
 
 	body := IndexData{
 		Title:    "Details",
@@ -218,8 +252,7 @@ func DetailsId(w http.ResponseWriter, r *http.Request) {
 		Body:     map[string]string{"message": "Detail Page", "id": fmt.Sprintf("%v", id)},
 	}
 
-	tmpl.Render(w, "detail.html", body)
-
+	return body, nil
 }
 
 func HandleAppend(w http.ResponseWriter, r *http.Request) {
@@ -247,57 +280,95 @@ func HandleAppend(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (flist *FilesDataList) GetListOffset(name string, limit int, offset int) error {
-
-	stmt := fmt.Sprintf(`
-	SELECT id, data, ts_rank_cd( to_tsvector(%[1]s, keywords), websearch_to_tsquery(%[1]s, $1) ) as ts_rank
-	FROM files
-	WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords)
-	ORDER BY ts_rank DESC
-	LIMIT $2 OFFSET $3;`, "'polish'")
-
-	fmt.Printf("%s %s %d %d \n", stmt, name, limit, offset)
-
+func explain(stmt string, placeholders ...any) {
 	conn, err := utils.PgConn()
 	if err != nil {
-		return err
+		log.Println("Error connecting to the database for search words:", err)
+		return
 	}
 	defer conn.Close()
+	explainAnalyze := fmt.Sprintf("EXPLAIN ANALYZE %s", stmt)
+	log.Printf("%v %v", explainAnalyze, placeholders)
+	explainRows, err := conn.Query(explainAnalyze, placeholders...)
+	if err != nil {
+		log.Println("Error running EXPLAIN ANALYZE:", err)
+	}
+	defer explainRows.Close()
+	for explainRows.Next() {
+		var line string
+		if err := explainRows.Scan(&line); err != nil {
+			log.Println("Error scanning EXPLAIN ANALYZE line:", err)
+			continue
+		}
+		log.Println(line)
+	}
+	if err := explainRows.Err(); err != nil {
+		log.Println("Error iterating EXPLAIN ANALYZE rows:", err)
+	}
+}
 
-	rows, err := conn.Query(stmt, name, limit, offset)
+func PreviewImageNew(c echo.Context) error {
+
+	id := c.Param("id")
+
+	finfo, err := SelectFinfoById(id)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Error executing query by id in\n PreviewImage "+err.Error())
+	}
+
+	srcPath := fmt.Sprintf("%s/%s.%v", finfo.Directory, finfo.Name, finfo.Ext)
+	destPath := fmt.Sprintf("media/images/%s.%v", finfo.Name, finfo.Ext)
+
+	// Ensure the destination directory exists
+	if err := os.MkdirAll("media/images", os.ModePerm); err != nil {
+		return c.String(http.StatusInternalServerError, "Error creating destination directory")
+	}
+
+	// Copy the image file
+	if err := copyImageFile(srcPath, destPath); err != nil {
+		log.Printf("Error copying file from %s to %s: %v", srcPath, destPath, err)
+		return c.String(http.StatusInternalServerError, "Error copying image file")
+	}
+
+	go func(filePath string) {
+		time.Sleep(120 * time.Second)
+		if err := os.Remove(filePath); err != nil {
+			log.Printf("Error deleting file %s: %v", filePath, err)
+		} else {
+			log.Printf("File %s deleted successfully", filePath)
+		}
+	}(destPath)
+
+	finfo.Src = template.URL(destPath)
+
+	return c.Render(http.StatusOK, "single_page", finfo)
+}
+
+func copyImageFile(srcPath, destPath string) error {
+	// Open the source file
+	srcFile, err := os.Open(srcPath)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	// Create the destination file
+	destFile, err := os.Create(destPath)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	// Copy the content from source to destination
+	_, err = io.Copy(destFile, srcFile)
 	if err != nil {
 		return err
 	}
 
-	for rows.Next() {
-
-		tsRank := float64(0)
-		id := uuid.UUID{}
-		data := models.FinfoJSON{}
-
-		rawData := []byte{}
-
-		err := rows.Scan(
-			&id,
-			&rawData,
-			&tsRank,
-		)
-		if err != nil {
-			return err
-		}
-
-		err = json.Unmarshal(rawData, &data)
-
-		dataWithId := models.FileData{
-			FinfoJSON: data,
-			Id:        id,
-		}
-
-		if err != nil {
-			return err
-		}
-
-		flist.List = append(flist.List, dataWithId)
+	// Ensure the destination file is properly written to disk
+	err = destFile.Sync()
+	if err != nil {
+		return err
 	}
 
 	return nil

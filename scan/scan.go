@@ -338,9 +338,9 @@ func ScanDir(dir string) error {
 		fmt.Printf("There was %d items inserted\n", len(fileList))
 	}
 
-	// if err := SqlMigrations("migrations/002_initial.sql"); err != nil {
-	// 	return fmt.Errorf("Error for: migrations/002_initial.sql: update ext, keywords and ext_id: %w", err)
-	// }
+	if err := SqlMigrations("migrations/002_initial.sql"); err != nil {
+		return fmt.Errorf("Error for: migrations/002_initial.sql: update ext, keywords and ext_id: %w", err)
+	}
 
 	// if err := SqlMigrations("migrations/003_initial.sql"); err != nil {
 	// 	return fmt.Errorf("Error for: in migrations/003_initial.sql update files.ext_id: %w", err)

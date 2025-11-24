@@ -23,27 +23,25 @@ if (themeForm) {
 const previewSectionEl = document.getElementById("preview-section");
 
 function hidePreview() {
-    previewSectionEl .style.display = "none";
+    previewSectionEl.style.display = "none";
 }
 
 function showPreview() {
     previewSectionEl.style.display = "block";
 }
 
-
-hidePreview(previewSectionEl);
-
-
-
-
-document.addEventListener("keydown", function (event) {
-        if (event.key === "Escape" || event.key === "Esc") {
-                if (typeof previewSectionEl !== "undefined" && previewSectionEl.style.display !== "none") {
-                        hidePreview();
+if (previewSectionEl) {
+        
+    document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape" || event.key === "Esc") {
+                    if (typeof previewSectionEl !== "undefined" && previewSectionEl.style.display !== "none") {
+                            hidePreview();
+                        }
                     }
-                }
-            });
-            
+                });
+                
+}
+
             
 
 // theme.oninput = e => {

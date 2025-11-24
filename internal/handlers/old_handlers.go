@@ -6,7 +6,6 @@ import (
 	"gofiles/internal/models"
 	"gofiles/internal/utils"
 	"html/template"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -243,36 +242,6 @@ func PreviewImage(c echo.Context) error {
 	finfo.Src = template.URL(destPath)
 
 	return c.Render(http.StatusOK, "single_page", finfo)
-}
-
-func copyImageFile(srcPath, destPath string) error {
-	// Open the source file
-	srcFile, err := os.Open(srcPath)
-	if err != nil {
-		return err
-	}
-	defer srcFile.Close()
-
-	// Create the destination file
-	destFile, err := os.Create(destPath)
-	if err != nil {
-		return err
-	}
-	defer destFile.Close()
-
-	// Copy the content from source to destination
-	_, err = io.Copy(destFile, srcFile)
-	if err != nil {
-		return err
-	}
-
-	// Ensure the destination file is properly written to disk
-	err = destFile.Sync()
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func DetailById(c echo.Context) error {

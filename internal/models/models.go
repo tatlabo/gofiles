@@ -48,11 +48,17 @@ type FinfoJSON struct {
 }
 
 type FileData struct {
-	FinfoJSON   `json:"finfo"`
-	Id          uuid.UUID `json:"id"`
-	DirectoryId uuid.UUID `json:"directoryId"`
-	Error       string    `json:"error"`
-	Keywords    string    `json:"keywords"`
+	FinfoJSON     `json:"finfo"`
+	Id            uuid.UUID `json:"id"`
+	DirectoryId   uuid.UUID `json:"directoryId"`
+	Keywords      string    `json:"keywords"`
+	SizeSimple    string    `json:"sizeSimple"`
+	ModTimeSimple string    `json:"modTimeStr"`
+}
+
+func (f *FileData) SimplifyDetails() {
+	f.SizeSimple = utils.ConvertBytes(f.Size)
+	f.ModTimeSimple = f.ModTime.Format("2006-01-02 15:04:05")
 }
 
 func (f *FileData) GetById(id uuid.UUID) error {
@@ -83,10 +89,9 @@ func (f *FileData) GetById(id uuid.UUID) error {
 	f.DirectoryId = dirId
 	f.Keywords = keywords
 
-	fmt.Printf("Retrieved file: %+v\n", f)
+	f.SimplifyDetails()
 
 	if err != nil {
-		f.Error = fmt.Sprintf("Error retrieving file by ID: %v", err)
 		return fmt.Errorf("Error retrieving file by ID:\n%v", err)
 	}
 

@@ -33,10 +33,11 @@ func main() {
 		Body  []string
 	}
 
-	http.HandleFunc("/endpoint", h2)
+	http.HandleFunc("/h2", h2)
 	http.HandleFunc("/search", handlers.HandleJSON)
 	http.HandleFunc("/append", handlers.HandleAppend)
 	http.HandleFunc("/detail/{id}", handlers.DetailsId)
+	http.HandleFunc("/item-detail/{id}", handlers.ItemDetailsId)
 
 	log.Fatal(http.ListenAndServe(":80", nil))
 
