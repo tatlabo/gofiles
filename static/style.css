@@ -587,3 +587,13 @@ time {
   display: grid;
   grid-template-columns: repeat(auto-fit, 33%);
 }
+
+:where(.home-page-container) {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: calc(100vh - var(--nav-height, 3rem));
+  gap: 1em;
+
+}

@@ -34,10 +34,11 @@ func main() {
 	}
 
 	http.HandleFunc("/h2", h2)
-	http.HandleFunc("/search", handlers.HandleJSON)
+	http.HandleFunc("/", handlers.HandleSearch)
 	http.HandleFunc("/append", handlers.HandleAppend)
 	http.HandleFunc("/detail/{id}", handlers.DetailsId)
 	http.HandleFunc("/item-detail/{id}", handlers.ItemDetailsId)
+	http.HandleFunc("/preview/{id}", handlers.PreviewById)
 
 	log.Fatal(http.ListenAndServe(":80", nil))
 
@@ -67,7 +68,6 @@ func main() {
 	// e.POST("/search", handlers.SearchInDb)
 	// e.GET("/detail/:id", handlers.DetailById)
 	// e.GET("/details/:id", handlers.DetailById)
-	// e.GET("/preview/:id", handlers.PreviewById)
 	// e.GET("/preview/image/:id", handlers.PreviewImage)
 	// e.GET("/json/search", handlers.ResponseJson)
 	// e.GET("/append", handlers.ResponseAppend)

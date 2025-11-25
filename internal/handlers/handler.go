@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"gofiles/chroma"
 	"gofiles/internal/models"
 	"gofiles/internal/utils"
 	"html/template"
@@ -26,55 +27,35 @@ func (t *Template) Render(w io.Writer, name string, data any) error {
 }
 
 var tmpl = Template{
-	templates: template.Must(template.New("").ParseGlob("public/views/*.html")),
+	templates: template.Must(template.New("").Funcs(template.FuncMap{
+		"formatDate": utils.FormatDate,
+		"not":        utils.Not,
+		"equals":     utils.Equals,
+		"notequals":  utils.Notequals,
+	}).ParseGlob("public/views/*.html")),
 }
 
 type IndexData struct {
-	Title string
-	Body  map[string]string
 	FilesDataList
-	Count        int
 	FileData     models.FileData
+	Title        string
+	Body         map[string]string
+	Count        int
 	SearchParams map[string]string
+	HomePage     bool
+	Html         template.HTML
 }
 
-func HandleJSON(w http.ResponseWriter, r *http.Request) {
+func HandleSearch(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodGet:
 		{
-			tmpl.Render(w, "index.html", IndexData{Title: "My Title", Body: map[string]string{"message": "Wyszukaj pliki po słowach kluczowych"}})
-
-			// query := r.URL.Query()
-
-			// keywords := query.Get("keywords")
-			// append := query.Get("append")
-			// lStr := query.Get("limit")
-			// limit, _ := strconv.Atoi(lStr)
-			// offsetStr := query.Get("offset")
-			// offset, _ := strconv.Atoi(offsetStr)
-
-			// data := FilesDataList{}
-			// if err := data.GetList(keywords, limit, offset); err != nil {
-			// 	fmt.Println("Error getting search list: ", err)
-			// 	tmpl.Render(w, "index.html", IndexData{Title: "My Title", Body: []string{"Error retrieving search results"}})
-			// 	return
-			// }
-
-			// if err := data.GetCount(keywords); err != nil {
-			// 	fmt.Println("Error getting search count: ", err)
-			// 	tmpl.Render(w, "index.html", IndexData{Title: "My Title", Body: []string{"Error retrieving search results"}})
-			// 	return
-			// }
-
-			// if append != "" {
-			// 	// Return only the list part for appending
-			// 	tmpl.Render(w, "append.html", IndexData{Title: "My Title", Body: []string{"data", keywords}, FilesDataList: data,
-			// 		Count: data.Count, SearchParams: map[string]string{"keywords": keywords, "limit": lStr, "offset": offsetStr},
-			// 	})
-			// 	return
-			// }
-
+			tmpl.Render(w, "home.html", IndexData{
+				Title:    "Search files",
+				Body:     map[string]string{"message": "Wyszukaj pliki po słowach kluczowych"},
+				HomePage: true,
+			})
 		}
 
 	case http.MethodPost:
@@ -86,14 +67,23 @@ func HandleJSON(w http.ResponseWriter, r *http.Request) {
 			offset := 0
 
 			data := FilesDataList{}
-			if err := data.GetList(keywords, limit, offset); err != nil {
-				fmt.Println("Error getting search list: ", err)
+
+			if err := data.GetCount(keywords); err != nil {
+				fmt.Println("Error getting search count: ", err)
 				tmpl.Render(w, "index.html", IndexData{Title: "My Title", Body: map[string]string{"message": "Error retrieving search results"}})
 				return
 			}
 
-			if err := data.GetCount(keywords); err != nil {
-				fmt.Println("Error getting search count: ", err)
+			if data.Count == 0 {
+				tmpl.Render(w, "home.html",
+					IndexData{Title: "No results",
+						Body:         map[string]string{"message": "No results found for the given keywords"},
+						SearchParams: map[string]string{"keywords": keywords}})
+				return
+			}
+
+			if err := data.GetList(keywords, limit, offset); err != nil {
+				fmt.Println("Error getting search list: ", err)
 				tmpl.Render(w, "index.html", IndexData{Title: "My Title", Body: map[string]string{"message": "Error retrieving search results"}})
 				return
 			}
@@ -226,30 +216,40 @@ func DetailsId(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func getItemById(w http.ResponseWriter, r *http.Request) (IndexData, error) {
+func getItem(w http.ResponseWriter, r *http.Request) (models.FileData, error) {
 
 	idStr := r.PathValue("id")
 
 	id, err := uuid.Parse(idStr)
+	f := models.FileData{}
 
 	if err != nil {
 		http.Error(w, "Invalid ID", http.StatusBadRequest)
-		return IndexData{}, err
+		return f, err
 	}
 
-	fileData := models.FileData{}
-
-	if err := fileData.GetById(id); err != nil {
+	if err := f.GetById(id); err != nil {
 		http.Error(w, "Error retrieving file details in method GetById", http.StatusInternalServerError)
-		return IndexData{}, err
+		return f, err
 	}
 
-	fileData.SimplifyDetails()
+	f.SimplifyDetails()
+
+	return f, nil
+}
+
+func getItemById(w http.ResponseWriter, r *http.Request) (IndexData, error) {
+
+	f, err := getItem(w, r)
+	if err != nil {
+		http.Error(w, "Error retrieving file details in getItemById", http.StatusInternalServerError)
+		return IndexData{}, err
+	}
 
 	body := IndexData{
 		Title:    "Details",
-		FileData: fileData,
-		Body:     map[string]string{"message": "Detail Page", "id": fmt.Sprintf("%v", id)},
+		FileData: f,
+		Body:     map[string]string{"message": "Detail Page", "id": fmt.Sprintf("%v", f.Id)},
 	}
 
 	return body, nil
@@ -372,4 +372,67 @@ func copyImageFile(srcPath, destPath string) error {
 	}
 
 	return nil
+}
+
+func PreviewById(w http.ResponseWriter, r *http.Request) {
+
+	body, err := getItemById(w, r)
+	if err != nil {
+		http.Error(w, "Error retrieving file details (ItemDetailsId / getItemById)", http.StatusInternalServerError)
+		return
+	}
+
+	address := fmt.Sprintf("%s\\%s.%s", body.FileData.Directory, body.FileData.Name, body.FileData.Ext)
+	body.Body["address"] = address
+	html, err := txtToChoroma(address)
+	if err != nil {
+		http.Error(w, "Error converting text to choroma", http.StatusInternalServerError)
+		return
+	}
+
+	// wrap := fmt.Sprintf("<div><h3>Text to chroma</h3><p>%s</p></div>", html)
+	body.Html = html
+
+	tmpl.Render(w, "chroma-preview.html", body)
+
+	// tmpl.Render(w, "chromoa-preview.html", IndexData{Title: "Chroma preview", Body: map[string]string{"message": "data", "html": wrap}, FileData: f})
+}
+
+func txtToChoroma(address string) (template.HTML, error) {
+
+	fin, err := os.Open(address)
+
+	if err != nil {
+		return "", err
+	}
+	defer fin.Close()
+
+	highlightCode, err := chroma.HighlightCode(address)
+
+	if err != nil {
+		return "", err
+	}
+
+	return template.HTML(highlightCode), nil
+
+}
+
+func TxtToChoroma(f models.Finfo) (template.HTML, error) {
+
+	address := fmt.Sprintf("%s\\%s.%v", f.Directory, f.Name, f.Ext)
+	fin, err := os.Open(address)
+
+	if err != nil {
+		return "", err
+	}
+	defer fin.Close()
+
+	highlightCode, err := chroma.HighlightCode(address)
+
+	if err != nil {
+		return "", err
+	}
+
+	return template.HTML(highlightCode), nil
+
 }

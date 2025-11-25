@@ -1,0 +1,10 @@
+{{ define "form" }}
+<form action="/search" method="POST" class="form flex column gap-3" id="search-form">
+    <input class="" type="text" id="name" name="name" required 
+        {{ if .SearchParams.keywords }} placeholder="{{ .SearchParams.keywords }}" {{ else }}placeholder="search"{{ end }}
+        {{ if .SearchParams.keywords }} value="{{ .SearchParams.keywords }}" {{ else }}placeholder="search"{{ end }}>
+    <div>
+    </div>
+    <button class="primary" type="submit" id="submit">Submit</button>
+</form>
+{{ end }}

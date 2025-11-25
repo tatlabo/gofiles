@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"gofiles/chroma"
 	"gofiles/internal/models"
 	"gofiles/internal/utils"
 	"html/template"
@@ -265,48 +264,6 @@ func DetailById(c echo.Context) error {
 	}
 
 	return c.Render(http.StatusOK, "detail", finfodetail)
-}
-
-func PreviewById(c echo.Context) error {
-
-	id := c.Param("id")
-
-	finfo, err := SelectFinfoById(id)
-	if err != nil {
-		return c.String(http.StatusInternalServerError, "Error executing query by id in\n PreviewById "+err.Error())
-	}
-
-	finfodetail := models.FinfoDetail{
-		Finfo: &finfo,
-	}
-
-	if finfo.IsText == true {
-		finfodetail.HTML, _ = TxtToChoroma(finfo)
-	}
-
-	wrap := fmt.Sprintf("<div><h3>%s.%s</h3><p>%s</p>%s</div>", finfodetail.Name, finfodetail.Ext, finfodetail.Directory, string(finfodetail.HTML))
-
-	return c.String(http.StatusOK, wrap)
-}
-
-func TxtToChoroma(f models.Finfo) (template.HTML, error) {
-
-	address := fmt.Sprintf("%s\\%s.%v", f.Directory, f.Name, f.Ext)
-	fin, err := os.Open(address)
-
-	if err != nil {
-		return "", err
-	}
-	defer fin.Close()
-
-	highlightCode, err := chroma.HighlightCode(address)
-
-	if err != nil {
-		return "", err
-	}
-
-	return template.HTML(highlightCode), nil
-
 }
 
 // DeleteIndexedDirectory handles DELETE requests to remove indexed directories
