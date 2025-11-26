@@ -44,6 +44,7 @@ type IndexData struct {
 	SearchParams map[string]string
 	HomePage     bool
 	Html         template.HTML
+	IsText       bool
 }
 
 func HandleSearch(w http.ResponseWriter, r *http.Request) {
@@ -189,10 +190,6 @@ func (flist *FilesDataList) GetCount(name string) error {
 	return nil
 }
 
-func Details(w http.ResponseWriter, r *http.Request) {
-	tmpl.Render(w, "detail.html", IndexData{Title: "Details", Body: map[string]string{"message": "DetailPage"}})
-}
-
 func ItemDetailsId(w http.ResponseWriter, r *http.Request) {
 
 	body, err := getItemById(w, r)
@@ -234,6 +231,10 @@ func getItem(w http.ResponseWriter, r *http.Request) (models.FileData, error) {
 	}
 
 	f.SimplifyDetails()
+	if err := f.CheckExtension(); err != nil {
+		http.Error(w, "Error checking file extension", http.StatusInternalServerError)
+		return f, err
+	}
 
 	return f, nil
 }
@@ -382,20 +383,25 @@ func PreviewById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	address := fmt.Sprintf("%s\\%s.%s", body.FileData.Directory, body.FileData.Name, body.FileData.Ext)
-	body.Body["address"] = address
-	html, err := txtToChoroma(address)
-	if err != nil {
-		http.Error(w, "Error converting text to choroma", http.StatusInternalServerError)
+	if body.FileData.Type == "txt" {
+
+		address := fmt.Sprintf("%s\\%s.%s", body.FileData.Directory, body.FileData.Name, body.FileData.Ext)
+		body.Body["address"] = address
+		html, err := txtToChoroma(address)
+		if err != nil {
+			http.Error(w, "Error converting text to choroma", http.StatusInternalServerError)
+			return
+		}
+
+		_ = fmt.Sprintf("<div><h3>Text to chroma</h3><p>%s</p></div>", html)
+		body.Html = html
+
+		tmpl.Render(w, "chroma-preview.html", body)
 		return
 	}
 
-	// wrap := fmt.Sprintf("<div><h3>Text to chroma</h3><p>%s</p></div>", html)
-	body.Html = html
+	tmpl.Render(w, "detail.html", body)
 
-	tmpl.Render(w, "chroma-preview.html", body)
-
-	// tmpl.Render(w, "chromoa-preview.html", IndexData{Title: "Chroma preview", Body: map[string]string{"message": "data", "html": wrap}, FileData: f})
 }
 
 func txtToChoroma(address string) (template.HTML, error) {

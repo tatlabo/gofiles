@@ -17,6 +17,20 @@
         <li id="keywords">
             {{ .Keywords }}
         </li>
+
+        {{ if .Url  }}
+        <li id="url">
+            {{ .Url }}
+        </li>
+        {{ end }}
+
+        {{ if .Type  }} 
+        <li>
+            {{ .Type }}
+        </li>
+        {{ end }}
+
+
     </ul>
 </div>
 {{ end}}

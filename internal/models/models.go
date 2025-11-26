@@ -53,11 +53,34 @@ type FileData struct {
 	Keywords      string    `json:"keywords"`
 	SizeSimple    string    `json:"sizeSimple"`
 	ModTimeSimple string    `json:"modTimeStr"`
+	Type          string    `json:"type"`
+	Url           string    `json:"url"`
 }
 
 func (f *FileData) SimplifyDetails() {
 	f.SizeSimple = utils.ConvertBytes(f.Size)
 	f.ModTimeSimple = f.ModTime.Format("2006-01-02 15:04:05")
+}
+
+func (f *FileData) CheckExtension() (e error) {
+
+	var url string
+	var fileType string
+
+	if slices.Contains(textFiles, f.Ext) {
+		fileType = "txt"
+		url = fmt.Sprintf("%s/%s.%v", f.Directory, f.Name, f.Ext)
+	} else if slices.Contains(imageFiles, f.Ext) {
+		url = fmt.Sprintf("file:///%s/%s.%v", f.Directory, f.Name, f.Ext)
+		f.Type = "image"
+	} else if slices.Contains(videoFiles, f.Ext) {
+		fileType = "video"
+		url = fmt.Sprintf("file:///%s/%s.%v", f.Directory, f.Name, f.Ext)
+	}
+
+	f.Type = fileType
+	f.Url = url
+	return nil
 }
 
 func (f *FileData) GetById(id uuid.UUID) error {
@@ -213,6 +236,7 @@ func (i *IndexedDirs) Append() error {
 	i.Indexeddirs = append(i.Indexeddirs, newDir)
 
 	return nil
+
 }
 
 func (f *Finfo) CheckExtension() error {

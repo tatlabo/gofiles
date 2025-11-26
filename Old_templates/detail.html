@@ -16,6 +16,18 @@
         <p>
             {{ .Directory }}\{{ .Name }}.{{ .Ext }}
         </p>
+        {{ if .Url }}
+            <p>
+                {{ .Url }}
+            </p>
+        {{ end }}
+        {{ if .Type }}
+            <p>
+                {{ .Type }}
+            </p>
+        {{ end }}
+
+        {{ . }}
 
         <!-- 
             <ul class="file-detail">

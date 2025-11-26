@@ -1,4 +1,10 @@
+{{ template "header" .Title }}
 
-{{ .Html | html }}
+<h2>{{ .FileData.Name }}.{{ .FileData.Ext }}</h2>
+<h3>{{ .FileData.Directory }}</h3>
+<div id="preview">
+    {{ .Html }}
+</div>
 
 
+{{ template "footer" }}
