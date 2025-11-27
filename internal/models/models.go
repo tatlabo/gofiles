@@ -3,8 +3,9 @@ package models
 import (
 	"encoding/json"
 	"fmt"
-	"gofiles/internal/utils"
+	"gofiles/utils"
 	"html/template"
+	"log"
 	"net/http"
 	"slices"
 	"strconv"
@@ -55,6 +56,151 @@ type FileData struct {
 	ModTimeSimple string    `json:"modTimeStr"`
 	Type          string    `json:"type"`
 	Url           string    `json:"url"`
+}
+
+type FilesDataList struct {
+	List  []FileData
+	Count int
+}
+
+func (flist *FilesDataList) GetList(name string, limit int, offset int) error {
+
+	language := "'polish'"
+	query := `
+	SELECT DISTINCT(id), data, ts_rank_cd( to_tsvector(%[1]s, keywords), websearch_to_tsquery(%[1]s, $1) ) as ts_rank
+	FROM files
+	WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords)
+	ORDER BY ts_rank DESC, id ASC
+	LIMIT $2 OFFSET $3;`
+
+	stmt := fmt.Sprintf(query, language)
+
+	conn, err := utils.PgConn()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	rows, err := conn.Query(stmt, name, limit, offset)
+	if err != nil {
+		return err
+	}
+
+	go explain(stmt, name, limit, offset)
+
+	for rows.Next() {
+
+		tsRank := float64(0)
+		id := uuid.UUID{}
+		data := FinfoJSON{}
+
+		rawData := []byte{}
+
+		err := rows.Scan(
+			&id,
+			&rawData,
+			&tsRank,
+		)
+		if err != nil {
+			return err
+		}
+
+		err = json.Unmarshal(rawData, &data)
+
+		dataWithId := FileData{
+			FinfoJSON: data,
+			Id:        id,
+		}
+
+		dataWithId.Keywords = name
+		dataWithId.SimplifyDetails()
+
+		if err != nil {
+			return err
+		}
+
+		flist.List = append(flist.List, dataWithId)
+	}
+
+	return nil
+}
+
+func (flist *FilesDataList) GetCount(name string) error {
+
+	stmt := fmt.Sprintf(`
+	SELECT COUNT(DISTINCT id) FROM files
+	WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords);`, "'polish'")
+
+	conn, err := utils.PgConn()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	err = conn.QueryRow(stmt, name).Scan(&flist.Count)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type Directory struct {
+	Id   uuid.UUID `db:"id" json:"id"`
+	Path string    `db:"path" json:"path"`
+}
+
+type Directries struct {
+	List  []Directory       `json:"list"`
+	Body  map[string]string `json:"body"`
+	Title string            `json:"title"`
+}
+
+func (l *Directries) GetList() error {
+	query := `SELECT id, json data FROM directory;`
+
+	conn, err := utils.PgConn()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	rows, err := conn.Query(query)
+	if err != nil {
+		return err
+	}
+
+	for rows.Next() {
+
+		id := uuid.UUID{}
+		data := Directory{}
+
+		rawData := []byte{}
+
+		err := rows.Scan(
+			&id,
+			&rawData,
+		)
+		if err != nil {
+			return err
+		}
+
+		err = json.Unmarshal(rawData, &data)
+
+		dataWithId := Directory{
+			Id:   id,
+			Path: data.Path,
+		}
+
+		if err != nil {
+			return err
+		}
+
+		l.List = append(l.List, dataWithId)
+	}
+
+	return nil
 }
 
 func (f *FileData) SimplifyDetails() {
@@ -448,4 +594,31 @@ func (i *IndexedDirs) DeleteByPath(path string) error {
 	}
 
 	return nil
+}
+
+func explain(stmt string, placeholders ...any) {
+	conn, err := utils.PgConn()
+	if err != nil {
+		log.Println("Error connecting to the database for search words:", err)
+		return
+	}
+	defer conn.Close()
+	explainAnalyze := fmt.Sprintf("EXPLAIN ANALYZE %s", stmt)
+	log.Printf("%v %v", explainAnalyze, placeholders)
+	explainRows, err := conn.Query(explainAnalyze, placeholders...)
+	if err != nil {
+		log.Println("Error running EXPLAIN ANALYZE:", err)
+	}
+	defer explainRows.Close()
+	for explainRows.Next() {
+		var line string
+		if err := explainRows.Scan(&line); err != nil {
+			log.Println("Error scanning EXPLAIN ANALYZE line:", err)
+			continue
+		}
+		log.Println(line)
+	}
+	if err := explainRows.Err(); err != nil {
+		log.Println("Error iterating EXPLAIN ANALYZE rows:", err)
+	}
 }

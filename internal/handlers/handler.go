@@ -1,11 +1,10 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"gofiles/chroma"
 	"gofiles/internal/models"
-	"gofiles/internal/utils"
+	"gofiles/utils"
 	"html/template"
 	"io"
 	"log"
@@ -36,7 +35,7 @@ var tmpl = Template{
 }
 
 type IndexData struct {
-	FilesDataList
+	models.FilesDataList
 	FileData     models.FileData
 	Title        string
 	Body         map[string]string
@@ -49,10 +48,13 @@ type IndexData struct {
 
 func HandleSearch(w http.ResponseWriter, r *http.Request) {
 
+	templatePage := "index.html"
+
 	switch r.Method {
 	case http.MethodGet:
+		templatePage = "home.html"
 		{
-			tmpl.Render(w, "home.html", IndexData{
+			tmpl.Render(w, templatePage, IndexData{
 				Title:    "Search files",
 				Body:     map[string]string{"message": "Wyszukaj pliki po słowach kluczowych"},
 				HomePage: true,
@@ -67,16 +69,17 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 			limit := 10
 			offset := 0
 
-			data := FilesDataList{}
+			data := models.FilesDataList{}
 
 			if err := data.GetCount(keywords); err != nil {
 				fmt.Println("Error getting search count: ", err)
-				tmpl.Render(w, "index.html", IndexData{Title: "My Title", Body: map[string]string{"message": "Error retrieving search results"}})
+				tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "Error retrieving search results"}})
 				return
 			}
 
 			if data.Count == 0 {
-				tmpl.Render(w, "home.html",
+				templatePage = "home.html"
+				tmpl.Render(w, templatePage,
 					IndexData{Title: "No results",
 						Body:         map[string]string{"message": "No results found for the given keywords"},
 						SearchParams: map[string]string{"keywords": keywords}})
@@ -85,109 +88,19 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 
 			if err := data.GetList(keywords, limit, offset); err != nil {
 				fmt.Println("Error getting search list: ", err)
-				tmpl.Render(w, "index.html", IndexData{Title: "My Title", Body: map[string]string{"message": "Error retrieving search results"}})
+				tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "Error retrieving search results"}})
 				return
 			}
 
 			if keywords != "" {
-				tmpl.Render(w, "index.html", IndexData{Title: "My Title", Body: map[string]string{"message": "data", "keywords": keywords}, FilesDataList: data,
+				tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "data", "keywords": keywords}, FilesDataList: data,
 					Count: data.Count, SearchParams: map[string]string{"keywords": keywords, "limit": "10", "offset": "0"},
 				})
 			} else {
-				tmpl.Render(w, "index.html", IndexData{Title: "My Title", Body: map[string]string{"message": "TNie podano słów kluczowych"}})
+				tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "TNie podano słów kluczowych"}})
 			}
 		}
 	}
-}
-
-type FilesDataList struct {
-	List  []models.FileData
-	Count int
-}
-
-func (flist *FilesDataList) GetList(name string, limit int, offset int) error {
-
-	language := "'polish'"
-	query := `
-	SELECT DISTINCT(id), data, ts_rank_cd( to_tsvector(%[1]s, keywords), websearch_to_tsquery(%[1]s, $1) ) as ts_rank
-	FROM files
-	WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords)
-	ORDER BY ts_rank DESC, id ASC
-	LIMIT $2 OFFSET $3;`
-
-	stmt := fmt.Sprintf(query, language)
-
-	conn, err := utils.PgConn()
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-
-	rows, err := conn.Query(stmt, name, limit, offset)
-	if err != nil {
-		return err
-	}
-
-	go explain(stmt, name, limit, offset)
-
-	for rows.Next() {
-
-		tsRank := float64(0)
-		id := uuid.UUID{}
-		data := models.FinfoJSON{}
-
-		rawData := []byte{}
-
-		err := rows.Scan(
-			&id,
-			&rawData,
-			&tsRank,
-		)
-		if err != nil {
-			return err
-		}
-
-		err = json.Unmarshal(rawData, &data)
-
-		dataWithId := models.FileData{
-			FinfoJSON: data,
-			Id:        id,
-		}
-
-		dataWithId.Keywords = name
-		dataWithId.SimplifyDetails()
-
-		if err != nil {
-			return err
-		}
-
-		flist.List = append(flist.List, dataWithId)
-	}
-
-	return nil
-}
-
-func (flist *FilesDataList) GetCount(name string) error {
-
-	stmt := fmt.Sprintf(`
-	SELECT COUNT(DISTINCT id) FROM files
-	WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords);`, "'polish'")
-
-	conn, err := utils.PgConn()
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-
-	go explain(stmt, name)
-
-	err = conn.QueryRow(stmt, name).Scan(&flist.Count)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func ItemDetailsId(w http.ResponseWriter, r *http.Request) {
@@ -268,7 +181,7 @@ func HandleAppend(w http.ResponseWriter, r *http.Request) {
 	offsetStr := query.Get("offset")
 	offset, _ := strconv.Atoi(offsetStr)
 
-	data := FilesDataList{}
+	data := models.FilesDataList{}
 	if err := data.GetList(keywords, limit, offset); err != nil {
 		fmt.Println("Error getting search list: ", err)
 		tmpl.Render(w, "index.html", IndexData{Title: "My Title", Body: map[string]string{"message": "Error retrieving search results"}})
@@ -279,33 +192,6 @@ func HandleAppend(w http.ResponseWriter, r *http.Request) {
 		Count: data.Count, SearchParams: map[string]string{"keywords": keywords, "limit": lStr, "offset": offsetStr},
 	})
 
-}
-
-func explain(stmt string, placeholders ...any) {
-	conn, err := utils.PgConn()
-	if err != nil {
-		log.Println("Error connecting to the database for search words:", err)
-		return
-	}
-	defer conn.Close()
-	explainAnalyze := fmt.Sprintf("EXPLAIN ANALYZE %s", stmt)
-	log.Printf("%v %v", explainAnalyze, placeholders)
-	explainRows, err := conn.Query(explainAnalyze, placeholders...)
-	if err != nil {
-		log.Println("Error running EXPLAIN ANALYZE:", err)
-	}
-	defer explainRows.Close()
-	for explainRows.Next() {
-		var line string
-		if err := explainRows.Scan(&line); err != nil {
-			log.Println("Error scanning EXPLAIN ANALYZE line:", err)
-			continue
-		}
-		log.Println(line)
-	}
-	if err := explainRows.Err(); err != nil {
-		log.Println("Error iterating EXPLAIN ANALYZE rows:", err)
-	}
 }
 
 func PreviewImageNew(c echo.Context) error {
@@ -441,4 +327,69 @@ func TxtToChoroma(f models.Finfo) (template.HTML, error) {
 
 	return template.HTML(highlightCode), nil
 
+}
+
+func HandleDirs(w http.ResponseWriter, r *http.Request) {
+
+	templatePage := "dirs.html"
+
+	switch r.Method {
+	case http.MethodGet:
+		{
+			data := models.Directries{
+				Title: "Directory listing",
+				Body:  map[string]string{"message": "Zindexuj katalogi"},
+			}
+
+			if err := data.GetList(); err != nil {
+				fmt.Println("Error getting search list: ", err)
+				tmpl.Render(w, templatePage, data)
+				return
+			}
+
+			log.Printf("%v", data.List)
+
+			tmpl.Render(w, templatePage, data)
+		}
+
+	case http.MethodPost:
+		{
+			r.ParseForm()
+			keywords := r.FormValue("name")
+
+			limit := 10
+			offset := 0
+
+			data := models.FilesDataList{}
+
+			if err := data.GetCount(keywords); err != nil {
+				fmt.Println("Error getting search count: ", err)
+				tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "Error retrieving search results"}})
+				return
+			}
+
+			if data.Count == 0 {
+				templatePage = "home.html"
+				tmpl.Render(w, templatePage,
+					IndexData{Title: "No results",
+						Body:         map[string]string{"message": "No results found for the given keywords"},
+						SearchParams: map[string]string{"keywords": keywords}})
+				return
+			}
+
+			if err := data.GetList(keywords, limit, offset); err != nil {
+				fmt.Println("Error getting search list: ", err)
+				tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "Error retrieving search results"}})
+				return
+			}
+
+			if keywords != "" {
+				tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "data", "keywords": keywords}, FilesDataList: data,
+					Count: data.Count, SearchParams: map[string]string{"keywords": keywords, "limit": "10", "offset": "0"},
+				})
+			} else {
+				tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "TNie podano słów kluczowych"}})
+			}
+		}
+	}
 }

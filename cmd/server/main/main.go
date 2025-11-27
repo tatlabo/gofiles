@@ -39,6 +39,7 @@ func main() {
 	http.HandleFunc("/detail/{id}", handlers.DetailsId)
 	http.HandleFunc("/item-detail/{id}", handlers.ItemDetailsId)
 	http.HandleFunc("/preview/{id}", handlers.PreviewById)
+	http.HandleFunc("/dirs", handlers.HandleDirs)
 
 	log.Fatal(http.ListenAndServe(":80", nil))
 

@@ -1,60 +1,63 @@
 package main
 
 import (
-	"fmt"
-	"gofiles/internal/utils"
-	"os"
-
-	"embed"
-
-	_ "github.com/lib/pq"
+	"gofiles/internal/sequel"
+	"gofiles/utils"
+	"log"
 )
 
-const outputFile = "output.txt"
+func SequelMigrations() error {
 
-//go:embed migrations/*.sql
-var migrations embed.FS
+	initialMigration := sequel.InitialMigrations()
 
-func SqlMigrations(filename string) error {
-	// Read with full embedded path
-	f, err := migrations.ReadFile(filename)
-	if err != nil {
-		return fmt.Errorf("failed to read migration file %s: %w", "migrations/"+filename, err)
-	}
-
-	if err := VanillaSql(f); err != nil {
-		return fmt.Errorf("failed to execute migration %s: %w", filename, err)
+	if err := utils.VanillaSql(initialMigration, true); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func VanillaSql(xs []byte) error {
-
-	var e error
-
-	db, e := utils.PgConn()
-	if e != nil {
-		return e
-	}
-	defer db.Close()
-
-	tx, e := db.Begin()
-	if e != nil {
-		return e
-	}
-	if _, e = tx.Exec(string(xs)); e != nil {
-		return e
-	}
-	return tx.Commit()
-
-}
-
 func main() {
 
-	if err := SqlMigrations("migrations/001_initial.sql"); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: migrations/001_initial.sql creating tables: %v\n", err)
-		os.Exit(1)
+	SequelMigrations()
+
+	tables, err := GetExistingTables()
+	if err != nil {
+		log.Fatalf("Error getting existing tables: %v", err)
+	}
+	for table := range tables {
+		log.Printf("Existing table: %s", tables[table])
+	}
+}
+
+func GetExistingTables() ([]string, error) {
+	query := `
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+          AND table_type = 'BASE TABLE'
+        ORDER BY table_name;
+    `
+
+	conn, err := utils.PgConn()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	rows, err := conn.Query(query)
+	if err != nil {
+		return nil, err
 	}
 
+	var tables []string
+	for rows.Next() {
+		var tableName string
+		if err := rows.Scan(&tableName); err != nil {
+			return nil, err
+		}
+		tables = append(tables, tableName)
+	}
+
+	return tables, nil
 }

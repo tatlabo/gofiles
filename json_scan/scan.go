@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"gofiles/internal/models"
-	"gofiles/internal/utils"
+	"gofiles/utils"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -53,14 +53,14 @@ func SqlMigrations(path string) error {
 		return fmt.Errorf("failed to read migration file %s: %w", path, err)
 	}
 
-	if err := VanillaSql(f); err != nil {
+	if err := VanillaRaw(f); err != nil {
 		return fmt.Errorf("failed to execute migration %s: %w", path, err)
 	}
 
 	return nil
 }
 
-func VanillaSql(xs []byte) error {
+func VanillaRaw(xs []byte) error {
 
 	db, err := utils.PgConn()
 	if err != nil {

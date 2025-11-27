@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"gofiles/internal/models"
-	"gofiles/internal/utils"
+	"gofiles/utils"
 	"io/fs"
 	"log"
 	"os"
@@ -61,14 +61,14 @@ func SqlMigrations(path string) error {
 		return fmt.Errorf("failed to read migration file %s: %w", path, err)
 	}
 
-	if err := VanillaSql(f); err != nil {
+	if err := VanillaRaw(f); err != nil {
 		return fmt.Errorf("failed to execute migration %s: %w", path, err)
 	}
 
 	return nil
 }
 
-func VanillaSqlReturn(q string, param string) error {
+func VanillaRawReturn(q string, param string) error {
 
 	var e error
 
@@ -92,7 +92,7 @@ func VanillaSqlReturn(q string, param string) error {
 	return tx.Commit()
 }
 
-func VanillaSql(xs []byte) error {
+func VanillaRaw(xs []byte) error {
 
 	var e error
 
@@ -108,6 +108,38 @@ func VanillaSql(xs []byte) error {
 	}
 	if _, e = tx.Exec(string(xs)); e != nil {
 		return e
+	}
+	return tx.Commit()
+
+}
+
+func VanillaSql(s []string, group bool) error {
+
+	var e error
+
+	db, e := utils.PgConn()
+	if e != nil {
+		return e
+	}
+	defer db.Close()
+
+	tx, e := db.Begin()
+	if e != nil {
+		return e
+	}
+
+	if group != false {
+		groupCommands := strings.Join(s, " ")
+		if _, e = tx.Exec(groupCommands); e != nil {
+			return e
+		}
+		return tx.Commit()
+	}
+
+	for _, s := range s {
+		if _, e = tx.Exec(s); e != nil {
+			return e
+		}
 	}
 	return tx.Commit()
 
@@ -195,25 +227,6 @@ func main() {
 
 }
 
-func insertIntoDirs(path string) error {
-
-	const insertIntoDirs = `INSERT INTO directory (name, done)
-	VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET done = EXCLUDED.done;`
-
-	conn, err := utils.PgConn()
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-
-	_, err = conn.Exec(insertIntoDirs, path, true)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func writelogMessage(logMessage *[]string) error {
 
 	f, err := os.Create("logMessage .txt")
@@ -247,8 +260,6 @@ func insertToPostgres(flist *[]models.Finfo) error {
 
 	var (
 		s = len(*flist)
-		// counter  int
-		// quantity = 100
 	)
 
 	j := 0
@@ -276,27 +287,6 @@ func insertToPostgres(flist *[]models.Finfo) error {
 	return nil
 }
 
-func insertItem(f []models.Finfo) [][]any {
-
-	params := [][]any{}
-
-	for i := range len(f) {
-
-		params = append(params, []any{
-			f[i].Directory,
-			f[i].Name,
-			f[i].Ext,
-			f[i].IsDir,
-			f[i].Size,
-			f[i].ModTime,
-			directoryId,
-		})
-
-	}
-
-	return params
-}
-
 func ScanDir(dir string) error {
 
 	var sqlInsertReturn = `INSERT INTO directory (json) VALUES ($1::jsonb) RETURNING id;`
@@ -307,21 +297,14 @@ func ScanDir(dir string) error {
 		return fmt.Errorf("invalid path: %s", path)
 	}
 
-	// create tables
-	// use init/table_init.go SqlMigrations
-	// if err := SqlMigrations("migrations/001_initial.sql"); err != nil {
-	// 	return fmt.Errorf("Error: migrations/001_initial.sql creating tables: %w", err)
-	// }
-
 	var pathJson = `{"path": "` + path + `"}`
 
 	fmt.Println(sqlInsertReturn, fmt.Sprintf("%s", pathJson))
 
-	if err := VanillaSqlReturn(sqlInsertReturn, pathJson); err != nil {
-		return fmt.Errorf("Error inserting and/or returning value into directory table: %w", err)
+	if err := VanillaRawReturn(sqlInsertReturn, pathJson); err != nil {
+		return fmt.Errorf("Error inserting and/or returning value into directory table:\n %w", err)
 	}
 
-	// visit function = main scan logMessage ic
 	err := filepath.WalkDir(path, visit)
 	if err != nil {
 		writelogMessage(&logMessage)

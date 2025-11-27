@@ -3,7 +3,7 @@ package models
 
 import (
 	"fmt"
-	"gofiles/internal/utils"
+	"gofiles/utils"
 	"html/template"
 	"net/http"
 	"path/filepath"

@@ -1,0 +1,38 @@
+
+{{ template "header" .Title }}
+
+<main class="main">
+
+    <article id="fileList" class="grid-container">
+        {{ if .Body }}
+        <h4> 
+            {{ .Body.message }}
+        </h4>
+        {{end}}
+        {{ template "form"  }}
+
+        <ul id="list-headers" class="file-list headers">
+            <li id="sort-name" data-sort-type="name" data-ascending="true">name</li>
+            <li id="sort-size" data-sort-type="size" data-ascending="true">size</li>
+            <li id="sort-date" data-sort-type="moddate" data-ascending="true">date</li>
+        </ul>
+
+        <ol id="list" class="file-list" type="1">
+        </ol>
+        
+        
+        
+    </article>
+        {{ range .List }}
+            {{ .Path }} <br>
+            <div class="Id">{{ .Id }}</div> 
+        {{end}}
+
+</main>
+
+
+</body>
+</html>
+
+
+

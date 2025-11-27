@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"gofiles/internal/models"
-	"gofiles/internal/utils"
+	"gofiles/utils"
 	"io/fs"
 	"os"
 	"path/filepath"

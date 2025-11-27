@@ -3,7 +3,7 @@ package handlers
 import (
 	"fmt"
 	"gofiles/internal/models"
-	"gofiles/internal/utils"
+	"gofiles/utils"
 	"html/template"
 	"log"
 	"net/http"
