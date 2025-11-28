@@ -5,6 +5,9 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
+	"gofiles/chroma"
+	"html/template"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -212,5 +215,24 @@ func VanillaRaw(xs []byte) error {
 		return e
 	}
 	return tx.Commit()
+
+}
+
+func TxtToChoroma(address string) (template.HTML, error) {
+
+	fin, err := os.Open(address)
+
+	if err != nil {
+		return "", err
+	}
+	defer fin.Close()
+
+	highlightCode, err := chroma.HighlightCode(address)
+
+	if err != nil {
+		return "", err
+	}
+
+	return template.HTML(highlightCode), nil
 
 }

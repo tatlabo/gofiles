@@ -67,7 +67,8 @@ func (flist *FilesDataList) GetList(name string, limit int, offset int) error {
 
 	language := "'polish'"
 	query := `
-	SELECT DISTINCT(id), data, ts_rank_cd( to_tsvector(%[1]s, keywords), websearch_to_tsquery(%[1]s, $1) ) as ts_rank
+	SELECT 
+	DISTINCT(id), data, ts_rank_cd( to_tsvector(%[1]s, keywords), websearch_to_tsquery(%[1]s, $1) ) as ts_rank
 	FROM files
 	WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords)
 	ORDER BY ts_rank DESC, id ASC
@@ -147,8 +148,11 @@ func (flist *FilesDataList) GetCount(name string) error {
 }
 
 type Directory struct {
-	Id   uuid.UUID `db:"id" json:"id"`
-	Path string    `db:"path" json:"path"`
+	Id        uuid.UUID `db:"id" json:"id"`
+	Path      string    `db:"path" json:"path"`
+	CreatedAt time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
+	Done      bool      `db:"scanned" json:"scanned"`
 }
 
 type Directries struct {
@@ -603,22 +607,24 @@ func explain(stmt string, placeholders ...any) {
 		return
 	}
 	defer conn.Close()
-	explainAnalyze := fmt.Sprintf("EXPLAIN ANALYZE %s", stmt)
-	log.Printf("%v %v", explainAnalyze, placeholders)
+	explainAnalyze := fmt.Sprintf(`EXPLAIN ANALYZE %s`, stmt)
+	fmt.Println()
+	fmt.Printf("%v %v", explainAnalyze, placeholders)
 	explainRows, err := conn.Query(explainAnalyze, placeholders...)
 	if err != nil {
 		log.Println("Error running EXPLAIN ANALYZE:", err)
 	}
 	defer explainRows.Close()
+	fmt.Println()
 	for explainRows.Next() {
 		var line string
 		if err := explainRows.Scan(&line); err != nil {
 			log.Println("Error scanning EXPLAIN ANALYZE line:", err)
 			continue
 		}
-		log.Println(line)
+		fmt.Println(line)
 	}
 	if err := explainRows.Err(); err != nil {
-		log.Println("Error iterating EXPLAIN ANALYZE rows:", err)
+		fmt.Println("Error iterating EXPLAIN ANALYZE rows:", err)
 	}
 }

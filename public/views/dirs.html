@@ -9,7 +9,8 @@
             {{ .Body.message }}
         </h4>
         {{end}}
-        {{ template "form"  }}
+
+        {{ template "add-path-form"  }}
 
         <ul id="list-headers" class="file-list headers">
             <li id="sort-name" data-sort-type="name" data-ascending="true">name</li>
@@ -20,15 +21,56 @@
         <ol id="list" class="file-list" type="1">
         </ol>
         
-        
-        
     </article>
-        {{ range .List }}
-            {{ .Path }} <br>
-            <div class="Id">{{ .Id }}</div> 
-        {{end}}
+        <ol id="list" class="file-list" type="1">
+            {{ range .List }}
+                {{ template "dirs" . }}
+            {{end}}
+        </ol>
 
 </main>
+
+{{ block "dirs" . }}
+    <li>{{ .Path }} {{ .Id }}</li>
+    <li>{{ .CreatedAt }} {{ .Done }}</li>
+{{ end }}
+
+
+
+{{ define "directory_list" }}
+    {{ if .Indexeddirs }}
+        {{ .Text }}
+        {{ range .Indexeddirs }}
+        <li class="dir-item" id="entry" data-id="{{ .Id }}">
+            <span class="item-name">
+                {{ .Path }}
+            </span>
+            <span class="item-id">
+                {{ .Id }}
+            </span>
+            <button class="delete" data-id="{{ .Id }}" data-name="{{ .Name }}">x</button>
+            <button class="scan" data-id="{{ .Id }}" data-path="{{ .Name }}">
+                {{ if .Done }}Rescan{{ else }}Scan{{ end }}
+            </button>
+            <time datetime="{{ .Created | formatDate }}" class="">
+                {{ .Created | formatDate }}
+            </time>
+        </li>
+        {{ end }}
+    {{ else }}
+        <li>No directories indexed yet.</li>
+    {{ end }}
+
+{{ end }}
+
+
+
+{{ define "add-path-form" }}
+<form action="/dirs" method="POST" class="form flex column" id="search-form">
+    <input class="" type="text" id="path" name="path" required placeholder="add path">
+    <button class="primary" type="submit" id="submit">Add Path</button>
+</form>
+{{ end }}
 
 
 </body>

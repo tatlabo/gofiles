@@ -273,7 +273,7 @@ func PreviewById(w http.ResponseWriter, r *http.Request) {
 
 		address := fmt.Sprintf("%s\\%s.%s", body.FileData.Directory, body.FileData.Name, body.FileData.Ext)
 		body.Body["address"] = address
-		html, err := txtToChoroma(address)
+		html, err := utils.TxtToChoroma(address)
 		if err != nil {
 			http.Error(w, "Error converting text to choroma", http.StatusInternalServerError)
 			return
@@ -287,25 +287,6 @@ func PreviewById(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tmpl.Render(w, "detail.html", body)
-
-}
-
-func txtToChoroma(address string) (template.HTML, error) {
-
-	fin, err := os.Open(address)
-
-	if err != nil {
-		return "", err
-	}
-	defer fin.Close()
-
-	highlightCode, err := chroma.HighlightCode(address)
-
-	if err != nil {
-		return "", err
-	}
-
-	return template.HTML(highlightCode), nil
 
 }
 

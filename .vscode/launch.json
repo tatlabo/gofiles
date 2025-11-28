@@ -1,0 +1,71 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "name": "Launch Main",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceFolder}/cmd/server/main/main.go",
+            "cwd": "${workspaceFolder}",
+            "env": {},
+            "args": []
+        },
+        {
+            "name": "Launch Current File",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${file}",
+            "cwd": "${fileDirname}"
+        },
+        {
+            "name": "Launch Package",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${fileDirname}",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Launch with Arguments",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceFolder}",
+            "args": [
+                "--config", "config.json",
+                "--port", "8080"
+            ]
+        },
+        {
+            "name": "Attach to Process",
+            "type": "go",
+            "request": "attach",
+            "mode": "local",
+            "processId": "${command:pickProcess}"
+        },
+        {
+            "name": "Debug Tests",
+            "type": "go",
+            "request": "launch",
+            "mode": "test",
+            "program": "${workspaceFolder}",
+            "args": [
+                "-test.v"
+            ]
+        },
+        {
+            "name": "Debug Current Test",
+            "type": "go",
+            "request": "launch",
+            "mode": "test",
+            "program": "${file}",
+            "args": [
+                "-test.run",
+                "^${selectedText}$"
+            ]
+        }
+    ]
+}
