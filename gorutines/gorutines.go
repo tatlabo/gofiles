@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func main() {
+func mainInGor() {
 	start := time.Now()
 	ch := make(chan string)
 
