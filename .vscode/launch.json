@@ -3,6 +3,50 @@
     "configurations": [
 
         {
+            "name": "Debug test.go with URL",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceFolder}/tests/test.go",
+            "args": [
+                "https://golang.org"
+            ]
+        },
+        {
+            "name": "Debug test.go with Custom URL",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceFolder}/tests/test.go",
+            "args": [
+                "https://adamkowal.info/"
+            ]
+        },
+        {
+            "name": "Debug test.go - Print with Params",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceFolder}/tests/test.go",
+            "args": [
+                "5",
+                "10",
+                "double"
+            ]
+        },
+        {
+            "name": "Launch with Arguments",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${file}",
+            "args": [
+                "https://adamkowal.info/"
+            ]  // You can modify this before each run
+        },
+
+
+        {
             "name": "Launch Main",
             "type": "go",
             "request": "launch",

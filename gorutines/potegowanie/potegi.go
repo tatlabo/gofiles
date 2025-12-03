@@ -2,15 +2,28 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"runtime"
+	"time"
 )
 
 func counter(out chan<- int) {
-	for x := 0; x < 14; x++ {
+	for x := range 14 {
 		out <- x
+		time.Sleep(100 * time.Millisecond)
 	}
 	close(out)
+}
+
+func square(in <-chan int, out chan<- int) {
+	for x := range in {
+		out <- x * x
+	}
+	close(out)
+}
+
+func printer(in <-chan int) {
+	for val := range in {
+		fmt.Printf("%d\n", val)
+	}
 }
 
 func main() {
@@ -19,23 +32,7 @@ func main() {
 
 	go counter(naturals)
 
-	go func() {
-		for y := range naturals {
-			fmt.Printf("%d (goroutines: %d)\n", y, runtime.NumGoroutine())
-			sq <- y * y
-		}
+	go square(naturals, sq)
 
-		close(sq)
-
-	}()
-
-	for {
-		x, ok := <-sq
-		if ok {
-			fmt.Printf("%d\n", x)
-		} else if !ok {
-			os.Exit(0)
-		}
-	}
-
+	printer(sq)
 }
