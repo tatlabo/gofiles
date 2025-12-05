@@ -1,27 +1,41 @@
 package main
 
-import "time"
-
 func main() {
-	chans := []chan int{make(chan int, 5), make(chan int, 5)}
+	type shoe uint
 
-	for i := range chans {
-		go func(i int, ch chan<- int) {
-			for {
-				time.Sleep(time.Duration(i) * 500 * time.Millisecond)
-				ch <- i
-			}
+	const (
+		_ shoe = 1 << iota
+		running
+		dress
+		sandal
+		clog
+	)
 
-		}(i+1, chans[i])
-	}
+	println(running, "\n", clog)
 
-	for j := 0; j < 10; j++ {
+}
+
+func merge(out chan<- int, a, b <-chan int) {
+
+	var aClosed, bClosed bool
+	for !bClosed || !aClosed {
 		select {
-		case msg1 := <-chans[0]:
-			println("Odebrano z kanału 1:", msg1)
-		case msg2 := <-chans[1]:
-			println("Odebrano z kanału 2:", msg2)
+		case v, ok := <-a:
+			if !ok {
+				aClosed = true
+				continue
+			}
+			out <- v
 
+		case v, ok := <-b:
+			{
+				if !ok {
+					bClosed = true
+					continue
+				}
+				out <- v
+			}
 		}
+		close(out)
 	}
 }

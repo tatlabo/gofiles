@@ -126,7 +126,7 @@ func (flist *FilesDataList) GetList(name string, limit int, offset int) error {
 	return nil
 }
 
-func (flist *FilesDataList) GetCount(name string) error {
+func (flist *FilesDataList) SelectCount(name string) error {
 
 	stmt := fmt.Sprintf(`
 	SELECT COUNT(DISTINCT id) FROM files

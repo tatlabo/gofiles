@@ -69,9 +69,14 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 			limit := 10
 			offset := 0
 
+			if keywords == "" {
+				tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "TNie podano słów kluczowych"}})
+				return
+			}
+
 			data := models.FilesDataList{}
 
-			if err := data.GetCount(keywords); err != nil {
+			if err := data.SelectCount(keywords); err != nil {
 				fmt.Println("Error getting search count: ", err)
 				tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "Error retrieving search results"}})
 				return
@@ -92,13 +97,10 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			if keywords != "" {
-				tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "data", "keywords": keywords}, FilesDataList: data,
-					Count: data.Count, SearchParams: map[string]string{"keywords": keywords, "limit": "10", "offset": "0"},
-				})
-			} else {
-				tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "TNie podano słów kluczowych"}})
-			}
+			tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "data", "keywords": keywords}, FilesDataList: data,
+				Count: data.Count, SearchParams: map[string]string{"keywords": keywords, "limit": "10", "offset": "0"},
+			})
+			return
 		}
 	}
 }
@@ -343,7 +345,7 @@ func HandleDirs(w http.ResponseWriter, r *http.Request) {
 
 			data := models.FilesDataList{}
 
-			if err := data.GetCount(keywords); err != nil {
+			if err := data.SelectCount(keywords); err != nil {
 				fmt.Println("Error getting search count: ", err)
 				tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "Error retrieving search results"}})
 				return
@@ -371,6 +373,7 @@ func HandleDirs(w http.ResponseWriter, r *http.Request) {
 			} else {
 				tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "TNie podano słów kluczowych"}})
 			}
+			return
 		}
 	}
 }

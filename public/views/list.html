@@ -8,12 +8,12 @@
         <span class="item-name">
             <a href="/item-detail/{{.Id}}" class="strong" hx-get="/item-detail/{{.Id}}" hx-target="#preview"
                 hx-swap="innerHTML" hx-boost="true" onClick="showPreview()">
-                {{ .Name }}.{{ if .Ext }}{{ .Ext }}{{ end}}
+                {{ .Name }}{{ if .Ext }}.{{ .Ext }}{{ end}}
             </a>
         </span>
         <span class="item-size">
             <a href="/detail/{{ .Id }}">
-                {{ .SizeSimple }}
+                {{ if .IsDir }}folder{{ else }}{{ .SizeSimple }}{{ end}} {{ .Type }}
             </a>
         </span>
 
