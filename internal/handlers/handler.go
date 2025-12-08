@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -63,6 +64,7 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 
 	case http.MethodPost:
 		{
+			var wg sync.WaitGroup
 			r.ParseForm()
 			keywords := r.FormValue("name")
 
@@ -76,26 +78,35 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 
 			data := models.FilesDataList{}
 
-			if err := data.SelectCount(keywords); err != nil {
-				fmt.Println("Error getting search count: ", err)
-				tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "Error retrieving search results"}})
-				return
-			}
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				if err := data.SelectCount(keywords); err != nil {
+					fmt.Println("Error getting search count: ", err)
+					tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "Error retrieving search results"}})
+					return
+				}
+				if data.Count == 0 {
+					templatePage = "home.html"
+					tmpl.Render(w, templatePage,
+						IndexData{Title: "No results",
+							Body:         map[string]string{"message": "No results found for the given keywords"},
+							SearchParams: map[string]string{"keywords": keywords}})
+					return
+				}
+			}()
+			// wg.Wait()
 
-			if data.Count == 0 {
-				templatePage = "home.html"
-				tmpl.Render(w, templatePage,
-					IndexData{Title: "No results",
-						Body:         map[string]string{"message": "No results found for the given keywords"},
-						SearchParams: map[string]string{"keywords": keywords}})
-				return
-			}
-
-			if err := data.GetList(keywords, limit, offset); err != nil {
-				fmt.Println("Error getting search list: ", err)
-				tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "Error retrieving search results"}})
-				return
-			}
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				if err := data.GetList(keywords, limit, offset); err != nil {
+					fmt.Println("Error getting search list: ", err)
+					tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "Error retrieving search results"}})
+					return
+				}
+			}()
+			wg.Wait()
 
 			tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "data", "keywords": keywords}, FilesDataList: data,
 				Count: data.Count, SearchParams: map[string]string{"keywords": keywords, "limit": "10", "offset": "0"},
