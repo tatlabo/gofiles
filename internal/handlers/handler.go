@@ -64,6 +64,11 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 
 	case http.MethodPost:
 		{
+			start := time.Now()
+			var dataStream chan any
+			dataStream = make(chan any)
+			defer close(dataStream)
+
 			var wg sync.WaitGroup
 			r.ParseForm()
 			keywords := r.FormValue("name")
@@ -95,7 +100,8 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 			}()
-			// wg.Wait()
+
+			wg.Wait()
 
 			wg.Add(1)
 			go func() {
@@ -111,6 +117,8 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 			tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "data", "keywords": keywords}, FilesDataList: data,
 				Count: data.Count, SearchParams: map[string]string{"keywords": keywords, "limit": "10", "offset": "0"},
 			})
+
+			log.Printf("\n\n\nSearch completed in %v\n\n", time.Since(start))
 			return
 		}
 	}
