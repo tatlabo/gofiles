@@ -10,8 +10,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"runtime"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -69,7 +69,7 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 			dataStream = make(chan any)
 			defer close(dataStream)
 
-			var wg sync.WaitGroup
+			// var wg sync.WaitGroup
 			r.ParseForm()
 			keywords := r.FormValue("name")
 
@@ -83,42 +83,69 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 
 			data := models.FilesDataList{}
 
-			wg.Add(1)
+			count := make(chan int, 1)
+			errCh := make(chan error)
 			go func() {
-				defer wg.Done()
+				defer close(count)
+				// defer wg.Done()
 				if err := data.SelectCount(keywords); err != nil {
-					fmt.Println("Error getting search count: ", err)
+					errCh <- err
 					tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "Error retrieving search results"}})
 					return
 				}
-				if data.Count == 0 {
+				count <- data.Count
+			}()
+
+			select {
+			case err := <-errCh:
+				fmt.Println("Error getting search count: ", err)
+				return
+			case c := <-count:
+				if c == 0 {
 					templatePage = "home.html"
 					tmpl.Render(w, templatePage,
 						IndexData{Title: "No results",
 							Body:         map[string]string{"message": "No results found for the given keywords"},
 							SearchParams: map[string]string{"keywords": keywords}})
 					return
+
 				}
-			}()
+			}
 
-			wg.Wait()
-
-			wg.Add(1)
+			res := make(chan models.FilesDataList)
+			resErr := make(chan error)
 			go func() {
-				defer wg.Done()
+				defer close(res)
+				defer close(resErr)
+
+				// defer wg.Done()
 				if err := data.GetList(keywords, limit, offset); err != nil {
-					fmt.Println("Error getting search list: ", err)
+					resErr <- err
 					tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "Error retrieving search results"}})
 					return
 				}
+				res <- data
 			}()
-			wg.Wait()
 
-			tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "data", "keywords": keywords}, FilesDataList: data,
-				Count: data.Count, SearchParams: map[string]string{"keywords": keywords, "limit": "10", "offset": "0"},
-			})
+			select {
+			case err := <-errCh:
+				fmt.Println("Error getting search count: ", err)
+				return
+			case err := <-resErr:
+				fmt.Println("Error getting search list: ", err)
+				return
+			case result := <-res:
+				tmpl.Render(w, templatePage, IndexData{
+					Title:         "My Title",
+					Body:          map[string]string{"message": "data", "keywords": keywords},
+					FilesDataList: result,
+					Count:         result.Count,
+					SearchParams:  map[string]string{"keywords": keywords, "limit": "10", "offset": "0"},
+				})
+			}
 
 			log.Printf("\n\n\nSearch completed in %v\n\n", time.Since(start))
+			log.Printf("nr of gorutines (after Render): %v", runtime.NumGoroutine())
 			return
 		}
 	}
@@ -212,6 +239,7 @@ func HandleAppend(w http.ResponseWriter, r *http.Request) {
 	tmpl.Render(w, "append.html", IndexData{Title: "My Title", Body: map[string]string{"message": "data", "keywords": keywords}, FilesDataList: data,
 		Count: data.Count, SearchParams: map[string]string{"keywords": keywords, "limit": lStr, "offset": offsetStr},
 	})
+	log.Printf("nr of gorutines (HandleAppend): %v", runtime.NumGoroutine())
 
 }
 
