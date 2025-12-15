@@ -1,0 +1,30 @@
+github.com/jackc/pgx
+
+
+###############
+
+golang-migrate/migrate
+
+001_initial_setup.up.sql
+
+CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    age INTEGER NOT NULL,
+    create_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT TIMESTAMP
+);
+
+001_initia1_setup. clwvn. sql
+
+DROP TABLE IF EXISTS users CASCADE;
+
+##############
+
+go-bindata
+
+
+##############
+
+kyleconroy/sqlc
+
+https://youtu.be/AgHdVPSty7k?t=1809

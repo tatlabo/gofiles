@@ -65,8 +65,8 @@ type FilesDataList struct {
 
 func (flist *FilesDataList) GetList(name string, limit int, offset int) error {
 
-	language := "'polish'"
-	query := `
+	const language = "'polish'"
+	const query = `
 	SELECT 
 	DISTINCT(id), data, ts_rank_cd( to_tsvector(%[1]s, keywords), websearch_to_tsquery(%[1]s, $1) ) as ts_rank
 	FROM files
@@ -128,9 +128,10 @@ func (flist *FilesDataList) GetList(name string, limit int, offset int) error {
 
 func (flist *FilesDataList) SelectCount(name string) error {
 
-	stmt := fmt.Sprintf(`
+	const language = "'polish'"
+	var stmt = fmt.Sprintf(`
 	SELECT COUNT(DISTINCT id) FROM files
-	WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords);`, "'polish'")
+	WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords);`, language)
 
 	conn, err := utils.PgConn()
 	if err != nil {
@@ -162,7 +163,7 @@ type Directries struct {
 }
 
 func (l *Directries) GetList() error {
-	query := `SELECT id, json data FROM directory;`
+	const query = `SELECT id, json data FROM directory;`
 
 	conn, err := utils.PgConn()
 	if err != nil {
@@ -235,13 +236,13 @@ func (f *FileData) CheckExtension() (e error) {
 
 func (f *FileData) GetById(id uuid.UUID) error {
 
+	const stmt = `SELECT data, directory_id, keywords FROM files WHERE id=$1;`
+
 	conn, err := utils.PgConn()
 	if err != nil {
 		return fmt.Errorf("Error connecting to database:\n%v", err)
 	}
 	defer conn.Close()
-
-	stmt := `SELECT data, directory_id, keywords FROM files WHERE id=$1;`
 
 	raw := []byte{}
 	dirId := uuid.UUID{}
@@ -336,7 +337,7 @@ func (p *IndexedDirs) SetParams(c echo.Context) error {
 
 func (i *IndexedDirs) List() error {
 
-	query := `SELECT id, name, done, created FROM directory ORDER BY created DESC;`
+	const query = `SELECT id, name, done, created FROM directory ORDER BY created DESC;`
 
 	conn, err := utils.PgConn()
 	if err != nil {
