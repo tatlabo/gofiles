@@ -289,7 +289,7 @@ func insertToPostgres(flist *[]models.Finfo) error {
 
 func ScanDir(dir string) error {
 
-	var sqlInsertReturn = `INSERT INTO directory (json) VALUES ($1::jsonb) RETURNING id;`
+	const sqlInsertReturn = `INSERT INTO directory (json) VALUES ($1::jsonb) RETURNING id;`
 	var path string
 
 	path = strings.TrimSpace(dir)

@@ -9,19 +9,20 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/google/uuid"
+
 	"embed"
 
 	_ "github.com/lib/pq"
 )
 
+var directory string
+var directoryId uuid.UUID
+
 const outputFile = "output.txt"
 
 var skipDirectories = []string{".git", "node_modules", "tmp", "temp", ".vscode", ".idea", "vendor", "build", "dist", "__pycache__", ",bin", ".vite", "$SysReset", "$Windows.~WS", "OneDriveTemp", "AppData"}
 var skipFiles = []string{".DS_Store", ".gitignore", ".gitattributes", ".gitmodules", "package-lock.json", "yarn.lock", "dpx", ".gitignore"}
-
-var query = `INSERT INTO register (body) VALUES ($1);`
-
-var fileList = []models.Finfo{}
 
 var log = []string{}
 
@@ -130,6 +131,7 @@ func visit(path string, d fs.DirEntry, err error) error {
 
 //go:embed migrations/*.sql
 var migrations embed.FS
+var fileList = []models.Finfo{}
 
 func main() {
 
@@ -150,10 +152,47 @@ func main() {
 
 	}
 
+	sqlInsertReturn := `INSERT INTO directory (path) VALUES ($1) ON CONFLICT (path) DO NOTHING RETURNING id;`
+
+	if err := VanillaRawReturn(sqlInsertReturn, path); err != nil {
+		fmt.Fprintf(os.Stderr, "Error inserting directory: %v\n", err)
+		os.Exit(1)
+	}
+
 	if err := JsonInsert(path); err != nil {
 		fmt.Fprintf(os.Stderr, "invalid path: %v\n", err)
 		os.Exit(1)
 	}
+
+}
+
+func JsonInsert(path string) error {
+
+	// walk through the directories
+	err := filepath.WalkDir(path, visit)
+	if err != nil {
+		writeLog(&log)
+		return fmt.Errorf("Error walking through directories: %w", err)
+	}
+
+	// insert into files
+	stmt := filelistToSQL(fileList)
+
+	fmt.Println("Count of items: ", len(stmt))
+	fmt.Printf("There was %#v items to insert", stmt)
+	fmt.Println()
+
+	if err := insertToPostgres(stmt); err != nil {
+		return fmt.Errorf("Error for insertToPostgres: %w", err)
+	} else {
+		fmt.Printf("There was %d items inserted\n", len(stmt))
+	}
+
+	if err := insertIntoDirs(path); err != nil {
+		return fmt.Errorf("Error inserting into indexed directories: %w", err)
+	}
+
+	return nil
 
 }
 
@@ -205,9 +244,12 @@ func insertToPostgres(stmt []string) error {
 		// quantity = 100
 	)
 
+	const query = `INSERT INTO files (directory_id, data) VALUES ($1, $2);`
+
 	for i := range stmt {
-		_, err := db.Exec(query, i)
+		_, err := db.Exec(query, directoryId, stmt[i])
 		if err != nil {
+			return fmt.Errorf("error inserting file: %w", err)
 		}
 	}
 
@@ -223,107 +265,44 @@ func insertToPostgres(stmt []string) error {
 	return nil
 }
 
-func insertItem(f []models.Finfo) []string {
+func filelistToSQL(f []models.Finfo) []string {
 	var json []string
 	for i := range len(f) {
 
-		json = append(json, fmt.Sprintf(`'{"path":  "%s",
+		json = append(json, fmt.Sprintf(`{"path":  "%s",
 			"name":  "%s",
 			"ext":   "%s",
 			"is_dir": "%v",
 			"size":  "%d",
-			"mod_time": "%s"}'`, strings.ReplaceAll(f[i].Directory, "\\", "/"), f[i].Name, f[i].Ext, f[i].IsDir, f[i].Size, f[i].ModTime))
+			"mod_time": "%s"}`, strings.ReplaceAll(f[i].Directory, "\\", "/"), f[i].Name, f[i].Ext, f[i].IsDir, f[i].Size, f[i].ModTime))
 
 	}
 
 	return json
 }
 
-func ScanDir(dir string) error {
+func VanillaRawReturn(q string, param string) error {
 
-	var path string
+	var e error
 
-	path = strings.TrimSpace(dir)
-	// path = strings.ReplaceAll(path, "/", "\\")
-	if _, err := os.ReadDir(path); err != nil {
-		return fmt.Errorf("invalid path: %s", path)
+	db, e := utils.PgConn()
+	if e != nil {
+		return e
+	}
+	defer db.Close()
+
+	tx, e := db.Begin()
+	if e != nil {
+		return e
 
 	}
-
-	// create tables
-	if err := SqlMigrations("migrations/001_initial.sql"); err != nil {
-		return fmt.Errorf("Error: migrations/001_initial.sql creating tables: %w", err)
-	}
-
-	// walk through the directories
-	err := filepath.WalkDir(path, visit)
+	err := tx.QueryRow(q, param).Scan(&directoryId)
 	if err != nil {
-		writeLog(&log)
-		return fmt.Errorf("Error walking through directories: %w", err)
+		tx.Rollback() // Rollback on error
+		return fmt.Errorf("failed to insert and scan: %w", err)
 	}
 
-	// insert into files
-	stmt := insertItem(fileList)
-	fmt.Println("Count of items: ", len(stmt))
-
-	if err := insertToPostgres(stmt); err != nil {
-		return fmt.Errorf("Error for insertToPostgres: %w", err)
-	} else {
-		fmt.Printf("There was %d items inserted\n", len(stmt))
-	}
-
-	// update ext, keywords and ext_id
-	if err := SqlMigrations("migrations/002_initial.sql"); err != nil {
-		return fmt.Errorf("Error for: migrations/002_initial.sql: update ext, keywords and ext_id: %w", err)
-	}
-
-	// update files.ext_id
-	if err := SqlMigrations("migrations/003_initial.sql"); err != nil {
-		return fmt.Errorf("Error for: in migrations/003_initial.sql update files.ext_id: %w", err)
-	}
-
-	if err := insertIntoDirs(path); err != nil {
-		return fmt.Errorf("Error inserting into indexed directories: %w", err)
-	}
+	tx.Commit()
 
 	return nil
-
-}
-
-func JsonInsert(dir string) error {
-
-	var path string
-
-	path = strings.TrimSpace(dir)
-	path = strings.ReplaceAll(path, "\\", "/")
-	if _, err := os.ReadDir(path); err != nil {
-		return fmt.Errorf("invalid path: %s", path)
-
-	}
-
-	// walk through the directories
-	err := filepath.WalkDir(path, visit)
-	if err != nil {
-		writeLog(&log)
-		return fmt.Errorf("Error walking through directories: %w", err)
-	}
-
-	// insert into files
-	stmt := insertItem(fileList)
-	fmt.Println("Count of items: ", len(stmt))
-
-	fmt.Printf("There was %#v items to insert\n", stmt)
-
-	if err := insertToPostgres(stmt); err != nil {
-		return fmt.Errorf("Error for insertToPostgres: %w", err)
-	} else {
-		fmt.Printf("There was %d items inserted\n", len(stmt))
-	}
-
-	if err := insertIntoDirs(path); err != nil {
-		return fmt.Errorf("Error inserting into indexed directories: %w", err)
-	}
-
-	return nil
-
 }
