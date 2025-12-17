@@ -69,7 +69,6 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 			dataStream = make(chan any)
 			defer close(dataStream)
 
-			// var wg sync.WaitGroup
 			r.ParseForm()
 			keywords := r.FormValue("name")
 
@@ -385,42 +384,21 @@ func HandleDirs(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		{
 			r.ParseForm()
-			keywords := r.FormValue("name")
+			path := r.FormValue("path")
 
-			limit := 10
-			offset := 0
-
-			data := models.FilesDataList{}
-
-			if err := data.SelectCount(keywords); err != nil {
-				fmt.Println("Error getting search count: ", err)
-				tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "Error retrieving search results"}})
-				return
+			data := models.Directries{
+				Title: path,
+				Body:  map[string]string{"message": "Indexuj katalogi" + path},
 			}
 
-			if data.Count == 0 {
-				templatePage = "home.html"
-				tmpl.Render(w, templatePage,
-					IndexData{Title: "No results",
-						Body:         map[string]string{"message": "No results found for the given keywords"},
-						SearchParams: map[string]string{"keywords": keywords}})
-				return
-			}
-
-			if err := data.GetList(keywords, limit, offset); err != nil {
+			if err := data.GetList(); err != nil {
 				fmt.Println("Error getting search list: ", err)
-				tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "Error retrieving search results"}})
+				tmpl.Render(w, templatePage, data)
 				return
 			}
 
-			if keywords != "" {
-				tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "data", "keywords": keywords}, FilesDataList: data,
-					Count: data.Count, SearchParams: map[string]string{"keywords": keywords, "limit": "10", "offset": "0"},
-				})
-			} else {
-				tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "TNie podano słów kluczowych"}})
-			}
-			return
+			tmpl.Render(w, templatePage, data)
+
 		}
 	}
 }

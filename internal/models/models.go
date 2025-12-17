@@ -149,11 +149,11 @@ func (flist *FilesDataList) SelectCount(name string) error {
 }
 
 type Directory struct {
-	Id        uuid.UUID `db:"id" json:"id"`
-	Path      string    `db:"path" json:"path"`
-	CreatedAt time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
-	Done      bool      `db:"scanned" json:"scanned"`
+	Id        uuid.UUID `json:"id" db:"id"`
+	Path      string    `json:"path" db:"path"`
+	IsDone    bool      `json:"isDone" db:"is_done"`
+	CreatedAt time.Time `json:"createdAt" db:"created_at"`
+	UpdatedAt time.Time `json:"updatedAt" db:"updated_at"`
 }
 
 type Directries struct {
@@ -163,7 +163,7 @@ type Directries struct {
 }
 
 func (l *Directries) GetList() error {
-	const query = `SELECT id, json data FROM directory;`
+	const query = `SELECT id, path, is_done, created_at, updated_at FROM directory;`
 
 	conn, err := utils.PgConn()
 	if err != nil {
@@ -178,31 +178,14 @@ func (l *Directries) GetList() error {
 
 	for rows.Next() {
 
-		id := uuid.UUID{}
-		data := Directory{}
+		d := Directory{}
 
-		rawData := []byte{}
-
-		err := rows.Scan(
-			&id,
-			&rawData,
-		)
+		err := rows.Scan(&d.Id, &d.Path, &d.IsDone, &d.CreatedAt, &d.UpdatedAt)
 		if err != nil {
 			return err
 		}
 
-		err = json.Unmarshal(rawData, &data)
-
-		dataWithId := Directory{
-			Id:   id,
-			Path: data.Path,
-		}
-
-		if err != nil {
-			return err
-		}
-
-		l.List = append(l.List, dataWithId)
+		l.List = append(l.List, d)
 	}
 
 	return nil
