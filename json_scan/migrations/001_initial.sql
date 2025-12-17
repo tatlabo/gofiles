@@ -1,30 +1,33 @@
 
-CREATE TABLE IF NOT EXISTS ext (id SERIAL PRIMARY KEY,ext TEXT UNIQUE);
+CREATE TABLE IF NOT EXISTS directory (
+id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+path TEXT UNIQUE,
+is_done BOOLEAN NOT NULL DEFAULT FALSE,
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+UNIQUE (path));
 
-CREATE TABLE IF NOT EXISTS files 
-(id SERIAL PRIMARY KEY,
-parent_id INTEGER,
-path TEXT NOT NULL,
-name TEXT NOT NULL,
-ext TEXT,
-ext_id INTEGER, FOREIGN KEY(ext_id) REFERENCES ext(id) ON DELETE CASCADE,
-is_dir BOOLEAN NOT NULL DEFAULT FALSE,
-size BIGINT,
+CREATE TABLE IF NOT EXISTS files (
+id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+directory_id UUID, FOREIGN KEY(directory_id) REFERENCES directory(id) ON DELETE CASCADE,
+data jsonb,
 keywords TEXT,
-mod_time TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-UNIQUE (path, name, ext, is_dir));
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+UNIQUE (directory_id, data));
 
 CREATE TABLE IF NOT EXISTS search
 (id SERIAL PRIMARY KEY,
 input TEXT,
 created TIMESTAMPTZ NOT NULL DEFAULT NOW());
 
-CREATE TABLE IF NOT EXISTS indexed (
-id SERIAL PRIMARY KEY,
-path TEXT NOT NULL UNIQUE,
-done BOOLEAN NOT NULL DEFAULT FALSE,
-created TIMESTAMPTZ NOT NULL DEFAULT NOW());
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_ts_config WHERE cfgname = 'polish'
+    ) THEN
+        CREATE TEXT SEARCH CONFIGURATION polish (COPY = simple);
+    END IF;
+END $$;
 
-
-CREATE INDEX IF NOT EXISTS idx_ext ON files(LOWER(ext));
 CREATE INDEX IF NOT EXISTS idx_keywords_gin ON files USING GIN (to_tsvector('polish', keywords));

@@ -1,35 +1,55 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"slices"
 	"strconv"
-	"strings"
+	"time"
 
 	"golang.org/x/net/html"
 )
 
+type FinfoJSON struct {
+	Directory string    `json:"directory"`
+	Name      string    `json:"name"`
+	Ext       string    `json:"ext"`
+	IsDir     bool      `json:"isDir"`
+	Size      int64     `json:"size"`
+	ModTime   time.Time `json:"modTime"`
+}
+
 func main() {
 
-	path := os.Args[1]
+	// path := os.Args[1]
 
-	fetched, err := fetchBody(path)
-	if err != nil {
-		panic(err)
-	}
+	// fetched, err := fetchBody(path)
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	document, err := html.Parse(strings.NewReader(fetched))
-	fmt.Println(document)
-	if err != nil {
-		panic(err)
-	}
-	for _, node := range visit(nil, document) {
-		fmt.Println(node)
-	}
+	// document, err := html.Parse(strings.NewReader(fetched))
+	// fmt.Println(document)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// for _, node := range visit(nil, document) {
+	// 	fmt.Println(node)
+	// }
 
+	j, _ := json.Marshal(FinfoJSON{
+		Directory: "C:/test",
+		Name:      "file.txt",
+		Ext:       ".txt",
+		IsDir:     false,
+		Size:      1234,
+		ModTime:   time.Now(),
+	})
+
+	fmt.Println(string(j))
 }
 
 func fetchBody(path string) (string, error) {

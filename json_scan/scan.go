@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"gofiles/internal/models"
 	"gofiles/utils"
@@ -8,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -15,11 +17,6 @@ import (
 
 	_ "github.com/lib/pq"
 )
-
-var directory string
-var directoryId uuid.UUID
-
-const outputFile = "output.txt"
 
 var skipDirectories = []string{".git", "node_modules", "tmp", "temp", ".vscode", ".idea", "vendor", "build", "dist", "__pycache__", ",bin", ".vite", "$SysReset", "$Windows.~WS", "OneDriveTemp", "AppData"}
 var skipFiles = []string{".DS_Store", ".gitignore", ".gitattributes", ".gitmodules", "package-lock.json", "yarn.lock", "dpx", ".gitignore"}
@@ -79,6 +76,24 @@ func VanillaRaw(xs []byte) error {
 	return tx.Commit()
 }
 
+func VanillaSQL(s string) error {
+
+	db, err := utils.PgConn()
+	if err != nil {
+		return (err)
+	}
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	if _, err := tx.Exec(s); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
 func visit(path string, d fs.DirEntry, err error) error {
 
 	if err != nil {
@@ -105,7 +120,7 @@ func visit(path string, d fs.DirEntry, err error) error {
 			return nil
 		}
 
-		s := models.Finfo{}
+		s := models.FinfoJSON{}
 		s.Name = strings.TrimSuffix(d.Name(), extension)
 		s.Name = strings.ReplaceAll(s.Name, "'", "''")
 
@@ -131,7 +146,18 @@ func visit(path string, d fs.DirEntry, err error) error {
 
 //go:embed migrations/*.sql
 var migrations embed.FS
-var fileList = []models.Finfo{}
+var fileList = []models.FinfoJSON{}
+
+type Fdirectory struct {
+	ID        uuid.UUID `json:"id" db:"id"`
+	Directory string    `json:"directory " db:"directory"`
+	IsDone    bool      `json:"isDone" db:"is_done"`
+	CreatedAt time.Time `json:"createdAt" db:"created_at"`
+	UpdatedAt time.Time `json:"updatedAt" db:"updated_at"`
+}
+
+var directory string
+var directoryId uuid.UUID
 
 func main() {
 
@@ -152,15 +178,20 @@ func main() {
 
 	}
 
-	sqlInsertReturn := `INSERT INTO directory (path) VALUES ($1) ON CONFLICT (path) DO NOTHING RETURNING id;`
-
-	if err := VanillaRawReturn(sqlInsertReturn, path); err != nil {
-		fmt.Fprintf(os.Stderr, "Error inserting directory: %v\n", err)
+	directory = path
+	err := insertIntoDirs(path)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error inserting into directory table: %v\n", err)
 		os.Exit(1)
 	}
 
 	if err := JsonInsert(path); err != nil {
 		fmt.Fprintf(os.Stderr, "invalid path: %v\n", err)
+		os.Exit(1)
+	}
+
+	if err := updateDirs(path); err != nil {
+		fmt.Fprintf(os.Stderr, "Error updating directory table: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -188,9 +219,9 @@ func JsonInsert(path string) error {
 		fmt.Printf("There was %d items inserted\n", len(stmt))
 	}
 
-	if err := insertIntoDirs(path); err != nil {
-		return fmt.Errorf("Error inserting into indexed directories: %w", err)
-	}
+	// if err := insertIntoDirs(path); err != nil {
+	// 	return fmt.Errorf("Error inserting into indexed directories: %w", err)
+	// }
 
 	return nil
 
@@ -198,18 +229,30 @@ func JsonInsert(path string) error {
 
 func insertIntoDirs(path string) error {
 
-	const insertIntoDirs = `INSERT INTO indexed (path, done)
-	VALUES ($1, $2) ON CONFLICT (path) DO UPDATE SET done = EXCLUDED.done;`
+	const stmt = `INSERT INTO directory(path)
+	VALUES ($1) RETURNING id;`
 
-	conn, err := utils.PgConn()
+	err := VanillaRawReturn(stmt, directory)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error inserting directory: %v\n", err)
+		os.Exit(10)
+	}
+
+	return nil
+}
+
+func updateDirs(path string) error {
+	const stmt = `UPDATE directory SET is_done = $1, updated_at = NOW() WHERE id=$2;`
+
+	db, err := utils.PgConn()
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	defer db.Close()
 
-	_, err = conn.Exec(insertIntoDirs, path, true)
+	_, err = db.Exec(stmt, true, directoryId)
 	if err != nil {
-		return err
+		return fmt.Errorf("error updating directory: %w", err)
 	}
 
 	return nil
@@ -231,23 +274,26 @@ func writeLog(log *[]string) error {
 	return nil
 }
 
-func insertToPostgres(stmt []string) error {
+func insertToPostgres(stmt []byte) error {
 	db, err := utils.PgConn()
 	if err != nil {
 		panic(err)
 	}
 	defer db.Close()
 
-	var (
-		s = len(stmt)
-		// counter  int
-		// quantity = 100
-	)
+	s := len(fileList) // Use fileList length, not stmt bytes
 
-	const query = `INSERT INTO files (directory_id, data) VALUES ($1, $2);`
+	const query = `INSERT INTO files (directory_id, data) VALUES ($1, $2::jsonb);`
 
-	for i := range stmt {
-		_, err := db.Exec(query, directoryId, stmt[i])
+	// Insert each file from fileList
+	for _, file := range fileList {
+		jsonData, err := json.Marshal(file)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error marshalling file: %v\n", err)
+			continue
+		}
+
+		_, err = db.Exec(query, directoryId, string(jsonData))
 		if err != nil {
 			return fmt.Errorf("error inserting file: %w", err)
 		}
@@ -256,47 +302,50 @@ func insertToPostgres(stmt []string) error {
 	if s == 0 {
 		fmt.Println("No items to insert")
 		os.Exit(1)
-	} else if s < 5 {
-		fmt.Println(stmt)
-	} else {
-		fmt.Println(stmt[s-3:])
 	}
 
+	fmt.Printf("Inserted %d files\n", s)
 	return nil
 }
 
-func filelistToSQL(f []models.Finfo) []string {
-	var json []string
-	for i := range len(f) {
-
-		json = append(json, fmt.Sprintf(`{"path":  "%s",
-			"name":  "%s",
-			"ext":   "%s",
-			"is_dir": "%v",
-			"size":  "%d",
-			"mod_time": "%s"}`, strings.ReplaceAll(f[i].Directory, "\\", "/"), f[i].Name, f[i].Ext, f[i].IsDir, f[i].Size, f[i].ModTime))
-
+func filelistToSQL(f []models.FinfoJSON) []byte {
+	// This function is no longer needed with the fixed insertToPostgres
+	// But keeping it for compatibility
+	var jsonData []byte
+	for i := range f {
+		j, err := json.Marshal(models.FinfoJSON{
+			Directory: strings.ReplaceAll(f[i].Directory, "\\", "/"),
+			Name:      f[i].Name,
+			Ext:       f[i].Ext,
+			IsDir:     f[i].IsDir,
+			Size:      f[i].Size,
+			ModTime:   f[i].ModTime,
+		})
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error marshalling to JSON: %v\n", err)
+			continue
+		}
+		jsonData = append(jsonData, j...)
 	}
-
-	return json
+	return jsonData
 }
 
 func VanillaRawReturn(q string, param string) error {
 
 	var e error
 
-	db, e := utils.PgConn()
-	if e != nil {
-		return e
+	db, err := utils.PgConn()
+	if err != nil {
+		return err
 	}
 	defer db.Close()
 
-	tx, e := db.Begin()
+	tx, err := db.Begin()
 	if e != nil {
-		return e
-
+		return err
 	}
-	err := tx.QueryRow(q, param).Scan(&directoryId)
+
+	err = tx.QueryRow(q, param).Scan(&directoryId)
 	if err != nil {
 		tx.Rollback() // Rollback on error
 		return fmt.Errorf("failed to insert and scan: %w", err)
