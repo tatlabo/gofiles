@@ -160,6 +160,11 @@ func ValidatePath(path string) (string, error) {
 		return "", fmt.Errorf("path cannot be empty")
 	}
 	
+	// Check for path traversal attempts before cleaning
+	if strings.Contains(path, "..") {
+		return "", fmt.Errorf("path traversal detected: path contains '..'")
+	}
+	
 	// Clean and normalize the path
 	cleanPath := filepath.Clean(path)
 	
@@ -167,11 +172,6 @@ func ValidatePath(path string) (string, error) {
 	absPath, err := filepath.Abs(cleanPath)
 	if err != nil {
 		return "", fmt.Errorf("invalid path: %w", err)
-	}
-	
-	// Check for path traversal attempts
-	if strings.Contains(path, "..") {
-		return "", fmt.Errorf("path traversal detected: path contains '..'")
 	}
 	
 	// Check if path exists

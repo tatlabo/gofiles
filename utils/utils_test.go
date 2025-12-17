@@ -3,6 +3,7 @@ package utils
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -70,7 +71,7 @@ func TestValidatePath(t *testing.T) {
 			if tt.expectError {
 				if err == nil {
 					t.Errorf("Expected error containing '%s', but got no error", tt.errorMsg)
-				} else if tt.errorMsg != "" && !containsString(err.Error(), tt.errorMsg) {
+				} else if tt.errorMsg != "" && !strings.Contains(err.Error(), tt.errorMsg) {
 					t.Errorf("Expected error containing '%s', but got: %v", tt.errorMsg, err)
 				}
 			} else {
@@ -103,7 +104,7 @@ func TestValidatePath_PathTraversalVariations(t *testing.T) {
 			if err == nil {
 				t.Errorf("Expected error for path traversal attempt: %s", path)
 			}
-			if !containsString(err.Error(), "path traversal detected") {
+			if !strings.Contains(err.Error(), "path traversal detected") {
 				t.Errorf("Expected 'path traversal detected' error, got: %v", err)
 			}
 		})
@@ -153,19 +154,4 @@ func TestValidatePath_ReturnsAbsolutePath(t *testing.T) {
 	if result != expectedAbs {
 		t.Errorf("Expected absolute path %s, got %s", expectedAbs, result)
 	}
-}
-
-// Helper function to check if a string contains a substring
-func containsString(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(substr) == 0 || 
-		(len(s) > 0 && len(substr) > 0 && findSubstring(s, substr)))
-}
-
-func findSubstring(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }
