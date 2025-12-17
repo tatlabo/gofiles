@@ -162,6 +162,24 @@ type Directries struct {
 	Title string            `json:"title"`
 }
 
+func (l *Directries) AddPath(path string) error {
+	const query = `INSERT INTO directory (path, is_done, created_at, updated_at) VALUES ($1, false, NOW(), NOW()) RETURNING id, path, is_done, created_at, updated_at;`
+
+	conn, err := utils.PgConn()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	d := Directory{}
+	err = conn.QueryRow(query, path).Scan(&d.Id, &d.Path, &d.IsDone, &d.CreatedAt, &d.UpdatedAt)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (l *Directries) GetList() error {
 	const query = `SELECT id, path, is_done, created_at, updated_at FROM directory;`
 

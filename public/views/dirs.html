@@ -8,6 +8,8 @@
         <h4> 
             {{ .Body.message }}
         </h4>
+        {{ if .Body.error }}<p>{{ .Body.error }}</p>{{ end }}
+        {{ if .Body.path }}<p>Path: {{ .Body.path }}</p>{{ end }}
         {{end}}
 
         {{ template "add-path-form"  }}

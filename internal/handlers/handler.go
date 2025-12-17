@@ -365,9 +365,18 @@ func HandleDirs(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		{
+			// Get query parameters from URL
+			successMsg := r.URL.Query().Get("success")
+			addedPath := r.URL.Query().Get("added_path")
+
+			message := "Zindexuj katalogi"
+			if successMsg == "true" && addedPath != "" {
+				message = fmt.Sprintf("Successfully added path: %s", addedPath)
+			}
+
 			data := models.Directries{
 				Title: "Directory listing",
-				Body:  map[string]string{"message": "Zindexuj katalogi"},
+				Body:  map[string]string{"message": message},
 			}
 
 			if err := data.GetList(); err != nil {
@@ -375,8 +384,6 @@ func HandleDirs(w http.ResponseWriter, r *http.Request) {
 				tmpl.Render(w, templatePage, data)
 				return
 			}
-
-			log.Printf("%v", data.List)
 
 			tmpl.Render(w, templatePage, data)
 		}
@@ -386,18 +393,29 @@ func HandleDirs(w http.ResponseWriter, r *http.Request) {
 			r.ParseForm()
 			path := r.FormValue("path")
 
+			//todo: validate path
+			// todo: check if path exists
+
 			data := models.Directries{
 				Title: path,
-				Body:  map[string]string{"message": "Indexuj katalogi" + path},
+				Body:  map[string]string{"message": "Indexuj katalogi " + path},
 			}
 
-			if err := data.GetList(); err != nil {
-				fmt.Println("Error getting search list: ", err)
+			err := data.AddPath(path)
+			if err != nil {
+				fmt.Println("Error adding path: ", err)
+				data.Body = map[string]string{"message": "Error adding path: ", "error": err.Error()}
+
+				if err := data.GetList(); err != nil {
+					fmt.Println("Error getting search list: ", err)
+				}
 				tmpl.Render(w, templatePage, data)
 				return
 			}
 
-			tmpl.Render(w, templatePage, data)
+			// Redirect to GET with query parameters
+			redirectURL := fmt.Sprintf("%s?success=true&added_path=%s", r.URL.Path, path)
+			http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 
 		}
 	}
