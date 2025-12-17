@@ -330,7 +330,16 @@ func (p *IndexedDirs) SetParams(c echo.Context) error {
 	}
 
 	params := c.FormValue("path")
-	p.Params["path"] = utils.CleanInput(params)
+	
+	// Validate the path
+	validatedPath, err := utils.ValidatePath(params)
+	if err != nil {
+		p.Error["path"] = err.Error()
+		p.Status = false
+		return fmt.Errorf("path validation failed: %w", err)
+	}
+	
+	p.Params["path"] = validatedPath
 	p.Status = true
 
 	return nil

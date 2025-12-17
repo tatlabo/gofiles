@@ -8,6 +8,7 @@ import (
 	"gofiles/chroma"
 	"html/template"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -147,6 +148,54 @@ func CleanInput(input string) string {
 	re := regexp.MustCompile(`[^a-zA-Z0-9.,;\/-_!$ ]+ `)
 	// re := regexp.MustCompile(`[^a-zA-Z0-9.,\-_ ]+`)
 	return re.ReplaceAllString(input, "")
+}
+
+// ValidatePath validates a directory path for security and accessibility
+func ValidatePath(path string) (string, error) {
+	// Trim whitespace
+	path = strings.TrimSpace(path)
+	
+	// Check if path is empty
+	if path == "" {
+		return "", fmt.Errorf("path cannot be empty")
+	}
+	
+	// Check for path traversal attempts before cleaning
+	if strings.Contains(path, "..") {
+		return "", fmt.Errorf("path traversal detected: path contains '..'")
+	}
+	
+	// Clean and normalize the path
+	cleanPath := filepath.Clean(path)
+	
+	// Convert to absolute path
+	absPath, err := filepath.Abs(cleanPath)
+	if err != nil {
+		return "", fmt.Errorf("invalid path: %w", err)
+	}
+	
+	// Check if path exists
+	info, err := os.Stat(absPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", fmt.Errorf("path does not exist: %s", absPath)
+		}
+		return "", fmt.Errorf("cannot access path: %w", err)
+	}
+	
+	// Check if path is a directory
+	if !info.IsDir() {
+		return "", fmt.Errorf("path is not a directory: %s", absPath)
+	}
+	
+	// Check if path is readable
+	file, err := os.Open(absPath)
+	if err != nil {
+		return "", fmt.Errorf("path is not accessible: %w", err)
+	}
+	defer file.Close()
+	
+	return absPath, nil
 }
 
 func FormatDate(t time.Time) string {
