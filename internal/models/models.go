@@ -157,7 +157,7 @@ type Directory struct {
 }
 
 type Directries struct {
-	List  []Directory       `json:"list"`
+	Array []Directory       `json:"list"`
 	Body  map[string]string `json:"body"`
 	Title string            `json:"title"`
 }
@@ -180,7 +180,40 @@ func (l *Directries) AddPath(path string) error {
 	return nil
 }
 
-func (l *Directries) GetList() error {
+func (l *Directries) DeletePath(id uuid.UUID) (d Directory, err error) {
+	const query = `DELETE FROM directory WHERE id = $1 RETURNING id, path, is_done, created_at, updated_at;`
+
+	conn, err := utils.PgConn()
+	if err != nil {
+		return d, err
+	}
+	defer conn.Close()
+
+	err = conn.QueryRow(query, id).Scan(&d.Id, &d.Path, &d.IsDone, &d.CreatedAt, &d.UpdatedAt)
+	if err != nil {
+		return d, err
+	}
+
+	return d, nil
+}
+
+func (ds *Directries) Direcotry(id uuid.UUID) (d Directory, err error) {
+	const query = `SELECT id, path, is_done, created_at, updated_at FROM directory WHERE id = $1;`
+	conn, err := utils.PgConn()
+	if err != nil {
+		return d, err
+	}
+	defer conn.Close()
+
+	err = conn.QueryRow(query, id).Scan(&d.Id, &d.Path, &d.IsDone, &d.CreatedAt, &d.UpdatedAt)
+	if err != nil {
+		return d, err
+	}
+
+	return d, nil
+}
+
+func (l *Directries) List() error {
 	const query = `SELECT id, path, is_done, created_at, updated_at FROM directory;`
 
 	conn, err := utils.PgConn()
@@ -203,7 +236,25 @@ func (l *Directries) GetList() error {
 			return err
 		}
 
-		l.List = append(l.List, d)
+		l.Array = append(l.Array, d)
+	}
+
+	return nil
+}
+
+func (d *Directory) Row(id uuid.UUID) error {
+	const query = `SELECT id, path, is_done, created_at, updated_at FROM directory WHERE id = $1;`
+
+	conn, err := utils.PgConn()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	err = conn.QueryRow(query, id).Scan(&d.Id, &d.Path, &d.IsDone, &d.CreatedAt, &d.UpdatedAt)
+
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -330,7 +381,7 @@ func (p *IndexedDirs) SetParams(c echo.Context) error {
 	}
 
 	params := c.FormValue("path")
-	
+
 	// Validate the path
 	validatedPath, err := utils.ValidatePath(params)
 	if err != nil {
@@ -338,7 +389,7 @@ func (p *IndexedDirs) SetParams(c echo.Context) error {
 		p.Status = false
 		return fmt.Errorf("path validation failed: %w", err)
 	}
-	
+
 	p.Params["path"] = validatedPath
 	p.Status = true
 

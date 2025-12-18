@@ -24,7 +24,7 @@
         </ol>
         
         <ol id="list" class="file-list" type="1">
-            {{ range .List }}
+            {{ range .Array }}
                 {{ template "directory_list" . }}
             {{end}}
         </ol>
@@ -38,10 +38,22 @@
         <span class="item-name">
             {{ .Path }}
         </span>
-        <button class="delete" data-id="{{ .Id }}" data-name="{{ .Path }}">x</button>
-        <button class="scan" data-id="{{ .Id }}" data-path="{{ .Path }}">
-            {{ if .IsDone }}Rescan{{ else }}Scan{{ end }}
-        </button>
+        <form action="/dirs/delete" method="POST">
+            <input type="hidden" name="id" value="{{ .Id }}">
+            <button type="submit" class="delete" data-id="{{ .Id }}" data-name="{{ .Path }}">x</button>
+        </form>
+        {{ if .IsDone }}
+            <button class="scan" data-id="{{ .Id }}" data-path="{{ .Path }}">
+                Rescan
+            </button>
+        {{ else }}
+            <form action="/dirs/scan" method="POST">
+                <input type="hidden" name="scanid" value="{{ .Id }}">
+                <button type="submit" class="scan" data-id="{{ .Id }}" data-path="{{ .Path }}">
+                    Scan
+                </button>
+            </form>
+        {{ end }}
         <time datetime="{{ .CreatedAt | formatDate }}" class="">
             {{ .CreatedAt | formatDate }}
         </time>

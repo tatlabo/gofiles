@@ -1,37 +1,27 @@
-package main
+package scan
 
 import (
+	"encoding/json"
 	"fmt"
 	"gofiles/internal/models"
 	"gofiles/utils"
 	"io/fs"
-	"log"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
+
+	"github.com/google/uuid"
 
 	"embed"
 
-	"github.com/google/uuid"
 	_ "github.com/lib/pq"
-
-	"encoding/json"
 )
 
-const outputFile = "output.txt"
+var skipDirectories = []string{".git", "node_modules", "tmp", "temp", ".vscode", ".idea", "vendor", "build", "dist", "__pycache__", "bin", ".vite", "$SysReset", "$Windows.~WS", "OneDriveTemp", "AppData"}
+var skipFiles = []string{".DS_Store", ".gitignore", ".gitattributes", ".gitmodules", "package-lock.json", "yarn.lock", "dpx"}
 
-var directory string
-var directoryId uuid.UUID
-
-//go:embed migrations/*.sql
-var migrations embed.FS
-
-var skipDirectories = []string{".git", "node_modules", "tmp", "temp", ".vscode", ".idea", "vendor", "build", "dist", "__pycache__", ",bin", ".vite", "$SysReset", "$Windows.~WS", "OneDriveTemp", "AppData", "Windows", "AppData", ".cargo", ".conda", ".config"}
-var skipFiles = []string{".DS_Store", ".gitignore", ".gitattributes", ".gitmodules", "package-lock.json", "yarn.lock", "dpx", ".gitignore"}
-
-var fileList = []models.Finfo{}
-
-var logMessage = []string{}
+var log = []string{}
 
 func CommitSql(sql []string) error {
 
@@ -68,188 +58,11 @@ func SqlMigrations(path string) error {
 	return nil
 }
 
-func VanillaRawReturn(q string, param string) error {
-
-	var e error
-
-	db, e := utils.PgConn()
-	if e != nil {
-		return e
-	}
-	defer db.Close()
-
-	tx, e := db.Begin()
-	if e != nil {
-		return e
-
-	}
-	err := tx.QueryRow(q, param).Scan(&directoryId)
-	if err != nil {
-		tx.Rollback() // Rollback on error
-		return fmt.Errorf("failed to insert and scan: %w", err)
-	}
-
-	return tx.Commit()
-}
-
 func VanillaRaw(xs []byte) error {
-
-	var e error
-
-	db, e := utils.PgConn()
-	if e != nil {
-		return e
-	}
-	defer db.Close()
-
-	tx, e := db.Begin()
-	if e != nil {
-		return e
-	}
-	if _, e = tx.Exec(string(xs)); e != nil {
-		return e
-	}
-	return tx.Commit()
-
-}
-
-func VanillaSql(s []string, group bool) error {
-
-	var e error
-
-	db, e := utils.PgConn()
-	if e != nil {
-		return e
-	}
-	defer db.Close()
-
-	tx, e := db.Begin()
-	if e != nil {
-		return e
-	}
-
-	if group != false {
-		groupCommands := strings.Join(s, " ")
-		if _, e = tx.Exec(groupCommands); e != nil {
-			return e
-		}
-		return tx.Commit()
-	}
-
-	for _, s := range s {
-		if _, e = tx.Exec(s); e != nil {
-			return e
-		}
-	}
-	return tx.Commit()
-
-}
-
-func visit(path string, d fs.DirEntry, err error) error {
-
-	if err != nil {
-		logMessage = append(logMessage, fmt.Sprintf("Error accessing path %s: %v", path, err))
-		return nil // Handle errors accessing a path
-	} else {
-		// Check if the directory is in the skip list
-		for _, skipDir := range skipDirectories {
-			if strings.Contains(path, skipDir) {
-				return nil // Skip this directory
-			}
-		}
-
-		extension := filepath.Ext(path)
-
-		for _, skipFile := range skipFiles {
-			if strings.Contains(extension, skipFile) {
-				return nil // Skip this directory
-			}
-		}
-
-		if extension == "" && !d.IsDir() {
-			logMessage = append(logMessage, fmt.Sprintf("File has no extension: %s\n", path))
-			return nil
-		}
-
-		s := models.Finfo{}
-		s.Name = strings.TrimSuffix(d.Name(), extension)
-		s.Name = strings.ReplaceAll(s.Name, "'", "''")
-
-		s.IsDir = d.IsDir()
-		s.Directory = filepath.Dir(path) // Handle errors accessing a path}
-		s.Directory = strings.ReplaceAll(s.Directory, "\\", "/")
-		if len(extension) > 0 {
-			extension = extension[1:]
-		}
-
-		s.Ext = extension
-		info, err := d.Info()
-		if err != nil {
-			panic(err) // Handle errors accessing a path
-		}
-		s.Size = info.Size()
-		s.ModTime = info.ModTime()
-
-		s.DirectoryId = directoryId
-
-		fileList = append(fileList, s)
-	}
-
-	return nil
-}
-
-func main() {
-
-	var path string
-
-	switch len(os.Args) {
-	case 1:
-		c := 1
-		fmt.Println("Main case", c, "needs a path argument")
-		os.Exit(c)
-	case 2:
-		c := 2
-		path = os.Args[1]
-		path = strings.TrimSpace(path)
-		path = strings.ReplaceAll(path, "\\", "/")
-		directory = path
-		if _, err := os.ReadDir(path); err != nil {
-			fmt.Fprintf(os.Stderr, "Main case %d invalid path: %v\n", c, err)
-			os.Exit(1)
-		}
-
-	}
-
-	if err := ScanDir(path); err != nil {
-		fmt.Fprintf(os.Stderr, "invalid path: %v\n", err)
-		os.Exit(1)
-	}
-
-}
-
-func writelogMessage(logMessage *[]string) error {
-
-	f, err := os.Create("logMessage .txt")
-	if err != nil {
-		return err
-	}
-
-	defer f.Close()
-
-	if _, err := fmt.Fprintf(f, "%v\n", logMessage); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func insertToPostgres(flist *[]models.Finfo) error {
-
-	query := `INSERT INTO files (directory_id, data) VALUES ($1, $2);`
 
 	db, err := utils.PgConn()
 	if err != nil {
-		panic(err)
+		return (err)
 	}
 	defer db.Close()
 
@@ -257,82 +70,276 @@ func insertToPostgres(flist *[]models.Finfo) error {
 	if err != nil {
 		return err
 	}
+	if _, err := tx.Exec(string(xs)); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
 
-	var (
-		s = len(*flist)
-	)
+func VanillaSQL(s string) error {
 
-	j := 0
-	for _, obj := range *flist {
+	db, err := utils.PgConn()
+	if err != nil {
+		return (err)
+	}
+	defer db.Close()
 
-		objJSON := obj.ToJSON()
-		data, _ := json.Marshal(objJSON)
-		j++
-		if j < 5 {
-			fmt.Printf("%v %v %v", query, obj.DirectoryId, obj)
-			fmt.Println()
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	if _, err := tx.Exec(s); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func visit(path string, d fs.DirEntry, err error) error {
+
+	if err != nil {
+		log = append(log, fmt.Sprintf("Error accessing path %s: %v", path, err))
+		return nil // Handle errors accessing a path
+	}
+
+	// Check if the directory is in the skip list
+	for _, skipDir := range skipDirectories {
+		if strings.Contains(path, string(os.PathSeparator)+skipDir+string(os.PathSeparator)) || strings.HasSuffix(path, string(os.PathSeparator)+skipDir) {
+			return fs.SkipDir // Skip this directory
 		}
-		if _, err := tx.Exec(query, obj.DirectoryId, data); err != nil {
+	}
+
+	extension := filepath.Ext(path)
+
+	// Skip macOS
+	if strings.HasPrefix(d.Name(), "._") {
+		return nil
+	}
+
+	if slices.Contains(skipFiles, d.Name()) {
+		return nil
+	}
+
+	if extension == "" && !d.IsDir() {
+		log = append(log, fmt.Sprintf("File has no extension: %s\n", path))
+		return nil
+	}
+
+	s := models.FinfoJSON{}
+	s.Name = strings.TrimSuffix(d.Name(), extension)
+	s.Name = strings.ReplaceAll(s.Name, "'", "''")
+
+	s.IsDir = d.IsDir()
+	s.Directory = filepath.Dir(path) // Handle errors accessing a path}
+	if len(extension) > 0 {
+		extension = extension[1:]
+	}
+
+	s.Ext = extension
+	info, err := d.Info()
+	if err != nil {
+		log = append(log, fmt.Sprintf("Error getting file info for %s: %v", path, err))
+		return nil
+	}
+
+	s.Size = info.Size()
+	s.ModTime = info.ModTime()
+
+	fileList = append(fileList, s)
+	return nil
+}
+
+//go:embed migrations/*.sql
+var migrations embed.FS
+
+var fileList = []models.FinfoJSON{}
+var directory string
+var directoryId uuid.UUID
+
+func Scan(d models.Directory) error {
+
+	// switch len(os.Args) {
+	// case 1:
+	// 	fmt.Println("Please provide a path")
+	// 	os.Exit(1)
+	// case 2:
+	// 	path = os.Args[1]
+	// 	path = strings.TrimSpace(path)
+	// 	path = strings.ReplaceAll(path, "/", "\\")
+	// 	if _, err := os.ReadDir(path); err != nil {
+	// 		fmt.Fprintf(os.Stderr, "Error reading directory: %v\n", err)
+	// 		os.Exit(1)
+	// 	}
+
+	// }
+
+	directory = d.Path
+	directoryId = d.Id
+	// err := insertIntoDirs(path)
+	// if err != nil {
+	// 	fmt.Fprintf(os.Stderr, "Error inserting into directory table: %v\n", err)
+	// 	return err
+	// }
+
+	if err := JsonFilesToDb(directory); err != nil {
+		fmt.Fprintf(os.Stderr, "invalid path: %v\n", err)
+		return err
+	}
+
+	if err := updateDirs(directory); err != nil {
+		fmt.Fprintf(os.Stderr, "Error updating directory table: %v\n", err)
+		return err
+	}
+
+	SqlMigrations("migrations/002_initial.sql")
+
+	return nil
+
+}
+
+func JsonFilesToDb(path string) error {
+	db, err := utils.PgConn()
+	if err != nil {
+		return fmt.Errorf("failed to connect to database: %w", err)
+	}
+	defer db.Close()
+
+	err = filepath.WalkDir(path, visit)
+	if err != nil {
+		writeLog(&log)
+		return fmt.Errorf("Error walking through directories: %w", err)
+	}
+
+	s := len(fileList) // Use fileList length, not stmt bytes
+
+	if s == 0 {
+		fmt.Println("No items to insert")
+		os.Exit(1)
+	}
+
+	batchSize := 500
+	totalInserted := 0
+
+	// Process files in batches
+	for i := 0; i < len(fileList); i += batchSize {
+		end := i + batchSize
+		if end > len(fileList) {
+			end = len(fileList)
+		}
+		batch := fileList[i:end]
+
+		// Begin transaction for this batch
+		tx, err := db.Begin()
+		if err != nil {
+			return fmt.Errorf("error beginning transaction: %w", err)
+		}
+
+		// Prepare statement for batch
+		stmt, err := tx.Prepare(`INSERT INTO files (directory_id, data) VALUES ($1, $2::jsonb)`)
+		if err != nil {
 			tx.Rollback()
-			return fmt.Errorf("error inserting file: %w", err)
+			return fmt.Errorf("error preparing statement: %w", err)
 		}
+
+		// Insert batch
+		for _, file := range batch {
+			jsonData, err := json.Marshal(file)
+			if err != nil {
+				stmt.Close()
+				tx.Rollback()
+				return fmt.Errorf("error marshalling file: %w", err)
+			}
+
+			_, err = stmt.Exec(directoryId, string(jsonData))
+			if err != nil {
+				stmt.Close()
+				tx.Rollback()
+				return fmt.Errorf("error inserting file: %w", err)
+			}
+		}
+
+		stmt.Close()
+
+		// Commit transaction
+		if err := tx.Commit(); err != nil {
+			return fmt.Errorf("error committing transaction: %w", err)
+		}
+
+		totalInserted += len(batch)
+		fmt.Printf("Progress: %d/%d files inserted\n", totalInserted, s)
 	}
 
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("error committing: %w", err)
-	}
+	fmt.Printf("Successfully inserted %d files\n", s)
+	return nil
+}
 
-	fmt.Printf("Inserted %d of %d items\n", len(*flist), s)
+func insertIntoDirs(path string) error {
+
+	const stmt = `INSERT INTO directory(path)
+	VALUES ($1) RETURNING id;`
+
+	err := VanillaRawReturn(stmt, directory)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error inserting directory: %v\n", err)
+		os.Exit(10)
+	}
 
 	return nil
 }
 
-func ScanDir(dir string) error {
+func updateDirs(path string) error {
+	const stmt = `UPDATE directory SET is_done = $1, updated_at = NOW() WHERE id=$2;`
 
-	const sqlInsertReturn = `INSERT INTO directory (json) VALUES ($1::jsonb) RETURNING id;`
-	var path string
-
-	path = strings.TrimSpace(dir)
-	if _, err := os.ReadDir(path); err != nil {
-		return fmt.Errorf("invalid path: %s", path)
-	}
-
-	var pathJson = `{"path": "` + path + `"}`
-
-	fmt.Println(sqlInsertReturn, fmt.Sprintf("%s", pathJson))
-
-	if err := VanillaRawReturn(sqlInsertReturn, pathJson); err != nil {
-		return fmt.Errorf("Error inserting and/or returning value into directory table:\n %w", err)
-	}
-
-	err := filepath.WalkDir(path, visit)
+	db, err := utils.PgConn()
 	if err != nil {
-		writelogMessage(&logMessage)
-		return fmt.Errorf("Error walking through directories: %w", err)
+		return err
 	}
+	defer db.Close()
 
-	log.Println("There is: ")
-	log.Print(len(fileList))
-	log.Printf("in the filelist, parent directory is: %s", directory)
-
-	if err := insertToPostgres(&fileList); err != nil {
-		return fmt.Errorf("Error for insertToPostgres: %w", err)
-	} else {
-		fmt.Printf("There was %d items inserted\n", len(fileList))
+	_, err = db.Exec(stmt, true, directoryId)
+	if err != nil {
+		return fmt.Errorf("error updating directory: %w", err)
 	}
-
-	if err := SqlMigrations("migrations/002_initial.sql"); err != nil {
-		return fmt.Errorf("Error for: migrations/002_initial.sql: update ext, keywords and ext_id: %w", err)
-	}
-
-	// if err := SqlMigrations("migrations/003_initial.sql"); err != nil {
-	// 	return fmt.Errorf("Error for: in migrations/003_initial.sql update files.ext_id: %w", err)
-	// }
-
-	// if err := insertIntoDirs(path); err != nil {
-	// 	return fmt.Errorf("Error inserting into directory: %w", err)
-	// }
 
 	return nil
+}
 
+func VanillaRawReturn(q string, param string) error {
+	db, err := utils.PgConn()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	err = tx.QueryRow(q, param).Scan(&directoryId)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to insert and scan: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
+func writeLog(log *[]string) error {
+
+	f, err := os.Create("log.txt")
+	if err != nil {
+		return err
+	}
+
+	defer f.Close()
+
+	if _, err := fmt.Fprintf(f, "%v\n", log); err != nil {
+		return err
+	}
+
+	return nil
 }
