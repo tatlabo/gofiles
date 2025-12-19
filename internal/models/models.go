@@ -126,6 +126,95 @@ func (flist *FilesDataList) GetList(name string, limit int, offset int) error {
 	return nil
 }
 
+func (flist *FilesDataList) AppendList(name string, limit int, offset int, params ...string) error {
+
+	if params[0] == "" || params[1] == "true" {
+		flist.GetList(name, limit, offset)
+		return nil
+	}
+
+	const language = "'polish'"
+
+	var query string
+	var clause string
+	var order = " DESC "
+
+	switch params[0] {
+	case "name":
+		clause = "data->>'name'"
+	case "size":
+		clause = " (data->>'size')::bigint "
+	case "modtime":
+		clause = " (data->>'modTime')::timestamp "
+	}
+	if params[1] == "true" {
+		order = " ASC "
+	}
+
+	query = `
+	SELECT 
+	DISTINCT(id), %[2]s, data, ts_rank_cd( to_tsvector(%[1]s, keywords), websearch_to_tsquery(%[1]s, $1) ) as ts_rank
+	FROM files
+	WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords)
+	ORDER BY %[2]s %[3]s, ts_rank DESC, id ASC
+	LIMIT $2 OFFSET $3;`
+
+	conn, err := utils.PgConn()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	stmt := fmt.Sprintf(query, language, clause, order)
+
+	log.Println(stmt, name, limit, offset)
+	rows, err := conn.Query(stmt, name, limit, offset)
+	if err != nil {
+		return err
+	}
+
+	go explain(stmt, name, limit, offset)
+
+	for rows.Next() {
+
+		tsRank := float64(0)
+		id := uuid.UUID{}
+		data := FinfoJSON{}
+
+		rawData := []byte{}
+
+		_drop := ""
+
+		err := rows.Scan(
+			&id,
+			&_drop,
+			&rawData,
+			&tsRank,
+		)
+		if err != nil {
+			return err
+		}
+
+		err = json.Unmarshal(rawData, &data)
+
+		dataWithId := FileData{
+			FinfoJSON: data,
+			Id:        id,
+		}
+
+		dataWithId.Keywords = name
+		dataWithId.SimplifyDetails()
+
+		if err != nil {
+			return err
+		}
+
+		flist.List = append(flist.List, dataWithId)
+	}
+
+	return nil
+}
+
 func (flist *FilesDataList) SelectCount(name string) error {
 
 	const language = "'polish'"
@@ -671,7 +760,7 @@ func explain(stmt string, placeholders ...any) {
 	defer conn.Close()
 	explainAnalyze := fmt.Sprintf(`EXPLAIN ANALYZE %s`, stmt)
 	fmt.Println()
-	fmt.Printf("%v %v", explainAnalyze, placeholders)
+	fmt.Printf("%v %v\n", explainAnalyze, placeholders)
 	explainRows, err := conn.Query(explainAnalyze, placeholders...)
 	if err != nil {
 		log.Println("Error running EXPLAIN ANALYZE:", err)
@@ -686,6 +775,7 @@ func explain(stmt string, placeholders ...any) {
 		}
 		fmt.Println(line)
 	}
+	fmt.Println()
 	if err := explainRows.Err(); err != nil {
 		fmt.Println("Error iterating EXPLAIN ANALYZE rows:", err)
 	}

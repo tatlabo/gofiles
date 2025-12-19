@@ -228,9 +228,11 @@ func HandleAppend(w http.ResponseWriter, r *http.Request) {
 	limit, _ := strconv.Atoi(lStr)
 	offsetStr := query.Get("offset")
 	offset, _ := strconv.Atoi(offsetStr)
+	order := query.Get("order")
+	ascending := query.Get("ascending")
 
 	data := models.FilesDataList{}
-	if err := data.GetList(keywords, limit, offset); err != nil {
+	if err := data.AppendList(keywords, limit, offset, order, ascending); err != nil {
 		fmt.Println("Error getting search list: ", err)
 		tmpl.Render(w, "index.html", IndexData{Title: "My Title", Body: map[string]string{"message": "Error retrieving search results"}})
 		return
