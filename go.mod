@@ -3,7 +3,6 @@ module gofiles
 go 1.24.0
 
 require (
-	crawshaw.io/sqlite v0.3.2
 	github.com/alecthomas/chroma/v2 v2.17.2
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/labstack/echo/v4 v4.13.3
@@ -32,5 +31,5 @@ require (
 	golang.org/x/net v0.39.0
 	golang.org/x/sys v0.39.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
-	modernc.org/sqlite v1.40.1 // indirect
+	modernc.org/sqlite v1.40.1
 )

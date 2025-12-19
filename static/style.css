@@ -538,7 +538,7 @@ nav {
 
 .dir-item {
   display: grid;
-  grid-template-columns: max-content 1fr max-content min-content max-content max-content;
+  grid-template-columns: 1fr auto auto auto;
   column-gap: 1em;
   align-items: center;
 }

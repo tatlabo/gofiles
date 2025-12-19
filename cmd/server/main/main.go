@@ -39,7 +39,10 @@ func main() {
 	http.HandleFunc("/detail/{id}", handlers.DetailsId)
 	http.HandleFunc("/item-detail/{id}", handlers.ItemDetailsId)
 	http.HandleFunc("/preview/{id}", handlers.PreviewById)
+	//protected routes
 	http.HandleFunc("/dirs", handlers.HandleDirs)
+	http.HandleFunc("/dirs/delete", handlers.HandleDirDelete)
+	http.HandleFunc("/dirs/scan", handlers.HandleScan)
 
 	log.Fatal(http.ListenAndServe(":80", nil))
 

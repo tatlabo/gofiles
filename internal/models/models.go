@@ -126,6 +126,95 @@ func (flist *FilesDataList) GetList(name string, limit int, offset int) error {
 	return nil
 }
 
+func (flist *FilesDataList) AppendList(name string, limit int, offset int, params ...string) error {
+
+	if params[0] == "" || params[1] == "true" {
+		flist.GetList(name, limit, offset)
+		return nil
+	}
+
+	const language = "'polish'"
+
+	var query string
+	var clause string
+	var order = " DESC "
+
+	switch params[0] {
+	case "name":
+		clause = "data->>'name'"
+	case "size":
+		clause = " (data->>'size')::bigint "
+	case "modtime":
+		clause = " (data->>'modTime')::timestamp "
+	}
+	if params[1] == "true" {
+		order = " ASC "
+	}
+
+	query = `
+	SELECT 
+	DISTINCT(id), %[2]s, data, ts_rank_cd( to_tsvector(%[1]s, keywords), websearch_to_tsquery(%[1]s, $1) ) as ts_rank
+	FROM files
+	WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords)
+	ORDER BY %[2]s %[3]s, ts_rank DESC, id ASC
+	LIMIT $2 OFFSET $3;`
+
+	conn, err := utils.PgConn()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	stmt := fmt.Sprintf(query, language, clause, order)
+
+	log.Println(stmt, name, limit, offset)
+	rows, err := conn.Query(stmt, name, limit, offset)
+	if err != nil {
+		return err
+	}
+
+	go explain(stmt, name, limit, offset)
+
+	for rows.Next() {
+
+		tsRank := float64(0)
+		id := uuid.UUID{}
+		data := FinfoJSON{}
+
+		rawData := []byte{}
+
+		_drop := ""
+
+		err := rows.Scan(
+			&id,
+			&_drop,
+			&rawData,
+			&tsRank,
+		)
+		if err != nil {
+			return err
+		}
+
+		err = json.Unmarshal(rawData, &data)
+
+		dataWithId := FileData{
+			FinfoJSON: data,
+			Id:        id,
+		}
+
+		dataWithId.Keywords = name
+		dataWithId.SimplifyDetails()
+
+		if err != nil {
+			return err
+		}
+
+		flist.List = append(flist.List, dataWithId)
+	}
+
+	return nil
+}
+
 func (flist *FilesDataList) SelectCount(name string) error {
 
 	const language = "'polish'"
@@ -149,21 +238,72 @@ func (flist *FilesDataList) SelectCount(name string) error {
 }
 
 type Directory struct {
-	Id        uuid.UUID `db:"id" json:"id"`
-	Path      string    `db:"path" json:"path"`
-	CreatedAt time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
-	Done      bool      `db:"scanned" json:"scanned"`
+	Id        uuid.UUID `json:"id" db:"id"`
+	Path      string    `json:"path" db:"path"`
+	IsDone    bool      `json:"isDone" db:"is_done"`
+	CreatedAt time.Time `json:"createdAt" db:"created_at"`
+	UpdatedAt time.Time `json:"updatedAt" db:"updated_at"`
 }
 
 type Directries struct {
-	List  []Directory       `json:"list"`
+	Array []Directory       `json:"list"`
 	Body  map[string]string `json:"body"`
 	Title string            `json:"title"`
 }
 
-func (l *Directries) GetList() error {
-	const query = `SELECT id, json data FROM directory;`
+func (l *Directries) AddPath(path string) error {
+	const query = `INSERT INTO directory (path, is_done, created_at, updated_at) VALUES ($1, false, NOW(), NOW()) RETURNING id, path, is_done, created_at, updated_at;`
+
+	conn, err := utils.PgConn()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	d := Directory{}
+	err = conn.QueryRow(query, path).Scan(&d.Id, &d.Path, &d.IsDone, &d.CreatedAt, &d.UpdatedAt)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (l *Directries) DeletePath(id uuid.UUID) (d Directory, err error) {
+	const query = `DELETE FROM directory WHERE id = $1 RETURNING id, path, is_done, created_at, updated_at;`
+
+	conn, err := utils.PgConn()
+	if err != nil {
+		return d, err
+	}
+	defer conn.Close()
+
+	err = conn.QueryRow(query, id).Scan(&d.Id, &d.Path, &d.IsDone, &d.CreatedAt, &d.UpdatedAt)
+	if err != nil {
+		return d, err
+	}
+
+	return d, nil
+}
+
+func (ds *Directries) Direcotry(id uuid.UUID) (d Directory, err error) {
+	const query = `SELECT id, path, is_done, created_at, updated_at FROM directory WHERE id = $1;`
+	conn, err := utils.PgConn()
+	if err != nil {
+		return d, err
+	}
+	defer conn.Close()
+
+	err = conn.QueryRow(query, id).Scan(&d.Id, &d.Path, &d.IsDone, &d.CreatedAt, &d.UpdatedAt)
+	if err != nil {
+		return d, err
+	}
+
+	return d, nil
+}
+
+func (l *Directries) List() error {
+	const query = `SELECT id, path, is_done, created_at, updated_at FROM directory;`
 
 	conn, err := utils.PgConn()
 	if err != nil {
@@ -178,31 +318,32 @@ func (l *Directries) GetList() error {
 
 	for rows.Next() {
 
-		id := uuid.UUID{}
-		data := Directory{}
+		d := Directory{}
 
-		rawData := []byte{}
-
-		err := rows.Scan(
-			&id,
-			&rawData,
-		)
+		err := rows.Scan(&d.Id, &d.Path, &d.IsDone, &d.CreatedAt, &d.UpdatedAt)
 		if err != nil {
 			return err
 		}
 
-		err = json.Unmarshal(rawData, &data)
+		l.Array = append(l.Array, d)
+	}
 
-		dataWithId := Directory{
-			Id:   id,
-			Path: data.Path,
-		}
+	return nil
+}
 
-		if err != nil {
-			return err
-		}
+func (d *Directory) Row(id uuid.UUID) error {
+	const query = `SELECT id, path, is_done, created_at, updated_at FROM directory WHERE id = $1;`
 
-		l.List = append(l.List, dataWithId)
+	conn, err := utils.PgConn()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	err = conn.QueryRow(query, id).Scan(&d.Id, &d.Path, &d.IsDone, &d.CreatedAt, &d.UpdatedAt)
+
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -329,7 +470,16 @@ func (p *IndexedDirs) SetParams(c echo.Context) error {
 	}
 
 	params := c.FormValue("path")
-	p.Params["path"] = utils.CleanInput(params)
+
+	// Validate the path
+	validatedPath, err := utils.ValidatePath(params)
+	if err != nil {
+		p.Error["path"] = err.Error()
+		p.Status = false
+		return fmt.Errorf("path validation failed: %w", err)
+	}
+
+	p.Params["path"] = validatedPath
 	p.Status = true
 
 	return nil
@@ -610,7 +760,7 @@ func explain(stmt string, placeholders ...any) {
 	defer conn.Close()
 	explainAnalyze := fmt.Sprintf(`EXPLAIN ANALYZE %s`, stmt)
 	fmt.Println()
-	fmt.Printf("%v %v", explainAnalyze, placeholders)
+	fmt.Printf("%v %v\n", explainAnalyze, placeholders)
 	explainRows, err := conn.Query(explainAnalyze, placeholders...)
 	if err != nil {
 		log.Println("Error running EXPLAIN ANALYZE:", err)
@@ -625,6 +775,7 @@ func explain(stmt string, placeholders ...any) {
 		}
 		fmt.Println(line)
 	}
+	fmt.Println()
 	if err := explainRows.Err(); err != nil {
 		fmt.Println("Error iterating EXPLAIN ANALYZE rows:", err)
 	}

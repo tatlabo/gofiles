@@ -8,6 +8,8 @@
         <h4> 
             {{ .Body.message }}
         </h4>
+        {{ if .Body.error }}<p>{{ .Body.error }}</p>{{ end }}
+        {{ if .Body.path }}<p>Path: {{ .Body.path }}</p>{{ end }}
         {{end}}
 
         {{ template "add-path-form"  }}
@@ -21,52 +23,48 @@
         <ol id="list" class="file-list" type="1">
         </ol>
         
-    </article>
         <ol id="list" class="file-list" type="1">
-            {{ range .List }}
-                {{ template "dirs" . }}
+            {{ range .Array }}
+                {{ template "directory_list" . }}
             {{end}}
         </ol>
-
+        
+    </article>
 </main>
 
-{{ block "dirs" . }}
-    <li>{{ .Path }} {{ .Id }}</li>
-    <li>{{ .CreatedAt }} {{ .Done }}</li>
-{{ end }}
 
-
-
-{{ define "directory_list" }}
-    {{ if .Indexeddirs }}
-        {{ .Text }}
-        {{ range .Indexeddirs }}
-        <li class="dir-item" id="entry" data-id="{{ .Id }}">
-            <span class="item-name">
-                {{ .Path }}
-            </span>
-            <span class="item-id">
-                {{ .Id }}
-            </span>
-            <button class="delete" data-id="{{ .Id }}" data-name="{{ .Name }}">x</button>
-            <button class="scan" data-id="{{ .Id }}" data-path="{{ .Name }}">
-                {{ if .Done }}Rescan{{ else }}Scan{{ end }}
+{{ block "directory_list" . }}
+    <li class="dir-item" id="entry" data-id="{{ .Id }}">
+        <span class="item-name">
+            {{ .Path }}
+        </span>
+        <form action="/dirs/delete" method="POST">
+            <input type="hidden" name="id" value="{{ .Id }}">
+            <button type="submit" class="delete" data-id="{{ .Id }}" data-name="{{ .Path }}">x</button>
+        </form>
+        {{ if .IsDone }}
+            <button class="scan" data-id="{{ .Id }}" data-path="{{ .Path }}">
+                Rescan
             </button>
-            <time datetime="{{ .Created | formatDate }}" class="">
-                {{ .Created | formatDate }}
-            </time>
-        </li>
+        {{ else }}
+            <form action="/dirs/scan" method="POST">
+                <input type="hidden" name="scanid" value="{{ .Id }}">
+                <button type="submit" class="scan" data-id="{{ .Id }}" data-path="{{ .Path }}">
+                    Scan
+                </button>
+            </form>
         {{ end }}
-    {{ else }}
-        <li>No directories indexed yet.</li>
-    {{ end }}
-
+        <time datetime="{{ .CreatedAt | formatDate }}" class="">
+            {{ .CreatedAt | formatDate }}
+        </time>
+    </li>
 {{ end }}
 
 
 
 {{ define "add-path-form" }}
 <form action="/dirs" method="POST" class="form flex column" id="search-form">
+    <label for="path">Add Directory Path to Scan:</label>
     <input class="" type="text" id="path" name="path" required placeholder="add path">
     <button class="primary" type="submit" id="submit">Add Path</button>
 </form>

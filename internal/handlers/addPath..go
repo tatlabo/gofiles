@@ -26,14 +26,26 @@ func AddPath(c echo.Context) error {
 	switch method {
 
 	case http.MethodPost:
-		params := c.FormValue("path")
-		i.Params["path"] = params
-		_ = i.SetParams(c)
+		// Validate and set parameters
+		if err := i.SetParams(c); err != nil {
+			// Validation failed - list directories and render with error
+			if listErr := i.List(); listErr != nil {
+				return c.String(http.StatusInternalServerError, "Error listing indexed directories: "+listErr.Error())
+			}
+			// Render the page with validation error message
+			if renderErr := c.Render(http.StatusBadRequest, "dirs", i); renderErr != nil {
+				return c.String(http.StatusBadRequest, "Path validation error: "+err.Error())
+			}
+			return nil
+		}
 
-		i.Status = true
-
-		if i.Status == true {
-			_ = i.Append()
+		// Append the validated path
+		if err := i.Append(); err != nil {
+			i.Error["append"] = err.Error()
+			if listErr := i.List(); listErr != nil {
+				return c.String(http.StatusInternalServerError, "Error listing indexed directories: "+listErr.Error())
+			}
+			return c.Render(http.StatusInternalServerError, "dirs", i)
 		}
 
 		if err := i.List(); err != nil {

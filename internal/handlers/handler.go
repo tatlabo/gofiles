@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gofiles/chroma"
 	"gofiles/internal/models"
+	"gofiles/scan"
 	"gofiles/utils"
 	"html/template"
 	"io"
@@ -69,7 +70,6 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 			dataStream = make(chan any)
 			defer close(dataStream)
 
-			// var wg sync.WaitGroup
 			r.ParseForm()
 			keywords := r.FormValue("name")
 
@@ -228,9 +228,11 @@ func HandleAppend(w http.ResponseWriter, r *http.Request) {
 	limit, _ := strconv.Atoi(lStr)
 	offsetStr := query.Get("offset")
 	offset, _ := strconv.Atoi(offsetStr)
+	order := query.Get("order")
+	ascending := query.Get("ascending")
 
 	data := models.FilesDataList{}
-	if err := data.GetList(keywords, limit, offset); err != nil {
+	if err := data.AppendList(keywords, limit, offset, order, ascending); err != nil {
 		fmt.Println("Error getting search list: ", err)
 		tmpl.Render(w, "index.html", IndexData{Title: "My Title", Body: map[string]string{"message": "Error retrieving search results"}})
 		return
@@ -366,18 +368,25 @@ func HandleDirs(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		{
-			data := models.Directries{
-				Title: "Directory listing",
-				Body:  map[string]string{"message": "Zindexuj katalogi"},
+			// Get query parameters from URL
+			successMsg := r.URL.Query().Get("success")
+			addedPath := r.URL.Query().Get("added_path")
+
+			message := "Zindexuj katalogi"
+			if successMsg == "true" && addedPath != "" {
+				message = fmt.Sprintf("Successfully added path: %s", addedPath)
 			}
 
-			if err := data.GetList(); err != nil {
+			data := models.Directries{
+				Title: "Directory listing",
+				Body:  map[string]string{"message": message},
+			}
+
+			if err := data.List(); err != nil {
 				fmt.Println("Error getting search list: ", err)
 				tmpl.Render(w, templatePage, data)
 				return
 			}
-
-			log.Printf("%v", data.List)
 
 			tmpl.Render(w, templatePage, data)
 		}
@@ -385,42 +394,144 @@ func HandleDirs(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		{
 			r.ParseForm()
-			keywords := r.FormValue("name")
+			path := r.FormValue("path")
 
-			limit := 10
-			offset := 0
+			//todo: validate path
+			// todo: check if path exists
 
-			data := models.FilesDataList{}
+			data := models.Directries{
+				Title: path,
+				Body:  map[string]string{"message": "Indexuj katalogi " + path},
+			}
 
-			if err := data.SelectCount(keywords); err != nil {
-				fmt.Println("Error getting search count: ", err)
-				tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "Error retrieving search results"}})
+			err := data.AddPath(path)
+			if err != nil {
+				fmt.Println("Error adding path: ", err)
+				data.Body = map[string]string{"message": "Error adding path: ", "error": err.Error()}
+
+				if err := data.List(); err != nil {
+					fmt.Println("Error getting search list: ", err)
+				}
+				tmpl.Render(w, templatePage, data)
 				return
 			}
 
-			if data.Count == 0 {
-				templatePage = "home.html"
-				tmpl.Render(w, templatePage,
-					IndexData{Title: "No results",
-						Body:         map[string]string{"message": "No results found for the given keywords"},
-						SearchParams: map[string]string{"keywords": keywords}})
+			// Redirect to GET with query parameters
+			redirectURL := fmt.Sprintf("%s?success=true&added_path=%s", r.URL.Path, path)
+			http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+
+		}
+	}
+}
+
+func HandleDirDelete(w http.ResponseWriter, r *http.Request) {
+
+	templatePage := "dirs.html"
+
+	switch r.Method {
+	case http.MethodGet:
+		{
+			// Get query parameters from URL
+			redirectURL := "/dirs"
+			http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+
+		}
+
+	case http.MethodPost:
+		{
+			r.ParseForm()
+			id := r.FormValue("id")
+
+			uuid, err := uuid.Parse(id)
+			if err != nil {
+				fmt.Println("Invalid ID: ", err)
+				http.Error(w, "Invalid ID", http.StatusBadRequest)
 				return
 			}
 
-			if err := data.GetList(keywords, limit, offset); err != nil {
-				fmt.Println("Error getting search list: ", err)
-				tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "Error retrieving search results"}})
+			//todo: validate path
+			// todo: check if path exists
+
+			data := models.Directries{
+				Title: id,
+				Body:  map[string]string{"message": "Indexuj katalogi " + id},
+			}
+
+			d, err := data.DeletePath(uuid)
+			if err != nil {
+				fmt.Println("Error adding path: ", err)
+				data.Body = map[string]string{"message": "Error adding path: ", "error": err.Error()}
+
+				if err := data.List(); err != nil {
+					fmt.Println("Error getting search list: ", err)
+				}
+				tmpl.Render(w, templatePage, data)
 				return
 			}
 
-			if keywords != "" {
-				tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "data", "keywords": keywords}, FilesDataList: data,
-					Count: data.Count, SearchParams: map[string]string{"keywords": keywords, "limit": "10", "offset": "0"},
-				})
-			} else {
-				tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "TNie podano słów kluczowych"}})
+			redirectURL := fmt.Sprintf("/dirs?success=true&deleted_id=%s&path=%s", d.Id, d.Path)
+			http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+		}
+	}
+}
+
+func HandleScan(w http.ResponseWriter, r *http.Request) {
+
+	templatePage := "dirs.html"
+
+	switch r.Method {
+	case http.MethodGet:
+		{
+			// Get query parameters from URL
+			redirectURL := "/dirs"
+			http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+
+		}
+
+	case http.MethodPost:
+		{
+			r.ParseForm()
+			id := r.FormValue("scanid")
+
+			uuid, err := uuid.Parse(id)
+			if err != nil {
+				fmt.Println("Invalid ID: ", err)
+				http.Error(w, "Invalid ID", http.StatusBadRequest)
+				return
 			}
-			return
+
+			//todo: validate id
+			// todo: check if path exists
+
+			data := models.Directries{
+				Title: id,
+				Body:  map[string]string{"message": "Indexuj katalogi " + id},
+			}
+
+			d := models.Directory{}
+			d.Id = uuid
+
+			err = d.Row(uuid)
+			if err != nil {
+				fmt.Println("Error adding path: ", err)
+				data.Body = map[string]string{"message": "Error adding path: ", "error": err.Error()}
+
+				if err := data.List(); err != nil {
+					fmt.Println("Error getting search list: ", err)
+				}
+				tmpl.Render(w, templatePage, data)
+				return
+			}
+
+			go func(d models.Directory) {
+				err := scan.Scan(d)
+				if err != nil {
+					log.Printf("Error scanning directory %s: %v", d.Path, err)
+				}
+			}(d)
+
+			redirectURL := fmt.Sprintf("/dirs?scanning=true&path=%s&id=%s", d.Path, d.Id)
+			http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 		}
 	}
 }
