@@ -19,33 +19,6 @@ offset = offset + limit
 changeAtt()
 // if (btn !== null) {
 
-const  baseURL = `/append?keywords=${keywords}&limit=${limit}&offset=${offset}`;
-const sortButtons = [
-    {
-        element: document.querySelector(".ascending.name"),
-        ascending: true
-    },
-    {
-        element: document.querySelector(".descending.name"),
-    },
-]
-
-// const _ = sortButtons.map(item => {
-//     const ascdesc = item.ascending ? "true" : "false"
-//     const name = item.element.getAttribute("data-name")
-//     item.element.setAttribute("hx-get", baseURL + `&order=${item.type}&ascending=${item.ascending}&order=${name}&ascending=${ascdesc}`)
-//     htmx.process(item.element)
-// })
-
-const nameAsc = document.querySelector(".ascending.name");
-let desc = "desc"
-nameAsc.setAttribute("hx-get", baseURL + sufix)
-htmx.process(nameAsc)
-
-const nameDesc = document.querySelector(".descending.name");
-let sufix = `&order=name&ascending=false`
-nameAsc.setAttribute("hx-get", baseURL + sufix)
-htmx.process(nameAsc)
 
 
 
@@ -113,3 +86,33 @@ function handleSortClick(event) {
     target.setAttribute("data-ascending", !ascending);
 }
 
+
+
+
+const  baseURL = `/append?keywords=${keywords}&limit=${limit}&offset=${offset}`;
+const sortButtons = [
+    {
+        element: document.querySelector(".ascending.name"),
+        ascending: true
+    },
+    {
+        element: document.querySelector(".descending.name"),
+    },
+]
+
+// const _ = sortButtons.map(item => {
+//     const ascdesc = item.ascending ? "true" : "false"
+//     const name = item.element.getAttribute("data-name")
+//     item.element.setAttribute("hx-get", baseURL + `&order=${item.type}&ascending=${item.ascending}&order=${name}&ascending=${ascdesc}`)
+//     htmx.process(item.element)
+// })
+
+// const nameAsc = document.querySelector(".ascending.name");
+// let desc = "desc"
+// nameAsc.setAttribute("hx-get", baseURL + sufix)
+// htmx.process(nameAsc)
+
+// const nameDesc = document.querySelector(".descending.name");
+// let sufix = `&order=name&ascending=false`
+// nameAsc.setAttribute("hx-get", baseURL + sufix)
+// htmx.process(nameAsc)

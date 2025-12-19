@@ -139,20 +139,3 @@ function sortList(parameter, ascending = true) {
 
 
 
-function handleSortClick(event) {
-
-    listContainer = document.getElementById("list")
-    listItems = Array.from(listContainer.querySelectorAll("li.item-list"))
-
-    const target = event.target;
-    const sortType = target.getAttribute("data-sort-type");
-    const ascending = target.getAttribute("data-ascending") === "true";
-
-    console.log("sortType", sortType)
-
-    // Sort the list based on the clicked header
-    sortList(sortType, ascending);
-
-    // Toggle the ascending/descending flag
-    target.setAttribute("data-ascending", !ascending);
-}
