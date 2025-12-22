@@ -15,43 +15,46 @@
                 <span id="sort-name" data-sort-type="name" data-ascending="true">
                     name
                 </span>
-                <span class="ascending name" data-name="name"
-                    hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.limit }}&offset={{ .SearchParams.offset }}&order=name&ascending=true"
-                    hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click" id="sort-name">
-                    <strong>🠉</strong>
-                </span>
-                <span class="descending name"
-                    hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.limit }}&offset={{ .SearchParams.offset }}&order=name&ascending=false"
-                    hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click" id="sort-name">
+                <span class="descending name" data-name="name"
+                    hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.Offset }}&offset=0&order=name&ascending=false"
+                    hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click">
                     <strong>🠋</strong>
                 </span>
+                <span class="ascending name" data-name="name"
+                    hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.Offset }}&offset=0&order=name&ascending=true"
+                    hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click">
+                    <strong>🠉</strong>
+                </span>
+
             </li>
 
             <li id="sort-size" data-sort-type="size" data-ascending="true">
                 size
-                <!-- <span class="ascending size"
-                    hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.limit }}&offset={{ .SearchParams.offset }}&order=size&ascending=true"
-                    hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click" id="sort-size">
+                <span class="descending size" data-name="size"
+                    hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.Offset }}&offset=0&order=size&ascending=false"
+                    hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click">
+                    <strong>🠋</strong>
+                </span>
+                <span class="ascending size" data-name="size"
+                    hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.Offset }}&offset=0&order=size&ascending=true"
+                    hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click">
                     <strong>🠉</strong>
                 </span>
-                <span class="descending size"
-                    hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.limit }}&offset={{ .SearchParams.offset }}&order=size&ascending=false"
-                    hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click" id="sort-size">
-                    <strong>🠋</strong>
-                </span> -->
+
             </li>
             <li id="sort-date" data-sort-type="moddate" data-ascending="true">
                 date
-                <!-- <span class="ascending modtime"
-                    hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.limit }}&offset={{ .SearchParams.offset }}&order=modtime&ascending=true"
-                    hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click" id="sort-date">
+                <span class="descending modtime" data-name="modtime"
+                    hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.Offset }}&offset=0&order=modtime&ascending=false"
+                    hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click">
+                    <strong>🠋</strong>
+                </span>
+                <span class="ascending modtime" data-name="modtime"
+                    hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.Offset }}&offset=0&order=modtime&ascending=true"
+                    hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click">
                     <strong>🠉</strong>
                 </span>
-                <span class="descending modtime"
-                    hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.limit }}&offset={{ .SearchParams.offset }}&order=modtime&ascending=false"
-                    hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click" id="sort-date">
-                    <strong>🠋</strong>
-                </span> -->
+
             </li>
         </ul>
 

@@ -216,15 +216,12 @@ func JsonFilesToDb(path string) error {
 		os.Exit(1)
 	}
 
-	batchSize := 500
+	batchSize := 1000
 	totalInserted := 0
 
 	// Process files in batches
 	for i := 0; i < len(fileList); i += batchSize {
-		end := i + batchSize
-		if end > len(fileList) {
-			end = len(fileList)
-		}
+		end := min(i+batchSize, len(fileList))
 		batch := fileList[i:end]
 
 		// Begin transaction for this batch

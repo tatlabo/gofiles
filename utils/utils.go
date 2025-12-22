@@ -154,26 +154,26 @@ func CleanInput(input string) string {
 func ValidatePath(path string) (string, error) {
 	// Trim whitespace
 	path = strings.TrimSpace(path)
-	
+
 	// Check if path is empty
 	if path == "" {
 		return "", fmt.Errorf("path cannot be empty")
 	}
-	
+
 	// Check for path traversal attempts before cleaning
 	if strings.Contains(path, "..") {
 		return "", fmt.Errorf("path traversal detected: path contains '..'")
 	}
-	
+
 	// Clean and normalize the path
 	cleanPath := filepath.Clean(path)
-	
+
 	// Convert to absolute path
 	absPath, err := filepath.Abs(cleanPath)
 	if err != nil {
 		return "", fmt.Errorf("invalid path: %w", err)
 	}
-	
+
 	// Check if path exists
 	info, err := os.Stat(absPath)
 	if err != nil {
@@ -182,19 +182,19 @@ func ValidatePath(path string) (string, error) {
 		}
 		return "", fmt.Errorf("cannot access path: %w", err)
 	}
-	
+
 	// Check if path is a directory
 	if !info.IsDir() {
 		return "", fmt.Errorf("path is not a directory: %s", absPath)
 	}
-	
+
 	// Check if path is readable
 	file, err := os.Open(absPath)
 	if err != nil {
 		return "", fmt.Errorf("path is not accessible: %w", err)
 	}
 	defer file.Close()
-	
+
 	return absPath, nil
 }
 

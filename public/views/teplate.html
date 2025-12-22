@@ -1,0 +1,12 @@
+<h1>Handle with context</h1>
+
+{{ if .Status }}
+    <p>Start time: {{.Data.StartTime}}</p>
+    <p>End time: {{.Data.EndTime}}</p>
+    <p>Duration: {{.Data.Duration}}</p>
+    <p>Value from context: {{.Data.Text}}</p>
+{{ else }}
+    {{ .Msg }}   
+{{ end }}
+
+{{ . }}

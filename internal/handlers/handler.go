@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"gofiles/chroma"
 	"gofiles/internal/models"
@@ -90,16 +91,11 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 				// defer wg.Done()
 				if err := data.SelectCount(keywords); err != nil {
 					errCh <- err
-					tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "Error retrieving search results"}})
-					return
 				}
 				count <- data.Count
 			}()
 
 			select {
-			case err := <-errCh:
-				fmt.Println("Error getting search count: ", err)
-				return
 			case c := <-count:
 				if c == 0 {
 					templatePage = "home.html"
@@ -108,8 +104,11 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 							Body:         map[string]string{"message": "No results found for the given keywords"},
 							SearchParams: map[string]string{"keywords": keywords}})
 					return
-
 				}
+			case err := <-errCh:
+				i := IndexData{Title: "Error page", Body: map[string]string{"err": err.Error(), "msg": "Error retrieving search results"}}
+				tmpl.Render(w, "error.html", i)
+				return
 			}
 
 			res := make(chan models.FilesDataList)
@@ -121,18 +120,14 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 				// defer wg.Done()
 				if err := data.GetList(keywords, limit, offset); err != nil {
 					resErr <- err
-					tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "Error retrieving search results"}})
-					return
 				}
 				res <- data
 			}()
 
 			select {
-			case err := <-errCh:
-				fmt.Println("Error getting search count: ", err)
-				return
 			case err := <-resErr:
-				fmt.Println("Error getting search list: ", err)
+				i := IndexData{Title: "Error page", Body: map[string]string{"err": err.Error(), "msg": "Error retrieving search results"}}
+				tmpl.Render(w, "error.html", i)
 				return
 			case result := <-res:
 				tmpl.Render(w, templatePage, IndexData{
@@ -142,6 +137,7 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 					Count:         result.Count,
 					SearchParams:  map[string]string{"keywords": keywords, "limit": "10", "offset": "0"},
 				})
+
 			}
 
 			log.Printf("\n\n\nSearch completed in %v\n\n", time.Since(start))
@@ -155,7 +151,8 @@ func ItemDetailsId(w http.ResponseWriter, r *http.Request) {
 
 	body, err := getItemById(w, r)
 	if err != nil {
-		http.Error(w, "Error retrieving file details (ItemDetailsId / getItemById)", http.StatusInternalServerError)
+		i := IndexData{Title: "Error page", Body: map[string]string{"err": err.Error(), "msg": "ItemDetailsId Error"}}
+		tmpl.Render(w, "error.html", i)
 		return
 	}
 	tmpl.Render(w, "simple-entry-details.html", body)
@@ -166,7 +163,8 @@ func DetailsId(w http.ResponseWriter, r *http.Request) {
 
 	body, err := getItemById(w, r)
 	if err != nil {
-		http.Error(w, "Error retrieving file details (DetailsId / getItemById)", http.StatusInternalServerError)
+		i := IndexData{Title: "Error page", Body: map[string]string{"err": err.Error(), "msg": "Error retrieving file details (DetailsId / getItemById)"}}
+		tmpl.Render(w, "error.html", i)
 		return
 	}
 
@@ -182,18 +180,15 @@ func getItem(w http.ResponseWriter, r *http.Request) (models.FileData, error) {
 	f := models.FileData{}
 
 	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
 		return f, err
 	}
 
 	if err := f.GetById(id); err != nil {
-		http.Error(w, "Error retrieving file details in method GetById", http.StatusInternalServerError)
 		return f, err
 	}
 
 	f.SimplifyDetails()
 	if err := f.CheckExtension(); err != nil {
-		http.Error(w, "Error checking file extension", http.StatusInternalServerError)
 		return f, err
 	}
 
@@ -534,4 +529,69 @@ func HandleScan(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 		}
 	}
+}
+
+type Data struct {
+	StartTime string
+	EndTime   string
+	Duration  string
+	Text      string
+}
+
+type DataHtml struct {
+	Msg    string
+	Data   Data
+	Status bool
+}
+
+func HandleCtx(w http.ResponseWriter, r *http.Request) {
+
+	delayStr := r.URL.Query().Get("delay")
+	delay, err := strconv.Atoi(delayStr)
+	if err != nil {
+		delay = 1000 // default delay in milliseconds
+	}
+
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+
+	// r = r.WithContext(ctx)
+	d := make(chan DataHtml, 1)
+
+	go func() {
+		defer close(d)
+		d <- dataR(delay)
+	}()
+
+	select {
+	case <-ctx.Done():
+		var c DataHtml
+		c.Msg = "Request timed out"
+		c.Status = false
+
+		tmpl.Render(w, "teplate.html", c)
+		return
+	case res := <-d:
+		tmpl.Render(w, "teplate.html", res)
+	}
+
+}
+
+func dataR(t int) DataHtml {
+
+	t1 := time.Now()
+	time.Sleep(time.Duration(t) * time.Millisecond)
+	t2 := time.Now()
+
+	var data DataHtml
+	data.Data = Data{
+		StartTime: t1.Format("2006-01-02 15:04:05"),
+		EndTime:   t2.Format("2006-01-02 15:04:05"),
+		Duration:  t2.Sub(t1).String(),
+		Text:      "some data",
+	}
+	data.Status = true
+	data.Msg = "Processing completed successfully"
+	return data
 }

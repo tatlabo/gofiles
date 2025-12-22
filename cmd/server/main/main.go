@@ -34,6 +34,7 @@ func main() {
 	}
 
 	http.HandleFunc("/h2", h2)
+	http.HandleFunc("/h3", handlers.HandleCtx)
 	http.HandleFunc("/", handlers.HandleSearch)
 	http.HandleFunc("/append", handlers.HandleAppend)
 	http.HandleFunc("/detail/{id}", handlers.DetailsId)
