@@ -30,6 +30,21 @@ function showPreview() {
     previewSectionEl.style.display = "block";
 }
 
+function showImage(e) {
+    console.log("Showing image:", e);
+
+    const image = document.createElement("img");
+    image.src = e;
+    image.style.maxWidth = "100%";
+    image.style.height = "auto";
+
+    const previewImg = document.getElementById("preview-image");
+    previewImg.appendChild(image);
+    previewImg.style.display = "block";
+
+
+}
+
 if (previewSectionEl) {
         
     document.addEventListener("keydown", function (event) {

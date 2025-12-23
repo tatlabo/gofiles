@@ -128,6 +128,15 @@ ol.file-list li {
   padding-left: 0;
 }
 
+.file-list.headers li:last-child {
+  justify-self: end;
+}
+
+
+.headers li span:hover {
+  display: inline-block;
+  cursor: pointer;
+}
 
 ol.file-list li::marker {
   color: red;

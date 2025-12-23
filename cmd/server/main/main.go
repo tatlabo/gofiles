@@ -24,6 +24,9 @@ func main() {
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
+	media := http.FileServer(http.Dir("media"))
+	http.Handle("/media/", http.StripPrefix("/media/", media))
+
 	h2 := func(w http.ResponseWriter, _ *http.Request) {
 		io.WriteString(w, "Hello from a HandleFunc #2!\n")
 	}
@@ -37,13 +40,14 @@ func main() {
 	http.HandleFunc("/h3", handlers.HandleCtx)
 	http.HandleFunc("/", handlers.HandleSearch)
 	http.HandleFunc("/append", handlers.HandleAppend)
-	http.HandleFunc("/detail/{id}", handlers.DetailsId)
+	http.HandleFunc("/detail/{id}", handlers.ItemDetailsId)
 	http.HandleFunc("/item-detail/{id}", handlers.ItemDetailsId)
 	http.HandleFunc("/preview/{id}", handlers.PreviewById)
 	//protected routes
 	http.HandleFunc("/dirs", handlers.HandleDirs)
 	http.HandleFunc("/dirs/delete", handlers.HandleDirDelete)
 	http.HandleFunc("/dirs/scan", handlers.HandleScan)
+	http.HandleFunc("/preview-image/{id}", handlers.PreviewImage)
 
 	log.Fatal(http.ListenAndServe(":80", nil))
 

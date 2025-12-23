@@ -6,37 +6,16 @@ import (
 	"gofiles/utils"
 	"html/template"
 	"log"
-	"net/http"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
 )
 
 var textFiles = []string{"py", "txt", "js", "jsx", "json", "css", "go", "html", "edl", "xml", "java", "c", "cpp", "h", "php", "sql", "sh", "bat", "pl", "rb", "swift", "ts", "yaml", "yml", "csv", "R", "r"}
 var imageFiles = []string{"jpg", "jpeg", "png", "gif", "bmp", "tif", "tiff", "webp", "svg", "ico", "heic", "raw"}
-var videoFiles = []string{"mp4", "wav", "mp3", "aif", "aiff"}
-
-type Finfo struct {
-	Id          uuid.UUID    `db:"id"`
-	DirectoryId uuid.UUID    `json:"directoryId"`
-	Directory   string       `json:"directory"`
-	Name        string       `json:"name"`
-	Ext         string       `json:"ext"`
-	IsDir       bool         `json:"isDir"`
-	Size        int64        `json:"size"`
-	SizeStr     string       `json:"sizeStr"`
-	ModTime     time.Time    `json:"modTime"`
-	IsImage     bool         `json:"isImage"`
-	IsText      bool         `json:"isText"`
-	IsVideo     bool         `json:"isVideo"`
-	Link        string       `json:"link"`
-	Src         template.URL `json:"src"`
-	TsRank      float64      `db:"ts_rank" json:"tsRank"` // For full-text search ranking
-}
+var videoFiles = []string{"mp4", "wav", "mp3", "aif", "aiff", "mov", "avi", "mkv", "flv", "wmv", "webm", "mpg", "mpeg", "3gp"}
 
 type FinfoJSON struct {
 	Directory string    `json:"directory"`
@@ -49,13 +28,13 @@ type FinfoJSON struct {
 
 type FileData struct {
 	FinfoJSON     `json:"finfo"`
-	Id            uuid.UUID `json:"id"`
-	DirectoryId   uuid.UUID `json:"directoryId"`
-	Keywords      string    `json:"keywords"`
-	SizeSimple    string    `json:"sizeSimple"`
-	ModTimeSimple string    `json:"modTimeStr"`
-	Type          string    `json:"type"`
-	Url           string    `json:"url"`
+	Id            uuid.UUID    `json:"id"`
+	DirectoryId   uuid.UUID    `json:"directoryId"`
+	Keywords      string       `json:"keywords"`
+	SizeSimple    string       `json:"sizeSimple"`
+	ModTimeSimple string       `json:"modTimeStr"`
+	Type          string       `json:"type"`
+	Url           template.URL `json:"url"`
 }
 
 type FilesDataList struct {
@@ -354,25 +333,26 @@ func (f *FileData) SimplifyDetails() {
 	f.ModTimeSimple = f.ModTime.Format("2006-01-02 15:04:05")
 }
 
-func (f *FileData) CheckExtension() (e error) {
+func (f *FileData) CheckExtension() {
 
 	var url string
-	var fileType string
+	f.Type = ""
 
 	if slices.Contains(textFiles, f.Ext) {
-		fileType = "txt"
+		f.Type = "txt"
 		url = fmt.Sprintf("%s/%s.%v", f.Directory, f.Name, f.Ext)
 	} else if slices.Contains(imageFiles, f.Ext) {
 		url = fmt.Sprintf("file:///%s/%s.%v", f.Directory, f.Name, f.Ext)
 		f.Type = "image"
 	} else if slices.Contains(videoFiles, f.Ext) {
-		fileType = "video"
+		f.Type = "video"
+		url = fmt.Sprintf("file:///%s/%s.%v", f.Directory, f.Name, f.Ext)
+	} else {
 		url = fmt.Sprintf("file:///%s/%s.%v", f.Directory, f.Name, f.Ext)
 	}
 
-	f.Type = fileType
-	f.Url = url
-	return nil
+	f.Url = template.URL(strings.ReplaceAll(url, "\\", "/"))
+
 }
 
 func (f *FileData) GetById(id uuid.UUID) error {
@@ -403,37 +383,13 @@ func (f *FileData) GetById(id uuid.UUID) error {
 	f.DirectoryId = dirId
 	f.Keywords = keywords
 
-	f.SimplifyDetails()
+	// f.SimplifyDetails()
 
 	if err != nil {
 		return fmt.Errorf("Error retrieving file by ID:\n%v", err)
 	}
 
 	return nil
-}
-
-// type FilesDataList struct {
-// 	List  []FileData
-// 	Count int
-// }
-
-// ToJSON converts Finfo to FinfoJSON
-func (f *Finfo) ToJSON() FinfoJSON {
-	return FinfoJSON{
-		Directory: f.Directory,
-		Name:      f.Name,
-		Ext:       f.Ext,
-		IsDir:     f.IsDir,
-		Size:      f.Size,
-		ModTime:   f.ModTime,
-	}
-}
-
-type FinfoDetail struct {
-	*Finfo
-	Title   string
-	Preview string
-	HTML    template.HTML
 }
 
 type IndexedDir struct {
@@ -457,32 +413,6 @@ type User struct {
 	Id       uuid.UUID `db:"id" json:"id"`
 	Username string    `db:"username" json:"username"`
 	Password string    `db:"password" json:"-"`
-}
-
-func (p *IndexedDirs) SetParams(c echo.Context) error {
-
-	// Initialize maps if they're nil
-	if p.Params == nil {
-		p.Params = make(map[string]string)
-	}
-	if p.Error == nil {
-		p.Error = make(map[string]string)
-	}
-
-	params := c.FormValue("path")
-
-	// Validate the path
-	validatedPath, err := utils.ValidatePath(params)
-	if err != nil {
-		p.Error["path"] = err.Error()
-		p.Status = false
-		return fmt.Errorf("path validation failed: %w", err)
-	}
-
-	p.Params["path"] = validatedPath
-	p.Status = true
-
-	return nil
 }
 
 func (i *IndexedDirs) List() error {
@@ -540,132 +470,6 @@ func (i *IndexedDirs) Append() error {
 
 }
 
-func (f *Finfo) CheckExtension() error {
-
-	if f.IsDir {
-		fSrc := strings.ReplaceAll(f.Directory+"\\"+f.Name, "\\", "/")
-		f.Src = template.URL(fSrc)
-		return nil
-	}
-
-	if slices.Contains(textFiles, f.Ext) {
-		f.IsText = true
-		f.Link = fmt.Sprintf("%s\\%s.%v", f.Directory, f.Name, f.Ext)
-
-	} else if slices.Contains(imageFiles, f.Ext) {
-		f.IsImage = true
-		f.Link = fmt.Sprintf("file:///%s\\%s.%v", f.Directory, f.Name, f.Ext)
-	} else if slices.Contains(videoFiles, f.Ext) {
-		f.IsVideo = true
-		f.Link = fmt.Sprintf("file:///%s\\%s.%v", f.Directory, f.Name, f.Ext)
-	}
-
-	f.Link = strings.ReplaceAll(f.Link, "\\", "/")
-	fSrc := fmt.Sprintf("%s\\%s.%v", f.Directory, f.Name, f.Ext)
-	fSrc = strings.ReplaceAll(fSrc, "\\", "/")
-	f.Src = template.URL(fSrc)
-
-	return nil
-}
-
-func (f *Finfo) String() string {
-	return fmt.Sprintf("%s, %s, %s, %T\n", f.Directory, f.Name, f.Ext, f.IsDir)
-}
-
-type IndexData struct {
-	TC          []Finfo `json:"FileList"`
-	Text        string
-	HeaderTitle string
-	Counter     int
-	Params      map[string]string
-	Error       map[string]string
-}
-
-type SearchParams struct {
-	Params       string
-	Like         string
-	Dir          string
-	Keywords     string
-	Limit        int
-	Offset       int
-	QueryParam   string
-	Stmt         string
-	CounterStmt  string
-	Ext          string
-	Placeholders []any
-	Error        map[string]string
-}
-
-func (sp *SearchParams) SetParams(c echo.Context) error {
-
-	// Initialize Error map if it's nil
-	if sp.Error == nil {
-		sp.Error = make(map[string]string)
-	}
-
-	method := c.Request().Method
-
-	switch method {
-
-	case http.MethodGet:
-
-		if len(c.QueryParam("name")) == 0 {
-			sp.Error["Error"] = "No search parameters provided"
-		} else {
-			sp.Params = utils.CleanInput(c.QueryParam("name"))
-
-			if len(c.QueryParam("like")) > 0 {
-				sp.Like = utils.CleanInput(c.QueryParam("like"))
-			}
-
-			if len(c.QueryParam("dir")) > 0 {
-				sp.Dir = utils.CleanInput(c.QueryParam("dir"))
-			}
-
-			if len(c.QueryParam("keywords")) > 0 {
-				sp.Keywords = utils.CleanInput(c.QueryParam("keywords"))
-			}
-
-			offsetStr := c.QueryParam("offset")
-			limitStr := c.QueryParam("limit")
-
-			if len(limitStr) > 0 {
-				sp.Limit, _ = strconv.Atoi(limitStr)
-			} else {
-				sp.Limit = 10
-			}
-
-			if len(offsetStr) > 0 {
-				sp.Offset, _ = strconv.Atoi(offsetStr)
-			} else {
-				sp.Offset = 0
-			}
-		}
-
-	case http.MethodPost:
-		params := c.FormValue("name")
-		sp.Params = utils.CleanInput(params)
-
-		if len(c.FormValue("like")) > 0 {
-			sp.Like = c.FormValue("like")
-		}
-
-		if len(c.FormValue("dir")) > 0 {
-			sp.Dir = c.FormValue("dir")
-		}
-
-		if len(c.FormValue("keywords")) > 0 {
-			sp.Keywords = c.FormValue("keywords")
-		}
-
-		sp.Limit = 10
-		sp.Offset = 0
-
-	}
-
-	return nil
-}
-
 // Constructor functions to ensure maps are initialized
 
 // NewIndexedDirs creates a new IndexedDirs with initialized maps
@@ -674,25 +478,6 @@ func NewIndexedDirs() *IndexedDirs {
 		Indexeddirs: make([]IndexedDir, 0),
 		Params:      make(map[string]string),
 		Error:       make(map[string]string),
-	}
-}
-
-// NewSearchParams creates a new SearchParams with initialized maps
-func NewSearchParams() *SearchParams {
-	return &SearchParams{
-		Placeholders: make([]any, 0),
-		Error:        make(map[string]string),
-		Limit:        10,
-		Offset:       0,
-	}
-}
-
-// NewIndexData creates a new IndexData with initialized maps
-func NewIndexData() *IndexData {
-	return &IndexData{
-		TC:     make([]Finfo, 0),
-		Params: make(map[string]string),
-		Error:  make(map[string]string),
 	}
 }
 

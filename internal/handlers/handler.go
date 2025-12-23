@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
 )
 
 type Template struct {
@@ -121,6 +120,7 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 				if err := data.GetList(keywords, limit, offset); err != nil {
 					resErr <- err
 				}
+
 				res <- data
 			}()
 
@@ -130,6 +130,10 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 				tmpl.Render(w, "error.html", i)
 				return
 			case result := <-res:
+				for index := range result.List {
+					result.List[index].SimplifyDetails()
+					result.List[index].CheckExtension()
+				}
 				tmpl.Render(w, templatePage, IndexData{
 					Title:         "My Title",
 					Body:          map[string]string{"message": "data", "keywords": keywords},
@@ -149,26 +153,37 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 
 func ItemDetailsId(w http.ResponseWriter, r *http.Request) {
 
-	body, err := getItemById(w, r)
+	var f models.FileData
+
+	idStr := r.PathValue("id")
+
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
+
+	if err := f.GetById(id); err != nil {
+		http.Error(w, "Error retrieving file details", http.StatusInternalServerError)
+		return
+	}
+
+	f.CheckExtension()
+	f.SimplifyDetails()
+
+	tmpl.Render(w, "entry-details.html", f)
+
+}
+
+func DetailsId(w http.ResponseWriter, r *http.Request) {
+
+	body, err := getItem(w, r)
 	if err != nil {
 		i := IndexData{Title: "Error page", Body: map[string]string{"err": err.Error(), "msg": "ItemDetailsId Error"}}
 		tmpl.Render(w, "error.html", i)
 		return
 	}
 	tmpl.Render(w, "simple-entry-details.html", body)
-
-}
-
-func DetailsId(w http.ResponseWriter, r *http.Request) {
-
-	body, err := getItemById(w, r)
-	if err != nil {
-		i := IndexData{Title: "Error page", Body: map[string]string{"err": err.Error(), "msg": "Error retrieving file details (DetailsId / getItemById)"}}
-		tmpl.Render(w, "error.html", i)
-		return
-	}
-
-	tmpl.Render(w, "detail.html", body)
 
 }
 
@@ -188,9 +203,7 @@ func getItem(w http.ResponseWriter, r *http.Request) (models.FileData, error) {
 	}
 
 	f.SimplifyDetails()
-	if err := f.CheckExtension(); err != nil {
-		return f, err
-	}
+	f.CheckExtension()
 
 	return f, nil
 }
@@ -240,27 +253,46 @@ func HandleAppend(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func PreviewImageNew(c echo.Context) error {
+func PreviewImage(w http.ResponseWriter, r *http.Request) {
 
-	id := c.Param("id")
+	var f models.FileData
+	var i IndexData
 
-	finfo, err := SelectFinfoById(id)
+	idStr := r.PathValue("id")
+
+	id, err := uuid.Parse(idStr)
 	if err != nil {
-		return c.String(http.StatusInternalServerError, "Error executing query by id in\n PreviewImage "+err.Error())
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
 	}
 
-	srcPath := fmt.Sprintf("%s/%s.%v", finfo.Directory, finfo.Name, finfo.Ext)
-	destPath := fmt.Sprintf("media/images/%s.%v", finfo.Name, finfo.Ext)
+	if err := f.GetById(id); err != nil {
+		http.Error(w, "Error retrieving file details", http.StatusInternalServerError)
+		return
+	}
+
+	f.CheckExtension()
+	f.SimplifyDetails()
+
+	srcPath := fmt.Sprintf("%v/%v.%v", f.Directory, f.Name, f.Ext)
+	destPath := fmt.Sprintf("media/images/%s.%v", f.Name, f.Ext)
+
+	fmt.Println(srcPath)
+	fmt.Println(destPath)
 
 	// Ensure the destination directory exists
 	if err := os.MkdirAll("media/images", os.ModePerm); err != nil {
-		return c.String(http.StatusInternalServerError, "Error creating destination directory")
+		i.Title = "Error page"
+		i.Body = map[string]string{"err": err.Error(), "msg": "Error in media/images directory creation"}
+		tmpl.Render(w, "error.html", i)
+		return
 	}
-
 	// Copy the image file
 	if err := copyImageFile(srcPath, destPath); err != nil {
-		log.Printf("Error copying file from %s to %s: %v", srcPath, destPath, err)
-		return c.String(http.StatusInternalServerError, "Error copying image file")
+		i.Title = "Error page"
+		i.Body = map[string]string{"err": err.Error(), "msg": "Error copying image file"}
+		tmpl.Render(w, "error.html", i)
+		return
 	}
 
 	go func(filePath string) {
@@ -272,9 +304,13 @@ func PreviewImageNew(c echo.Context) error {
 		}
 	}(destPath)
 
-	finfo.Src = template.URL(destPath)
+	f.Url = template.URL("/" + destPath)
+	// tmpl.Render(w, "entry-details.html", f)
+	i.FileData = f
+	i.Title = "Image Preview"
 
-	return c.Render(http.StatusOK, "single_page", finfo)
+	tmpl.Render(w, "preview-image.html", i)
+
 }
 
 func copyImageFile(srcPath, destPath string) error {
@@ -336,7 +372,7 @@ func PreviewById(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func TxtToChoroma(f models.Finfo) (template.HTML, error) {
+func TxtToChoroma(f models.FinfoJSON) (template.HTML, error) {
 
 	address := fmt.Sprintf("%s\\%s.%v", f.Directory, f.Name, f.Ext)
 	fin, err := os.Open(address)
