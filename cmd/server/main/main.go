@@ -30,14 +30,10 @@ func WrapAuth(fn http.HandlerFunc) http.HandlerFunc {
 		fn(w, r)
 		// Pre-processing logic can be added here
 		log.Println("Handling request:", r.URL.Path)
-	})}
-
-
-
-
+	})
+}
 
 func main() {
-
 
 	// Serve static files (CSS, JS, images)
 	fs := http.FileServer(http.Dir("static"))
@@ -62,7 +58,7 @@ func main() {
 	http.HandleFunc("/detail/{id}", handlers.ItemDetailsId)
 	http.HandleFunc("/item-detail/{id}", handlers.ItemDetailsId)
 	http.HandleFunc("/preview/{id}", handlers.PreviewById)
-	http.HandleFunc("/preview-image/{id}", handlers.PreviewImage)
+	http.HandleFunc("/preview-media/{id}", handlers.PreviewMedia)
 	//protected routes
 	protected := http.NewServeMux()
 	http.Handle("/admin/", http.StripPrefix("/admin", WrapAuth(protected.ServeHTTP)))
@@ -71,13 +67,22 @@ func main() {
 	protected.HandleFunc("/dirs/delete", handlers.HandleDirDelete)
 	protected.HandleFunc("/dirs/scan", handlers.HandleScan)
 
-	
 	certPath := "C:/Users/adam/gofiles/localhost.pem"
 	keyPath := "C:/Users/adam/gofiles/localhost-key.pem"
 
-	err := http.ListenAndServeTLS(":80", certPath, keyPath, nil)
+	err := http.ListenAndServeTLS(":443", certPath, keyPath, nil)
 	log.Fatal(err)
 
+	//httpToHTTPS redirects all http to https
+	redirectToTls := func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "https://localhost:443"+r.RequestURI, http.StatusMovedPermanently)
+	}
+
+	go func() {
+		if err := http.ListenAndServe(":80", http.HandlerFunc(redirectToTls)); err != nil {
+			log.Fatalf("ListenAndServe error: %v", err)
+		}
+	}()
 
 	// Initialize Echo framework
 	// e := echo.New()

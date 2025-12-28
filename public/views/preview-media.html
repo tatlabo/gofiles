@@ -1,0 +1,32 @@
+{{ if eq .FileData.Type "video" }}
+    <video width="1280" height="720" controls>
+    <source src="{{ .FileData.Url }}" type="video/mp4">
+    </video>
+{{ else if eq .FileData.Type "image" }}
+    <img src="{{ .FileData.Url }}" alt="Image Preview" style="max-width: 100%; height: auto;" />
+{{ end }}
+
+{{ template "preview-image" . }}
+<h2>{{ .Title }}</h2>
+{{ define "preview-image" }}
+<div id="entry-details-section" class="section">
+    <ul id="list-headers" class="detail-list">`
+        <li>{{ .FileData.Directory }}</li>
+        <li>{{ .FileData.Name }}</li>
+        <li>{{ .FileData.Ext }}</li>
+        <li>{{ .FileData.Id }}</li>
+        <li>{{ .FileData.IsDir }}</li>
+        <li>{{ .FileData.Size }}</li>
+        <li>{{ .FileData.ModTime }}</li>
+        <li>{{ .FileData.DirectoryId }}</li>
+        <li>{{ .FileData.Keywords }}</li>
+        <li>{{ .FileData.SizeSimple }}</li>
+        <li>{{ .FileData.ModTimeSimple }}</li>
+        <li>{{ .FileData.Type }}</li>
+        <li>{{ .FileData.Url }}</li>
+    </ul>
+</div>
+
+{{ end }}
+
+

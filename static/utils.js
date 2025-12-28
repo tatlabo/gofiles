@@ -58,7 +58,7 @@ if (previewSectionEl) {
     document.addEventListener("keydown", function (event) {
             if (event.key === "Escape" || event.key === "Esc") {
                     if (typeof previewSectionEl !== "undefined" && previewSectionEl.style.display !== "none") {
-                            hidePreview();
+                            deletePreview();
                         }
                     }
                 });

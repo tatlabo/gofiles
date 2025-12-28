@@ -69,28 +69,31 @@ func handleS(w http.ResponseWriter, r *http.Request) {
 
 		qp = processQueryParams(r)
 
-		// templatePage = "home.html"
+		if qp.Keywords == "" {
+			templatePage = "home.html"
 
-		// tmpl.Render(w, templatePage, IndexData{
-		// 	Title:    "Search files",
-		// 	Body:     map[string]string{"message": "Wyszukaj pliki po słowach kluczowych"},
-		// 	HomePage: true,
-		// 	SearchParams: map[string]string{
-		// 		"keywords":  qp.Keywords,
-		// 		"limit":     strconv.Itoa(qp.Limit),
-		// 		"offset":    strconv.Itoa(qp.Offset),
-		// 		"order":     qp.Order,
-		// 		"ascending": strconv.FormatBool(qp.Ascending),
-		// 	},
-		// })
+			tmpl.Render(w, templatePage, IndexData{
+				Title:    "Search files",
+				Body:     map[string]string{"message": "Wyszukaj pliki po słowach kluczowych"},
+				HomePage: true,
+				SearchParams: map[string]string{
+					"keywords":  qp.Keywords,
+					"limit":     strconv.Itoa(qp.Limit),
+					"offset":    strconv.Itoa(qp.Offset),
+					"order":     qp.Order,
+					"ascending": strconv.FormatBool(qp.Ascending),
+				},
+			})
+			return
+		}
 
 	case http.MethodPost:
 		qp = processQueryParams(r)
-	}
 
-	if qp.Keywords == "" {
-		tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "TNie podano słów kluczowych"}})
-		return
+		if qp.Keywords == "" {
+			tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "TNie podano słów kluczowych"}})
+			return
+		}
 	}
 
 	data := models.FilesDataList{}
@@ -243,17 +246,37 @@ func processQueryParams(r *http.Request) models.QueryParams {
 		offsetStr := query.Get("offset")
 		ascending := query.Get("ascending")
 
-		qp.Keywords = query.Get("keywords")
+		s := ""
+		if k, ok := query["keywords"]; ok && len(k) > 0 {
+			s = k[0]
+		} else if k, ok := query["keyword"]; ok && len(k) > 0 {
+			s = k[0]
+		} else if k, ok := query["search"]; ok && len(k) > 0 {
+			s = k[0]
+		} else if k, ok := query["name"]; ok && len(k) > 0 {
+			s = k[0]
+		}
+
+		qp.Keywords = s
 		qp.Limit, _ = strconv.Atoi(lStr)
 		qp.Offset, _ = strconv.Atoi(offsetStr)
 		qp.Order = query.Get("order")
 		qp.Ascending = ascending == "true"
+
+		if qp.Limit <= 0 {
+			qp.Limit = 10
+		}
+		if qp.Offset < 0 {
+			qp.Offset = 0
+		}
+
 	case http.MethodPost:
 		qp.Keywords = r.FormValue("keywords")
 		qp.Limit = 10
 		qp.Offset = 0
 	}
 
+	log.Printf("Processed query params: %#v", qp)
 	return qp
 }
 
@@ -346,7 +369,68 @@ func PreviewImage(w http.ResponseWriter, r *http.Request) {
 	i.FileData = f
 	i.Title = "Image Preview"
 
-	tmpl.Render(w, "preview-image.html", i)
+	tmpl.Render(w, "preview-media.html", i)
+
+}
+
+func PreviewMedia(w http.ResponseWriter, r *http.Request) {
+
+	var f models.FileData
+	var i IndexData
+
+	idStr := r.PathValue("id")
+
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
+
+	if err := f.GetById(id); err != nil {
+		http.Error(w, "Error retrieving file details", http.StatusInternalServerError)
+		return
+	}
+
+	f.SimplifyDetails()
+
+	base := "media"
+
+	srcPath := fmt.Sprintf("%v/%v.%v", f.Directory, f.Name, f.Ext)
+	destPath := fmt.Sprintf("%s/%s/%s.%v", base, f.Type, f.Name, f.Ext)
+
+	fmt.Println(srcPath)
+	fmt.Println(destPath)
+
+	// Ensure the destination directory exists
+	if err := os.MkdirAll(base+"/"+f.Type, os.ModePerm); err != nil {
+		i.Title = "Error page"
+		i.Body = map[string]string{"err": err.Error(), "msg": "Error in media/video directory creation"}
+		tmpl.Render(w, "error.html", i)
+		return
+	}
+	// Copy the image file
+	if err := CopyImageFile(srcPath, destPath); err != nil {
+		i.Title = "Error page"
+		i.Body = map[string]string{"err": err.Error(), "msg": "Error copying image file"}
+		tmpl.Render(w, "error.html", i)
+		return
+	}
+
+	go func(filePath string) {
+		time.Sleep(120 * time.Second)
+		if err := os.Remove(filePath); err != nil {
+			log.Printf("Error deleting file %s: %v", filePath, err)
+		} else {
+			log.Printf("File %s deleted successfully", filePath)
+		}
+	}(destPath)
+
+	f.Url = template.URL("/" + destPath)
+	// tmpl.Render(w, "entry-details.html", f)
+	i.FileData = f
+	i.Title = "Media Preview"
+
+	tmpl.Render(w, "preview-media.html", i)
 
 }
 

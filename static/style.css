@@ -1,9 +1,5 @@
-@import "./normalize.min.css";
+@import "./cssprops.css";
 @import "./open-props.min.css";
-@import "./buttons.min.css";
-
-@import "./theme.light.switch.min.css";
-@import "./theme.dark.switch.min.css";
 
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=Noto+Sans+JP:wght@100..900&display=swap');
 

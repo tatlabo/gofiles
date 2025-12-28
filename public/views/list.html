@@ -20,14 +20,14 @@
         </a>
         {{ else if eq .Type "image" }}
         <span>
-            <a href="/preview-image/{{.Id}}" class="strong" hx-get="/preview-image/{{.Id}}" hx-target="#preview"
+            <a href="/preview-media/{{.Id}}" class="strong" hx-get="/preview-media/{{.Id}}" hx-target="#preview"
                 hx-swap="innerHTML" hx-boost="true" onClick="showPreview()"> {{ .Type }}
             </a>
         </span>
         </a>
         {{ else if eq .Type "video" }}
         <span>
-            <a href="/preview-video/{{.Id}}" class="strong" hx-get="/preview-video/{{.Id}}" hx-target="#preview"
+            <a href="/preview-media/{{.Id}}" class="strong" hx-get="/preview-media/{{.Id}}" hx-target="#preview"
                 hx-swap="innerHTML" hx-boost="true" onClick="showPreview()"> {{ .Type }}
             </a>
         </span>
