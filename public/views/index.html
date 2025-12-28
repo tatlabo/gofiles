@@ -1,5 +1,11 @@
 {{ template "header" .Title }}
 
+<template id="props" data-keywords="{{ .SearchParams.keywords }}" data-limit="{{ .SearchParams.limit }}"
+    data-offset="{{ .SearchParams.offset }}" data-counter="{{ .FilesDataList.Count }}"
+    data-order ="{{ .SearchParams.order }}"
+    data-base-url="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.limit }}&offset={{ .SearchParams.offset }}">
+</template>
+
 <main class="main">
 
     <article id="fileList" class="grid-container">
@@ -9,67 +15,20 @@
         </h4>
         {{end}}
         {{ template "form" . }}
-
-        <ul id="list-headers" class="file-list headers">
-            <li>
-                <span id="sort-name" data-sort-type="name" data-ascending="true">
-                    name
-                </span>
-                <span class="descending name" data-name="name"
-                    hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.Offset }}&offset=0&order=name&ascending=false"
-                    hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click">
-                    <strong>🠋</strong>
-                </span>
-                <span class="ascending name" data-name="name"
-                    hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.Offset }}&offset=0&order=name&ascending=true"
-                    hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click">
-                    <strong>🠉</strong>
-                </span>
-
-            </li>
-
-            <li id="sort-size" data-sort-type="size" data-ascending="true">
-                size
-                <span class="descending size" data-name="size"
-                    hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.Offset }}&offset=0&order=size&ascending=false"
-                    hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click">
-                    <strong>🠋</strong>
-                </span>
-                <span class="ascending size" data-name="size"
-                    hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.Offset }}&offset=0&order=size&ascending=true"
-                    hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click">
-                    <strong>🠉</strong>
-                </span>
-
-            </li>
-            <li id="sort-date" data-sort-type="moddate" data-ascending="true">
-                date
-                <span class="descending modtime" data-name="modtime"
-                    hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.Offset }}&offset=0&order=modtime&ascending=false"
-                    hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click">
-                    <strong>🠋</strong>
-                </span>
-                <span class="ascending modtime" data-name="modtime"
-                    hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.Offset }}&offset=0&order=modtime&ascending=true"
-                    hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click">
-                    <strong>🠉</strong>
-                </span>
-
-            </li>
-        </ul>
-
+        {{ template "table-headers" . }}
         {{ if .FilesDataList.List }}
         <ol id="list" class="file-list" type="1">
             {{ template "list" . }}
         </ol>
         {{ end }}
 
-        <div id="button-container" class="button-container">
-            <button class="primary" type="button" data-keywords="{{ .SearchParams.keywords }}"
+        <div class="button-container">
+            <button id="next" class="primary" type="button" data-keywords="{{ .SearchParams.keywords }}"
                 data-limit="{{ .SearchParams.limit }}" data-offset="{{ .SearchParams.offset }}"
                 data-counter="{{ .FilesDataList.Count }}"
                 hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.limit }}&offset={{ .SearchParams.offset }}"
-                hx-target="#list" hx-swap="beforeend" hx-boost="true" hx-trigger="click" id="next">
+                hx-target="#list" hx-swap="beforeend" hx-boost="true" hx-trigger="click" hx-replace-url="true">
+                There is {{ .FilesDataList.Count }} results
             </button>
         </div>
 
@@ -78,29 +37,71 @@
 </main>
 <article class="preview-wrapper" id="preview-section" style="display: none;">
     <section class="preview">
-        <button type="button" class="primary close-btn" id="hidePreview" onClick="hidePreview()">x</button>
+        <button type="button" class="primary close-btn" id="hidePreview" onClick="deletePreview()">x</button>
         {{ template "preview-content" . }}
     </section>
 </article>
-
-<div id="preview-image">
-</div>
-
 </body>
-
 </html>
 
 
-{{ block "preview-content" . }}
-<div id="preview">
-    {{ .Html }}
-</div>
+{{ define "preview-content"  }}
+    <div id="preview">
+        {{ .Html }}
+    </div>
 {{ end }}
 
 
+{{ define "table-headers" }}
+<ul id="list-headers" class="file-list headers">
+    <li>
+        <span id="sort-name" data-sort-type="name" data-ascending="true">
+            name
+        </span>
+        <span class="descending name" data-name="name" data-order="DESC"
+            hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.Offset }}&offset=0&order=name&ascending=false"
+            hx-target="#list" hx-swap="innerHTML" hx-trigger="click" hx-replapce-url="/true">
+            <strong>🠋</strong>
+        </span>
+        <span class="ascending name" data-name="name" data-order="ASC"
+            hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.Offset }}&offset=0&order=name&ascending=true"
+            hx-target="#list" hx-swap="innerHTML" hx-trigger="click" hx-replapce-url="/true">
+            <strong>🠉</strong>
+        </span>
 
+    </li>
 
+    <li>
+        <span id="sort-size" data-sort-type="size" data-ascending="true">
+            size
+        </span>
+        <span class="descending size" data-name="size" data-order="DESC"
+            hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.Offset }}&offset=0&order=size&ascending=false"
+            hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click" hx-replapce-url="true">
+            <strong>🠋</strong>
+        </span>
+        <span class="ascending size" data-name="size" data-order="ASC"
+            hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.Offset }}&offset=0&order=size&ascending=true"
+            hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click" hx-replapce-url="true">
+            <strong>🠉</strong>
+        </span>
 
+    </li>
+    <li>
+        <span id="sort-date" data-sort-type="moddate" data-ascending="true">
+            date
+        </span>
+        <span class="descending modtime" data-name="modtime" data-order="DESC"
+            hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.Offset }}&offset=0&order=modtime&ascending=false"
+            hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click" hx-replapce-url="true">
+            <strong>🠋</strong>
+        </span>
+        <span class="ascending modtime" data-name="modtime" data-order="ASC"
+            hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.Offset }}&offset=0&order=modtime&ascending=true"
+            hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click" hx-replapce-url="true">
+            <strong>🠉</strong>
+        </span>
 
-
-
+    </li>
+</ul>
+{{ end }}

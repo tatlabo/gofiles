@@ -26,6 +26,14 @@ function hidePreview() {
     previewSectionEl.style.display = "none";
 }
 
+function deletePreview() {
+    const p = document.getElementById("preview");
+    while (p.firstChild) {
+        p.removeChild(p.firstChild);
+}
+    previewSectionEl.style.display = "none";
+}
+
 function showPreview() {
     previewSectionEl.style.display = "block";
 }
@@ -130,12 +138,6 @@ function sortList(parameter, ascending = true) {
             default:
                 return 0;
         }
-        const aParsed = parameter === "size" || parameter === "moddate" ? parseFloat(aValue) : aValue.toLowerCase();
-        const bParsed = parameter === "size" || parameter === "moddate" ? parseFloat(bValue) : bValue.toLowerCase();
-
-        if (aParsed < bParsed) return ascending ? -1 : 1;
-        if (aParsed > bParsed) return ascending ? 1 : -1;
-        return 0;
     });
 
     // Use a DocumentFragment to append all sorted items at once

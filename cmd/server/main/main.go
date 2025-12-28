@@ -8,8 +8,6 @@ import (
 	_ "net/http/pprof"
 )
 
-var limit int
-
 // type Template struct {
 // 	templates *template.Template
 // }
@@ -18,7 +16,28 @@ var limit int
 // 	return t.templates.ExecuteTemplate(w, name, data)
 // }
 
+func WrapAuth(fn http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Authentication logic can be added here
+		username, password, ok := r.BasicAuth()
+
+		if !ok || username != "admin" || password != "s3cr3t" {
+			w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+			http.Error(w, "Unauthorized.", http.StatusUnauthorized)
+			return
+		}
+
+		fn(w, r)
+		// Pre-processing logic can be added here
+		log.Println("Handling request:", r.URL.Path)
+	})}
+
+
+
+
+
 func main() {
+
 
 	// Serve static files (CSS, JS, images)
 	fs := http.FileServer(http.Dir("static"))
@@ -43,16 +62,22 @@ func main() {
 	http.HandleFunc("/detail/{id}", handlers.ItemDetailsId)
 	http.HandleFunc("/item-detail/{id}", handlers.ItemDetailsId)
 	http.HandleFunc("/preview/{id}", handlers.PreviewById)
-	//protected routes
-	http.HandleFunc("/dirs", handlers.HandleDirs)
-	http.HandleFunc("/dirs/delete", handlers.HandleDirDelete)
-	http.HandleFunc("/dirs/scan", handlers.HandleScan)
 	http.HandleFunc("/preview-image/{id}", handlers.PreviewImage)
+	//protected routes
+	protected := http.NewServeMux()
+	http.Handle("/admin/", http.StripPrefix("/admin", WrapAuth(protected.ServeHTTP)))
+	//
+	protected.HandleFunc("/dirs", handlers.HandleDirs)
+	protected.HandleFunc("/dirs/delete", handlers.HandleDirDelete)
+	protected.HandleFunc("/dirs/scan", handlers.HandleScan)
 
-	log.Fatal(http.ListenAndServe(":80", nil))
+	
+	certPath := "C:/Users/adam/gofiles/localhost.pem"
+	keyPath := "C:/Users/adam/gofiles/localhost-key.pem"
 
-	// certPath := "C:/Users/adam/gofiles/certs/localhost+2.pem"
-	// keyPath := "C:/Users/adam/gofiles/certs/localhost+2-key.pem"
+	err := http.ListenAndServeTLS(":80", certPath, keyPath, nil)
+	log.Fatal(err)
+
 
 	// Initialize Echo framework
 	// e := echo.New()

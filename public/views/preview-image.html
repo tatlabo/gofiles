@@ -1,9 +1,6 @@
-{{ template "preview-image" . }}
 <img src="{{ .FileData.Url }}" alt="Image Preview" style="max-width: 100%; height: auto;" />
-
+{{ template "preview-image" . }}
 <h2>{{ .Title }}</h2>
-
-
 {{ define "preview-image" }}
 <div id="entry-details-section" class="section">
     <ul id="list-headers" class="detail-list">`

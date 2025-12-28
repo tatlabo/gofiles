@@ -1,5 +1,5 @@
-{{ define "list" }}
 
+{{ block "list" . }}
 {{ range .FilesDataList.List }}
 <li class="item-list" data-size="{{ .Size }}" data-name="{{ .Name }}{{ .Ext }}" data-moddate="{{ .ModTime }}">
     <span class="item-name">
@@ -15,9 +15,9 @@
         {{ if eq .Type "txt" }}
         <a href="/preview/{{.Id}}" class="strong" hx-get="/preview/{{.Id}}" hx-target="#preview" hx-swap="innerHTML"
             hx-boost="true" onClick="showPreview()">
-            {{ .Name }}{{ if .Ext }}.{{ .Ext }}{{ end}}
+            {{ if .Ext }}.{{ .Ext }}{{ end}}
+            {{ .Type }}
         </a>
-        {{ .Type }}
         {{ else if eq .Type "image" }}
         <span>
             <a href="/preview-image/{{.Id}}" class="strong" hx-get="/preview-image/{{.Id}}" hx-target="#preview"
@@ -42,8 +42,11 @@
     <span class="item-directory">
         {{ .Directory }}
     </span>
+    <span class="item-Id">
+        {{ .Id }}; {{ .TsRank}}
+    </span>
 </li>
 {{ end }}
-
-
 {{ end }}
+
+

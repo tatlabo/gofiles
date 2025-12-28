@@ -1,4 +1,4 @@
-package main
+package main_images
 
 import (
 	"fmt"
@@ -34,7 +34,7 @@ func (s ByWeight) Less(i, j int) bool {
 	return s.SomeSlice[i].Weight < s.SomeSlice[j].Weight
 }
 
-func main() {
+func main_images() {
 	fruits := SomeSlice{{Name: "peach", Weight: 1000}, {Name: "banana", Weight: 100}, {Name: "kiwi", Weight: 10}}
 	sort.Sort(ByWeight{fruits})
 	fmt.Println("Before sorting:", fruits)

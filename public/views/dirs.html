@@ -38,7 +38,7 @@
         <span class="item-name">
             {{ .Path }}
         </span>
-        <form action="/dirs/delete" method="POST">
+        <form action="/admin/dirs/delete" method="POST">
             <input type="hidden" name="id" value="{{ .Id }}">
             <button type="submit" class="delete" data-id="{{ .Id }}" data-name="{{ .Path }}">x</button>
         </form>
@@ -47,7 +47,7 @@
                 Rescan
             </button>
         {{ else }}
-            <form action="/dirs/scan" method="POST">
+            <form action="/admin/dirs/scan" method="POST">
                 <input type="hidden" name="scanid" value="{{ .Id }}">
                 <button type="submit" class="scan" data-id="{{ .Id }}" data-path="{{ .Path }}">
                     Scan
@@ -63,7 +63,7 @@
 
 
 {{ define "add-path-form" }}
-<form action="/dirs" method="POST" class="form flex column" id="search-form">
+<form action="/admin/dirs" method="POST" class="form flex column" id="search-form">
     <label for="path">Add Directory Path to Scan:</label>
     <input class="" type="text" id="path" name="path" required placeholder="add path">
     <button class="primary" type="submit" id="submit">Add Path</button>
