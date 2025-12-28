@@ -2,3 +2,5 @@ tmp
 *.exe
 certs
 *.pem
+*.mp4
+*.avi
