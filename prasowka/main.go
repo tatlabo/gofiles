@@ -19,33 +19,12 @@ func main() {
 	}
 	defer db.Close()
 
-	ctx := context.Background()
+	w := Website{URL: "https://rmf24.pl"}
 
-	CreateSourceTable(db)
-	CreateArticleTable(db)
-
-	w := Website{
-		URL:       "https://rmf24.pl/",
-		CreatedAt: time.Now(),
-		Keywords:  "rmf24",
-		Display:   0,
-	}
-
-	if err := w.ProcessWebsite(); err != nil {
+	err = w.GetSourceWebsite(db)
+	if err != nil {
 		log.Fatal(err)
 	}
-
-	if err := w.SourceToDb(ctx, db); err != nil {
-		log.Fatal(err)
-	}
-
-	// if w.Id != 0 {
-
-	// 	err = w.GetSourceWebsite(db)
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// }
 
 	if w.Body != "" {
 		subpages, err := ParseSourceBody(&w)
@@ -53,15 +32,43 @@ func main() {
 			log.Fatal(err)
 		}
 
-		for i := range subpages {
-			fmt.Println(subpages[i].Title)
+		l := len(subpages)
+		if l < 0 {
+			log.Println("No new entries found.")
+		} else {
 
-			err := (subpages[i]).AddWebsite(db)
-			if err != nil {
-				log.Fatal(err)
+			for i := range subpages {
+
+				err := (subpages[i]).AddWebsite(db)
+				if err != nil {
+					log.Fatal("There are no new entries ", err)
+				}
 			}
 		}
+
 	}
+
+}
+
+func SourceWebsite(ctx context.Context, db *sql.DB, w *Website) error {
+
+	CreateSourceTable(db)
+	CreateArticleTable(db)
+
+	w.URL = "https://rmf24.pl"
+	w.CreatedAt = time.Now()
+	w.Keywords = "rmf24"
+	w.Display = 0
+
+	if err := w.ProcessWebsite(); err != nil {
+		return fmt.Errorf("failed to process source website: %w", err)
+	}
+
+	if err := w.SourceToDb(ctx, db); err != nil {
+		return fmt.Errorf("failed to insert source website to db: %w", err)
+	}
+
+	return nil
 }
 
 func ParseSourceBody(w *Website) ([]Website, error) {
@@ -81,7 +88,7 @@ func ParseSourceBody(w *Website) ([]Website, error) {
 		title := htmlquery.InnerText(a)
 		title = strings.TrimSpace(title)
 		link := htmlquery.SelectAttr(a, "href")
-		link = string(w.URL) + link
+
 		subpage.Title = title
 		subpage.URL = template.URL(link)
 		subpage.CreatedAt = time.Now()

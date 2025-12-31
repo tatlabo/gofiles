@@ -46,6 +46,30 @@ func getWebsite(sql string, db *sql.DB, w *Website) error {
 
 }
 
+func SelectAllWebsites(db *sql.DB, w *Website) (l []Website, err error) {
+
+	sql := `SELECT id, url, body, created_at, keywords, display FROM daily;`
+
+	timeStr := ""
+	rows, err := db.Query(sql)
+	if err != nil {
+		return []Website{}, err
+	}
+
+	for rows.Next() {
+		next := Website{}
+		err := rows.Scan(&next.Id, &next.URL, &next.Body, &timeStr, &next.Keywords, &next.Display)
+		if err != nil {
+			return []Website{}, err
+		}
+
+		l = append(l, next)
+	}
+
+	return l, nil
+
+}
+
 func (w *Website) GetSourceWebsite(db *sql.DB) error {
 
 	sql := `SELECT id, url, body, created_at, keywords, display FROM source WHERE url = ?;`
@@ -60,7 +84,7 @@ func (w *Website) GetSourceWebsite(db *sql.DB) error {
 
 func (w *Website) GetWebsite(db *sql.DB) error {
 
-	sql := `SELECT id, url, body, created_at, keywords, display FROM daily WHERE url = ?;`
+	sql := `SELECT id, url, body, created_at, keywords, display FROM daily WHERE url = ? ORDER BY created_at DESC LIMIT 1;`
 	err := getWebsite(sql, db, w)
 	if err != nil {
 		return err
@@ -94,7 +118,8 @@ func (w *Website) ProcessWebsite() error {
 
 func (w *Website) AddWebsite(db *sql.DB) error {
 
-	stmt := `INSERT INTO daily (source_id, url, body, title, created_at, keywords, display)  VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id;`
+	stmt := `INSERT OR IGNORE INTO daily (source_id, url, body, title, created_at, keywords, display) 
+	VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id;`
 
 	err := db.QueryRow(stmt, w.SourceId, w.URL, w.Body, w.Title, w.CreatedAt.Format("2006-01-02 15:04:05"), w.Keywords, w.Display).Scan(&w.Id)
 	if err != nil {
@@ -129,63 +154,6 @@ func PragmaConfig(db *sql.DB) error {
 		if err != nil {
 			return err
 		}
-	}
-
-	return nil
-
-}
-
-func CreateSourceTable(db *sql.DB) error {
-
-	sql := `
-	CREATE TABLE IF NOT EXISTS 
-		source (
-			id INTEGER PRIMARY KEY,
-			url TEXT,
-			body TEXT not null,
-			raw BLOB,
-			created_at TEXT not null,
-			keywords TEXT,
-			md5 TEXT,
-			done INTEGER NOT NULL DEFAULT 0,
-			display INTEGER NOT NULL DEFAULT 0,
-			UNIQUE (url, created_at)
-		)
-		STRICT;`
-
-	_, err := db.Exec(sql)
-	if err != nil {
-		return err
-	}
-
-	return nil
-
-}
-
-func CreateArticleTable(db *sql.DB) error {
-
-	sql := `
-	CREATE TABLE IF NOT EXISTS 
-		daily (
-			id INTEGER PRIMARY KEY,
-			source_id INTEGER REFERENCES source(id) ON DELETE CASCADE,
-			title TEXT,
-			url TEXT,
-			body TEXT not null,
-			raw BLOB,
-			created_at TEXT not null,
-			keywords TEXT,
-			md5 TEXT,
-			done INTEGER NOT NULL DEFAULT 0,
-			display INTEGER NOT NULL DEFAULT 0,
-			UNIQUE (url, source_id)
-		)
-		STRICT;
-	`
-
-	_, err := db.Exec(sql)
-	if err != nil {
-		return err
 	}
 
 	return nil
