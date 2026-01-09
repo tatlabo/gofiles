@@ -1,6 +1,9 @@
 package main
 
 import (
+	"crypto/tls"
+	_ "embed"
+	cert "gofiles/certs"
 	"gofiles/internal/handlers"
 	"io"
 	"log"
@@ -67,10 +70,20 @@ func main() {
 	protected.HandleFunc("/dirs/delete", handlers.HandleDirDelete)
 	protected.HandleFunc("/dirs/scan", handlers.HandleScan)
 
-	certPath := "C:/Users/adam/gofiles/localhost.pem"
-	keyPath := "C:/Users/adam/gofiles/localhost-key.pem"
+	cert, err := cert.LocalCert()
+	if err != nil {
+		log.Fatalf("Failed to load certificate: %v", err)
+	}
 
-	err := http.ListenAndServeTLS(":443", certPath, keyPath, nil)
+	server := &http.Server{
+		Addr:    ":443",
+		Handler: nil, // Use default mux
+		TLSConfig: &tls.Config{
+			Certificates: []tls.Certificate{cert},
+		},
+	}
+
+	err = server.ListenAndServeTLS("", "")
 	log.Fatal(err)
 
 	//httpToHTTPS redirects all http to https
@@ -84,35 +97,4 @@ func main() {
 		}
 	}()
 
-	// Initialize Echo framework
-	// e := echo.New()
-
-	// e.Use(middleware.CORS())
-	// e.Use(middleware.Recover())
-
-	// e.Static("/static", "static")
-	// e.Static("/media", "media")
-
-	// e.Renderer = &Template{
-	// 	templates: template.Must(template.New("").Funcs(template.FuncMap{
-	// 		"formatDate": utils.FormatDate,
-	// 		"not":        utils.Not,
-	// 		"equals":     utils.Equals,
-	// 		"notequals":  utils.Notequals,
-	// 	}).ParseGlob("public/views/*.html")),
-	// }
-
-	// e.GET("/", handlers.StartPage)
-	// e.GET("/search", handlers.SearchInDb)
-	// e.POST("/search", handlers.SearchInDb)
-	// e.GET("/detail/:id", handlers.DetailById)
-	// e.GET("/details/:id", handlers.DetailById)
-	// e.GET("/preview/image/:id", handlers.PreviewImage)
-	// e.GET("/json/search", handlers.ResponseJson)
-	// e.GET("/append", handlers.ResponseAppend)
-
-	// log.Println("Starting HTTPS server on https://localhost:8443")
-	// if err := e.StartTLS(":8443", certPath, keyPath); err != nil {
-	// 	e.Logger.Fatal(err)
-	// }
 }
