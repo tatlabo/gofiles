@@ -22,6 +22,31 @@ type FinfoJSON struct {
 	ModTime   time.Time `json:"modTime"`
 }
 
+type person struct{}
+type human struct{}
+type animal struct{}
+
+func (p person) hello() {
+	fmt.Println("hello Person")
+}
+
+func (a animal) hello() {
+	fmt.Println("hello Animal")
+}
+
+// error: hello redeclared in this block
+func (h human) hello() {
+	fmt.Println("hello Human")
+}
+
+type mammal interface {
+	hello()
+}
+
+func hello(m mammal) {
+	m.hello()
+}
+
 func main() {
 
 	// path := os.Args[1]
@@ -50,6 +75,19 @@ func main() {
 	})
 
 	fmt.Println(string(j))
+
+	p := person{}
+	h := human{}
+	a := animal{}
+
+	hello(h)
+
+	hello(p)
+
+	hello(a)
+
+	h.hello()
+
 }
 
 func fetchBody(path string) (string, error) {
