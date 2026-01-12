@@ -1,4 +1,4 @@
-package main
+package word
 
 import (
 	"encoding/json"
@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strconv"
 	"time"
+	"unicode"
 
 	"golang.org/x/net/html"
 )
@@ -45,6 +46,22 @@ type mammal interface {
 
 func hello(m mammal) {
 	m.hello()
+}
+
+func IsPalindrome(s string) bool {
+	word := []rune{}
+	for _, r := range s {
+		if unicode.IsLetter(r) {
+			word = append(word, unicode.ToLower(r))
+		}
+	}
+
+	for i := range word {
+		if word[i] != word[len(word)-1-i] {
+			return false
+		}
+	}
+	return true
 }
 
 func main() {

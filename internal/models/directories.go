@@ -3,6 +3,7 @@ package models
 import (
 	"fmt"
 	"gofiles/utils"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -118,6 +119,7 @@ func (l *Directries) List() error {
 		}
 
 		l.Array = append(l.Array, d)
+		log.Println("Directory:", d)
 	}
 
 	return nil
