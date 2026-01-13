@@ -1,9 +1,10 @@
-package word
+package main
 
 import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"slices"
@@ -12,6 +13,8 @@ import (
 	"unicode"
 
 	"golang.org/x/net/html"
+
+	"sync"
 )
 
 type FinfoJSON struct {
@@ -105,6 +108,40 @@ func main() {
 
 	h.hello()
 
+	r := new(result)
+	r.Word = "example"
+	r.Count = 42
+	r.Data = map[string]any{
+		"key1": "value1",
+		"key2": 123,
+	}
+
+	http.Handle("/count", new(countHandler))
+	http.Handle("/result", r)
+	log.Fatal(http.ListenAndServe(":8080", nil))
+
+}
+
+type countHandler struct {
+	mu sync.Mutex // guards n
+	n  int
+}
+
+func (h *countHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.n++
+	fmt.Fprintf(w, "count is %d\n", h.n)
+}
+
+type result struct {
+	Word  string
+	Count int
+	Data  map[string]any
+}
+
+func (r *result) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	fmt.Fprintf(w, "Word: %s\nCount: %d\nData: %v\n", r.Word, r.Count, r.Data)
 }
 
 func fetchBody(path string) (string, error) {

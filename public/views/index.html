@@ -1,54 +1,164 @@
-{{ template "header" .Title }}
+{{ block "header" .Title }}
+<!DOCTYPE html>
+<html lang="en">
 
-<template id="props" data-keywords="{{ .SearchParams.keywords }}" data-limit="{{ .SearchParams.limit }}"
-    data-offset="{{ .SearchParams.offset }}" data-counter="{{ .FilesDataList.Count }}"
-    data-order ="{{ .SearchParams.order }}"
-    data-base-url="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.limit }}&offset={{ .SearchParams.offset }}">
-</template>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ . }}</title>
 
-<main class="main">
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" href="/static/search.svg" type="image/x-icon">
 
-    <article id="fileList" class="grid-container">
-        {{ if .FilesDataList.Count }}
-        <h4>
-            {{ .FilesDataList.Count }} results found
-        </h4>
-        {{end}}
-        {{ template "form" . }}
-        {{ template "table-headers" . }}
-        {{ if .FilesDataList.List }}
-        <ol id="list" class="file-list" type="1">
-            {{ template "list" . }}
-        </ol>
-        {{ end }}
+    <script src="/static/htmx.js" defer>
+    </script>
+    <script src="/static/utils.js" defer>
+    </script>
+    <script src="/static/main.js" defer>
+    </script>
 
-        <div class="button-container">
-            <button id="next" class="primary" type="button" data-keywords="{{ .SearchParams.keywords }}"
-                data-limit="{{ .SearchParams.limit }}" data-offset="{{ .SearchParams.offset }}"
-                data-counter="{{ .FilesDataList.Count }}"
-                hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.limit }}&offset={{ .SearchParams.offset }}"
-                hx-target="#list" hx-swap="beforeend" hx-boost="true" hx-trigger="click" hx-replace-url="true">
-                There is {{ .FilesDataList.Count }} results
-            </button>
-        </div>
+</head>
 
+<body>
+    {{ end }}
+    {{/* end of block "header" */}}
+
+
+    {{ block "navbar" . }}
+
+    <nav class="navbar">
+        <button id="theme-toggle">switch theme</button>
+    </nav>
+
+    {{ end }}
+
+
+    <template id="props" data-keywords="{{ .SearchParams.keywords }}" data-limit="{{ .SearchParams.limit }}"
+        data-offset="{{ .SearchParams.offset }}" data-counter="{{ .FilesDataList.Count }}"
+        data-order="{{ .SearchParams.order }}"
+        data-base-url="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.limit }}&offset={{ .SearchParams.offset }}">
+    </template>
+
+    <main class="main">
+
+        <article id="fileList" class="grid-container">
+            {{ if .FilesDataList.Count }}
+            <h4>
+                {{ .FilesDataList.Count }} results found
+            </h4>
+            {{end}}
+
+            {{/* Start of form */}}
+
+
+            {{ block "form" . }}
+            <form action="/search" method="POST" class="form flex column gap-3" id="search-form">
+                <input class="" type="text" id="keywords" name="keywords" required {{ if .SearchParams.keywords }}
+                    placeholder="{{ .SearchParams.keywords }}" {{ else }}placeholder="search" {{ end }} {{ if
+                    .SearchParams.keywords }} value="{{ .SearchParams.keywords }}" {{ else }}placeholder="search" {{ end
+                    }}>
+                <div>
+                </div>
+                <button class="primary" type="submit" id="submit">Submit</button>
+            </form>
+            {{ end }}
+
+
+            {{/* End of form */}}
+
+            {{ template "table-headers" . }}
+            {{ if .FilesDataList.List }}
+            <ol id="list" class="file-list" type="1">
+
+                {{ block "list" . }}
+                {{ range .FilesDataList.List }}
+                <li class="item-list" data-size="{{ .Size }}" data-name="{{ .Name }}{{ .Ext }}"
+                    data-moddate="{{ .ModTime }}">
+                    <span class="item-name">
+                        <a href="/item-detail/{{.Id}}" class="strong" hx-get="/item-detail/{{.Id}}" hx-target="#preview"
+                            hx-swap="innerHTML" hx-boost="true" onClick="showPreview()">
+                            {{ .Name }}{{ if .Ext }}.{{ .Ext }}{{ end}}
+                        </a>
+                    </span>
+                    <span class="item-size">
+                        <a href="/detail/{{ .Id }}">
+                            {{ if .IsDir }}folder{{ else }}{{ .SizeSimple }}{{ end}}
+                        </a>
+                        {{ if eq .Type "txt" }}
+                        <a href="/preview/{{.Id}}" class="strong" hx-get="/preview/{{.Id}}" hx-target="#preview"
+                            hx-swap="innerHTML" hx-boost="true" onClick="showPreview()">
+                            {{ if .Ext }}.{{ .Ext }}{{ end}}
+                            {{ .Type }}
+                        </a>
+                        {{ else if eq .Type "image" }}
+                        <span>
+                            <a href="/preview-media/{{.Id}}" class="strong" hx-get="/preview-media/{{.Id}}"
+                                hx-target="#preview" hx-swap="innerHTML" hx-boost="true" onClick="showPreview()"> {{
+                                .Type }}
+                            </a>
+                        </span>
+                        </a>
+                        {{ else if eq .Type "video" }}
+                        <span>
+                            <a href="/preview-media/{{.Id}}" class="strong" hx-get="/preview-media/{{.Id}}"
+                                hx-target="#preview" hx-swap="innerHTML" hx-boost="true" onClick="showPreview()"> {{
+                                .Type }}
+                            </a>
+                        </span>
+                        </a>
+                        {{ end}}
+                    </span>
+
+                    <time datetime="{{ .ModTime  }}" class="">
+                        {{ .ModTimeSimple }}
+                    </time>
+
+                    <span class="item-directory">
+                        {{ .Directory }}
+                    </span>
+                    <span class="item-Id">
+                        {{ .Id }}; {{ .TsRank}}
+                    </span>
+                    /li>
+                    {{ end }} {{/* end of range */}}
+                    {{ end }} {{/* end of block "list" */}}
+
+            </ol>
+            {{ end }}{{/* end of .FilesDataList.List */}}
+
+            <div class="button-container">
+                <button id="next" class="primary" type="button" data-keywords="{{ .SearchParams.keywords }}"
+                    data-limit="{{ .SearchParams.limit }}" data-offset="{{ .SearchParams.offset }}"
+                    data-counter="{{ .FilesDataList.Count }}"
+                    hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.limit }}&offset={{ .SearchParams.offset }}"
+                    hx-target="#list" hx-swap="beforeend" hx-boost="true" hx-trigger="click" hx-replace-url="true">
+                    There is {{ .FilesDataList.Count }} results
+                </button>
+            </div>
+
+        </article>
+
+    </main>
+    <article class="preview-wrapper" id="preview-section" style="display: none;">
+        <section class="preview">
+            <button type="button" class="primary close-btn" id="hidePreview" onClick="deletePreview()">x</button>
+            {{ template "preview-content" . }}
+        </section>
     </article>
 
-</main>
-<article class="preview-wrapper" id="preview-section" style="display: none;">
-    <section class="preview">
-        <button type="button" class="primary close-btn" id="hidePreview" onClick="deletePreview()">x</button>
-        {{ template "preview-content" . }}
-    </section>
-</article>
+
+
+    {{ block "footer" . }}
 </body>
 </html>
+{{ end }}
 
 
-{{ define "preview-content"  }}
-    <div id="preview">
-        {{ .Html }}
-    </div>
+
+{{ define "preview-content" }}
+<div id="preview">
+    {{ .Html }}
+</div>
 {{ end }}
 
 

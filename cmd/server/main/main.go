@@ -11,13 +11,36 @@ import (
 	_ "net/http/pprof"
 )
 
-// type Template struct {
-// 	templates *template.Template
-// }
+type Middleware func(http.HandlerFunc) http.HandlerFunc
+type User struct {
+	Username string
+	Password string
+	Ok       bool
+}
 
-// func (t *Template) Render(w io.Writer, name string, data any) error {
-// 	return t.templates.ExecuteTemplate(w, name, data)
-// }
+func (m Middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	m(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	}))(w, r)
+
+}
+
+func Login(fn http.HandlerFunc) Middleware {
+	return func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+
+			var user User
+			user.Username, user.Password, user.Ok = r.BasicAuth()
+
+			if !user.Ok || user.Username != "admin" || user.Password != "secret" {
+				w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+				http.Error(w, "Unauthorized.", http.StatusUnauthorized)
+				return
+			}
+
+			next(w, r)
+		}
+	}
+}
 
 func WrapAuth(fn http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -31,8 +54,6 @@ func WrapAuth(fn http.HandlerFunc) http.HandlerFunc {
 		}
 
 		fn(w, r)
-		// Pre-processing logic can be added here
-		log.Println("Handling request:", r.URL.Path)
 	})
 }
 
@@ -54,7 +75,7 @@ func main() {
 		Body  []string
 	}
 
-	http.HandleFunc("/h2", h2)
+	http.Handle("/h2", Login(h2))
 	http.HandleFunc("/h3", handlers.HandleCtx)
 	http.HandleFunc("/", handlers.HandleSearch)
 	http.HandleFunc("/append", handlers.HandleAppend)
@@ -75,26 +96,32 @@ func main() {
 		log.Fatalf("Failed to load certificate: %v", err)
 	}
 
-	server := &http.Server{
+	helloHandler := func(w http.ResponseWriter, req *http.Request) {
+		io.WriteString(w, "Hello, world!\n")
+	}
+
+	http.HandleFunc("/hello", helloHandler)
+
+	// HTTP server that redirects to HTTPS
+	go func() {
+		redirectToTls := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, "https://localhost:443"+r.RequestURI, http.StatusMovedPermanently)
+		})
+		log.Println("Starting HTTP redirect server on :80")
+		if err := http.ListenAndServe(":80", redirectToTls); err != nil {
+			log.Fatalf("HTTP server error: %v", err)
+		}
+	}()
+
+	// HTTPS server on main goroutine
+	tlsServer := &http.Server{
 		Addr:    ":443",
 		Handler: nil, // Use default mux
 		TLSConfig: &tls.Config{
 			Certificates: []tls.Certificate{cert},
 		},
 	}
-
-	err = server.ListenAndServeTLS("", "")
-	log.Fatal(err)
-
-	//httpToHTTPS redirects all http to https
-	redirectToTls := func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "https://localhost:443"+r.RequestURI, http.StatusMovedPermanently)
-	}
-
-	go func() {
-		if err := http.ListenAndServe(":80", http.HandlerFunc(redirectToTls)); err != nil {
-			log.Fatalf("ListenAndServe error: %v", err)
-		}
-	}()
+	log.Println("Starting HTTPS server on :443")
+	log.Fatal(tlsServer.ListenAndServeTLS("", ""))
 
 }

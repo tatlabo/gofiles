@@ -46,7 +46,7 @@ type IndexData struct {
 	IsText       bool
 }
 
-func WrapSearch(fn http.HandlerFunc) http.HandlerFunc {
+func Wraper(fn http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fn(w, r)
 		// Pre-processing logic can be added here
@@ -55,7 +55,7 @@ func WrapSearch(fn http.HandlerFunc) http.HandlerFunc {
 }
 
 func HandleSearch(w http.ResponseWriter, r *http.Request) {
-	WrapSearch(handleS)(w, r)
+	Wraper(handleS)(w, r)
 }
 
 func handleS(w http.ResponseWriter, r *http.Request) {
