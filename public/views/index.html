@@ -108,7 +108,6 @@
                         </a>
                         {{ end}}
                     </span>
-
                     <time datetime="{{ .ModTime  }}" class="">
                         {{ .ModTimeSimple }}
                     </time>
@@ -116,12 +115,13 @@
                     <span class="item-directory">
                         {{ .Directory }}
                     </span>
+
                     <span class="item-Id">
-                        {{ .Id }}; {{ .TsRank}}
+                        ts rank: {{ .TsRank}}
                     </span>
-                    /li>
-                    {{ end }} {{/* end of range */}}
-                    {{ end }} {{/* end of block "list" */}}
+                </li>
+                {{ end }} {{/* end of range */}}
+                {{ end }} {{/* end of block "list" */}}
 
             </ol>
             {{ end }}{{/* end of .FilesDataList.List */}}
@@ -150,6 +150,7 @@
 
     {{ block "footer" . }}
 </body>
+
 </html>
 {{ end }}
 

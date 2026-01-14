@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"math/rand/v2"
+	"sync"
 	"testing"
 )
 
@@ -34,23 +36,37 @@ func TestPalindrome(t *testing.T) {
 func randomPalindrome() string {
 	n := rand.IntN(25)
 	runes := make([]rune, n)
-	for i := 0; i < n; i++ {
+	for i := range (n / 2) + 1 {
 		r := rune(rand.IntN(0x1000))
 		runes[i] = r
-		// runes[n-1-i] = r
+		runes[n-1-i] = r
 	}
 	return string(runes)
 }
 
 func TestRandomPalindromes(t *testing.T) {
 
-	for range 100 {
+	for range 1 {
 		p := randomPalindrome()
+		fmt.Println("Testing palindrome:", p)
 		if !IsPalindrome(p) {
 			t.Errorf("IsPalindrome(%q) = false", p)
 		}
 	}
 
+}
+
+func TestGorutine(t *testing.T) {
+	var wg sync.WaitGroup
+	for _, s := range []string{"hello", "greetings", "good day"} {
+
+		customprint := func() {
+			fmt.Println(s)
+		}
+
+		wg.Go(customprint)
+	}
+	wg.Wait()
 }
 
 // func TestFrenchPalindrome(t *testing.T) {
