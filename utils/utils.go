@@ -31,7 +31,7 @@ func PgConn() (*sql.DB, error) {
 	const connStr = "user=golang password=golang dbname=json host=localhost sslmode=disable"
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error opening database connection.")
 	}
 	return db, nil
 }

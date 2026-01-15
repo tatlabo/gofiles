@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"gofiles/chroma"
 	"gofiles/internal/models"
@@ -21,6 +22,8 @@ type Template struct {
 	templates *template.Template
 }
 
+//https://www.youtube.com/watch?v=0x_oUlxzw5A&t=64s
+
 func (t *Template) Render(w io.Writer, name string, data any) error {
 	return t.templates.ExecuteTemplate(w, name, data)
 }
@@ -32,6 +35,17 @@ var tmpl = Template{
 		"equals":     utils.Equals,
 		"notequals":  utils.Notequals,
 	}).ParseGlob("public/views/*.html")),
+}
+
+type SimpleReq struct{}
+
+func (s SimpleReq) FillData(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("Index Data Page nr 555"))
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Accept-Language", "pl-PL")
+	w.WriteHeader(404)
+	w.Header().Add("X-Content-Type-Options", "nosniff")
+
 }
 
 type IndexData struct {
@@ -46,33 +60,45 @@ type IndexData struct {
 	IsText       bool
 }
 
-func Wraper(fn http.HandlerFunc) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fn(w, r)
-		// Pre-processing logic can be added here
-		log.Println("Handling request:", r.URL.Path)
-	})
+func (i *SimpleReq) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	i.FillData(w, r)
+}
+
+func Wraper(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+	ctx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
+	r = r.WithContext(ctx)
+	defer cancel()
+
+	parama := processQueryParams(r)
+	log.Printf("Received request for %s with parama=%s", r.URL.Path, parama)
+
+	params := processQueryParams(r)
+
+	indexData := make(chan IndexData)
+	errCh := make(chan error)
+
+	go func(p models.QueryParams) {
+		defer close(indexData)
+		indexData <- handleS(p)
+	}(params)
+
+	// log.Println("Handling request:", r.URL.Path)
 }
 
 func HandleSearch(w http.ResponseWriter, r *http.Request) {
-	Wraper(handleS)(w, r)
+	Wraper(w, r)
 }
 
-func handleS(w http.ResponseWriter, r *http.Request) {
+func handleS(qp models.QueryParams) IndexData {
 
 	templatePage := "index.html"
-	start := time.Now()
-	var qp models.QueryParams
 
-	switch r.Method {
-	case http.MethodGet:
-
-		qp = processQueryParams(r)
-
-		if qp.Keywords == "" {
-			templatePage = "home.html"
-
-			tmpl.Render(w, templatePage, IndexData{
+	if qp.Keywords == "" {
+		switch qp.Method {
+		case "get":
+			return IndexData{
 				Title:    "Search files",
 				Body:     map[string]string{"message": "Wyszukaj pliki po słowach kluczowych"},
 				HomePage: true,
@@ -83,16 +109,10 @@ func handleS(w http.ResponseWriter, r *http.Request) {
 					"order":     qp.Order,
 					"ascending": strconv.FormatBool(qp.Ascending),
 				},
-			})
-			return
-		}
+			}
 
-	case http.MethodPost:
-		qp = processQueryParams(r)
-
-		if qp.Keywords == "" {
-			tmpl.Render(w, templatePage, IndexData{Title: "My Title", Body: map[string]string{"message": "TNie podano słów kluczowych"}})
-			return
+		case "post":
+			return IndexData{Title: "My Title", Body: map[string]string{"message": "TNie podano słów kluczowych"}}
 		}
 	}
 
@@ -100,16 +120,21 @@ func handleS(w http.ResponseWriter, r *http.Request) {
 
 	count := make(chan int, 1)
 	errCh := make(chan error)
+
 	go func() {
 		defer close(count)
-		// defer wg.Done()
 		if err := data.SelectCount(qp.Keywords); err != nil {
+			log.Printf("Starting count goroutine: %v", err)
 			errCh <- err
 		}
 		count <- data.Count
 	}()
 
 	select {
+	case <-ctx.Done():
+		log.Println("Request timed out in handleS")
+		http.Error(w, "Request timed out", http.StatusGatewayTimeout)
+		return
 	case c := <-count:
 		if c == 0 {
 			templatePage = "home.html"
@@ -120,7 +145,8 @@ func handleS(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case err := <-errCh:
-		i := IndexData{Title: "Error page", Body: map[string]string{"err": err.Error(), "msg": "Error retrieving search results"}}
+		log.Printf("Error connection: %v", err)
+		i := IndexData{Title: "Error page", Body: map[string]string{"err": err.Error(), "msg": fmt.Sprintf("%v", err)}}
 		tmpl.Render(w, "error.html", i)
 		return
 	}
@@ -140,6 +166,10 @@ func handleS(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	select {
+	case <-ctx.Done():
+		log.Println("Request timed out in handleS")
+		http.Error(w, "Request timed out", http.StatusGatewayTimeout)
+		return
 	case err := <-resErr:
 		i := IndexData{Title: "Error page", Body: map[string]string{"err": err.Error(), "msg": "Error retrieving search results"}}
 		tmpl.Render(w, "error.html", i)
@@ -156,8 +186,8 @@ func handleS(w http.ResponseWriter, r *http.Request) {
 			SearchParams:  map[string]string{"keywords": qp.Keywords, "limit": strconv.Itoa(qp.Limit), "offset": strconv.Itoa(qp.Offset)},
 		})
 
-		log.Printf("\n\n\nSearch completed in %v\n\n", time.Since(start))
-		log.Printf("nr of gorutines (after Render): %v", runtime.NumGoroutine())
+		// log.Printf("\n\n\nSearch completed in %v\n\n", time.Since(start))
+		// log.Printf("nr of gorutines (after Render): %v", runtime.NumGoroutine())
 		return
 	}
 
@@ -240,6 +270,7 @@ func processQueryParams(r *http.Request) models.QueryParams {
 	qp := models.QueryParams{}
 	switch r.Method {
 	case http.MethodGet:
+		qp.Method = "get"
 		query := r.URL.Query()
 
 		lStr := query.Get("limit")
@@ -271,12 +302,13 @@ func processQueryParams(r *http.Request) models.QueryParams {
 		}
 
 	case http.MethodPost:
+		qp.Method = "post"
 		qp.Keywords = r.FormValue("keywords")
 		qp.Limit = 10
 		qp.Offset = 0
 	}
 
-	log.Printf("Processed query params: %#v", qp)
+	// log.Printf("Processed query params: %#v", qp)
 	return qp
 }
 

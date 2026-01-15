@@ -67,7 +67,7 @@ func (flist *FilesDataList) GetList(name string, limit int, offset int) error {
 		return err
 	}
 
-	go Explain(stmt, name, limit, offset)
+	// go Explain(stmt, name, limit, offset)
 
 	for rows.Next() {
 
@@ -156,6 +156,7 @@ type QueryParams struct {
 	Offset    int
 	Order     string
 	Ascending bool
+	Method    string
 }
 
 func (flist *FilesDataList) AppendListParams(qp QueryParams) error {
@@ -251,14 +252,15 @@ func (flist *FilesDataList) SelectCount(name string) error {
 
 	conn, err := utils.PgConn()
 	if err != nil {
-		return err
+		return fmt.Errorf("There is no connection to database")
 	}
 	defer conn.Close()
 
 	err = conn.QueryRow(stmt, name).Scan(&flist.Count)
 
 	if err != nil {
-		return err
+		errMsg := fmt.Errorf("There is error: there is no connection to database.\n%v", err.Error())
+		return errMsg
 	}
 
 	return nil

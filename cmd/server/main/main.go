@@ -75,6 +75,9 @@ func main() {
 		Body  []string
 	}
 
+	var idata http.Handler
+	idata = handlers.SimpleReq{}
+
 	http.Handle("/h2", Login(h2))
 	http.HandleFunc("/h3", handlers.HandleCtx)
 	http.HandleFunc("/", handlers.HandleSearch)
@@ -83,6 +86,9 @@ func main() {
 	http.HandleFunc("/item-detail/{id}", handlers.ItemDetailsId)
 	http.HandleFunc("/preview/{id}", handlers.PreviewById)
 	http.HandleFunc("/preview-media/{id}", handlers.PreviewMedia)
+
+	http.Handle("/data/", idata) // pprof
+	http.Handle("/data/{id}", idata)
 	//protected routes
 	protected := http.NewServeMux()
 	http.Handle("/admin/", http.StripPrefix("/admin", WrapAuth(protected.ServeHTTP)))
