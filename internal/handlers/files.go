@@ -81,17 +81,29 @@ func Wraper(w http.ResponseWriter, r *http.Request) {
 
 	go func(p models.QueryParams) {
 		defer close(indexData)
-		indexData <- handleS(p)
+		data, err := handleS(p)
+		indexData <- data
+		errCh <- err
 	}(params)
 
-	// log.Println("Handling request:", r.URL.Path)
+	select {
+	case <-ctx.Done():
+		log.Println("Request timed out in Wraper")
+		http.Error(w, "Request timed out", http.StatusGatewayTimeout)
+		return
+	case err := <-errCh:
+		i := IndexData{Title: "Error page", Body: map[string]string{"err": err.Error(), "msg": fmt.Sprintf("%v", err)}}
+		tmpl.Render(w, "error.html", i)
+
+	}
+
 }
 
 func HandleSearch(w http.ResponseWriter, r *http.Request) {
 	Wraper(w, r)
 }
 
-func handleS(qp models.QueryParams) IndexData {
+func handleS(qp models.QueryParams) (IndexData, error) {
 
 	templatePage := "index.html"
 
@@ -109,10 +121,10 @@ func handleS(qp models.QueryParams) IndexData {
 					"order":     qp.Order,
 					"ascending": strconv.FormatBool(qp.Ascending),
 				},
-			}
+			}, nil
 
 		case "post":
-			return IndexData{Title: "My Title", Body: map[string]string{"message": "TNie podano słów kluczowych"}}
+			return IndexData{Title: "My Title", Body: map[string]string{"message": "TNie podano słów kluczowych"}}, nil
 		}
 	}
 
