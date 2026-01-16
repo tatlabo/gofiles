@@ -159,8 +159,7 @@ function handleSortClick(event) {
 
 function FindDuplcates(arr) {
     const results = [];
-    // pets.includes("cat") // true
-
+    
     const seen = new Set();
     for (const value of arr) {
         if (seen.has(value)) {
@@ -171,13 +170,19 @@ function FindDuplcates(arr) {
     }
 
     return results;
+
 }
 
 function GetIds() {
     const ids = [];
-    const collection = document.querySelectorAll(".item-Id");
-    collection.forEach(
-        item => ids.push(item.textContent.replaceAll('\n', '').trim())
+    const collection = document.querySelectorAll(".item-list");
+    const collectionUUID = Array.from(collection).map( 
+        item => item.getAttribute("data-id")
+    )
+    collectionUUID.forEach(
+        item => {
+            ids.push(item)  
+        }
     )
 
     return ids;

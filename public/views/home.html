@@ -3,14 +3,10 @@
 <main class="main home-page">
 
     <article id="fileList" class="home-page-container">
-        {{ if not .HomePage }}
+
         <h4>
             {{ .Body.message }}
         </h4>
-        <p>
-            {{ .SearchParams.keywords }}, count = {{ .Count }}
-        </p>
-        {{ end }}
         {{ template "form" . }}
 
     </article>

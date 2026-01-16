@@ -32,11 +32,10 @@
 
     {{ end }}
 
-
-    <template id="props" data-keywords="{{ .SearchParams.keywords }}" data-limit="{{ .SearchParams.limit }}"
-        data-offset="{{ .SearchParams.offset }}" data-counter="{{ .FilesDataList.Count }}"
-        data-order="{{ .SearchParams.order }}"
-        data-base-url="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.limit }}&offset={{ .SearchParams.offset }}">
+    <template id="props" data-keywords="{{ .SearchParams.Keywords }}" data-limit="{{ .SearchParams.Limit }}"
+        data-offset="{{ .SearchParams.Offset }}" data-counter="{{ .FilesDataList.Count }}"
+        data-order="{{ .SearchParams.Order }}"
+        data-base-url="/append?keywords={{ .SearchParams.Keywords }}&limit={{ .SearchParams.Limit }}&offset={{ .SearchParams.Offset }}">
     </template>
 
     <main class="main">
@@ -53,10 +52,11 @@
 
             {{ block "form" . }}
             <form action="/search" method="POST" class="form flex column gap-3" id="search-form">
-                <input class="" type="text" id="keywords" name="keywords" required {{ if .SearchParams.keywords }}
-                    placeholder="{{ .SearchParams.keywords }}" {{ else }}placeholder="search" {{ end }} {{ if
-                    .SearchParams.keywords }} value="{{ .SearchParams.keywords }}" {{ else }}placeholder="search" {{ end
-                    }}>
+                <input class="" type="text" id="keywords" name="keywords" 
+                    {{ if .SearchParams.Keywords }}
+                    placeholder="{{ .SearchParams.Keywords }}"
+                    {{ else }} placeholder="search" 
+                    {{ end }}>
                 <div>
                 </div>
                 <button class="primary" type="submit" id="submit">Submit</button>
@@ -73,7 +73,8 @@
                 {{ block "list" . }}
                 {{ range .FilesDataList.List }}
                 <li class="item-list" data-size="{{ .Size }}" data-name="{{ .Name }}{{ .Ext }}"
-                    data-moddate="{{ .ModTime }}">
+                    data-moddate="{{ .ModTime }}"
+                    data-id="{{ .Id }}">
                     <span class="item-name">
                         <a href="/item-detail/{{.Id}}" class="strong" hx-get="/item-detail/{{.Id}}" hx-target="#preview"
                             hx-swap="innerHTML" hx-boost="true" onClick="showPreview()">
@@ -127,10 +128,10 @@
             {{ end }}{{/* end of .FilesDataList.List */}}
 
             <div class="button-container">
-                <button id="next" class="primary" type="button" data-keywords="{{ .SearchParams.keywords }}"
-                    data-limit="{{ .SearchParams.limit }}" data-offset="{{ .SearchParams.offset }}"
+                <button id="next" class="primary" type="button"
+                    data-keywords="{{ .SearchParams.Keywords }}"
+                    data-limit="{{ .SearchParams.Limit }}"
                     data-counter="{{ .FilesDataList.Count }}"
-                    hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.limit }}&offset={{ .SearchParams.offset }}"
                     hx-target="#list" hx-swap="beforeend" hx-boost="true" hx-trigger="click" hx-replace-url="true">
                     There is {{ .FilesDataList.Count }} results
                 </button>
@@ -149,6 +150,17 @@
 
 
     {{ block "footer" . }}
+
+    <script>
+        const $count = "{{ .FilesDataList.Count }};"
+        console.log("FilesDataList.Count:", $count);
+
+        const $keywords = "{{ .SearchParams.Keywords }};"
+        console.log("SearchParams.Keywords:", $keywords);
+
+        const $qp = "{{ .SearchParams }};"
+        console.log("SearchParams:", $qp);
+    </script>
 </body>
 
 </html>
@@ -170,12 +182,12 @@
             name
         </span>
         <span class="descending name" data-name="name" data-order="DESC"
-            hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.Offset }}&offset=0&order=name&ascending=false"
+            hx-get="/append?keywords={{ .SearchParams.Keywords }}&limit={{ .SearchParams.Limit }}&offset=0&order=name&ascending=false"
             hx-target="#list" hx-swap="innerHTML" hx-trigger="click" hx-replapce-url="/true">
             <strong>🠋</strong>
         </span>
         <span class="ascending name" data-name="name" data-order="ASC"
-            hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.Offset }}&offset=0&order=name&ascending=true"
+            hx-get="/append?keywords={{ .SearchParams.Keywords }}&limit={{ .SearchParams.Limit }}&offset=0&order=name&ascending=true"
             hx-target="#list" hx-swap="innerHTML" hx-trigger="click" hx-replapce-url="/true">
             <strong>🠉</strong>
         </span>
@@ -187,12 +199,12 @@
             size
         </span>
         <span class="descending size" data-name="size" data-order="DESC"
-            hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.Offset }}&offset=0&order=size&ascending=false"
+            hx-get="/append?keywords={{ .SearchParams.Keywords }}&limit={{ .SearchParams.Limit }}&offset=0&order=size&ascending=false"
             hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click" hx-replapce-url="true">
             <strong>🠋</strong>
         </span>
         <span class="ascending size" data-name="size" data-order="ASC"
-            hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.Offset }}&offset=0&order=size&ascending=true"
+            hx-get="/append?keywords={{ .SearchParams.Keywords }}&limit={{ .SearchParams.Limit }}&offset=0&order=size&ascending=true"
             hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click" hx-replapce-url="true">
             <strong>🠉</strong>
         </span>
@@ -203,12 +215,12 @@
             date
         </span>
         <span class="descending modtime" data-name="modtime" data-order="DESC"
-            hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.Offset }}&offset=0&order=modtime&ascending=false"
+            hx-get="/append?keywords={{ .SearchParams.Keywords }}&limit={{ .SearchParams.Limit }}&offset=0&order=modtime&ascending=false"
             hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click" hx-replapce-url="true">
             <strong>🠋</strong>
         </span>
         <span class="ascending modtime" data-name="modtime" data-order="ASC"
-            hx-get="/append?keywords={{ .SearchParams.keywords }}&limit={{ .SearchParams.Offset }}&offset=0&order=modtime&ascending=true"
+            hx-get="/append?keywords={{ .SearchParams.Keywords }}&limit={{ .SearchParams.Limit }}&offset=0&order=modtime&ascending=true"
             hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click" hx-replapce-url="true">
             <strong>🠉</strong>
         </span>

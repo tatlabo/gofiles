@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	_ "embed"
 	cert "gofiles/certs"
@@ -16,6 +17,26 @@ type User struct {
 	Username string
 	Password string
 	Ok       bool
+}
+
+func TraceId(fn http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Authentication logic can be added here
+		ctx := r.Context()
+		username, password, ok := r.BasicAuth()
+
+		if traceID := r.Header.Get("X-Trace-ID"); traceID != "" {
+			ctx = context.WithValue(ctx, "X-Trace-ID", traceID)
+		}
+
+		if !ok || username != "admin" || password != "s3cr3t" {
+			w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+			http.Error(w, "Unauthorized.", http.StatusUnauthorized)
+			return
+		}
+
+		fn.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
 
 func (m Middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -57,6 +78,14 @@ func WrapAuth(fn http.HandlerFunc) http.HandlerFunc {
 	})
 }
 
+type hello struct {
+	Message string
+}
+
+func (h *hello) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	io.WriteString(w, h.Message)
+}
+
 func main() {
 
 	// Serve static files (CSS, JS, images)
@@ -66,9 +95,7 @@ func main() {
 	media := http.FileServer(http.Dir("media"))
 	http.Handle("/media/", http.StripPrefix("/media/", media))
 
-	h2 := func(w http.ResponseWriter, _ *http.Request) {
-		io.WriteString(w, "Hello from a HandleFunc #2!\n")
-	}
+	h2 := &hello{Message: "Hello, secure world!"}
 
 	type IndexData struct {
 		Title string
@@ -78,7 +105,7 @@ func main() {
 	var idata http.Handler
 	idata = handlers.SimpleReq{}
 
-	http.Handle("/h2", Login(h2))
+	http.Handle("/h2", TraceId(h2))
 	http.HandleFunc("/h3", handlers.HandleCtx)
 	http.HandleFunc("/", handlers.HandleSearch)
 	http.HandleFunc("/append", handlers.HandleAppend)

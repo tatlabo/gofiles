@@ -50,41 +50,60 @@ func (s SimpleReq) FillData(w http.ResponseWriter, r *http.Request) {
 
 type IndexData struct {
 	models.FilesDataList
+	SearchParams models.QueryParams
 	FileData     models.FileData
 	Title        string
 	Body         map[string]string
 	Count        int
-	SearchParams map[string]string
 	HomePage     bool
 	Html         template.HTML
 	IsText       bool
 }
 
-func (i *SimpleReq) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (i SimpleReq) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	i.FillData(w, r)
+}
+
+func emptyKeywords(qp models.QueryParams) (data IndexData, empty bool) {
+
+	if len(qp.Keywords) == 0 {
+		data.Title = "My Title"
+		data.Body = map[string]string{"message": "Nie podano słów kluczowych"}
+		data.Title = "Search files"
+		data.Body = map[string]string{"message": "Wyszukaj pliki po słowach kluczowych"}
+		data.HomePage = true
+		return data, true
+	}
+
+	return data, false
+
 }
 
 func Wraper(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
-	ctx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+
 	r = r.WithContext(ctx)
 	defer cancel()
 
-	parama := processQueryParams(r)
-	log.Printf("Received request for %s with parama=%s", r.URL.Path, parama)
+	qp := processQueryParams(r)
+	if data, empty := emptyKeywords(qp); empty {
+		tmpl.Render(w, "home.html", data)
+		return
+	}
 
-	params := processQueryParams(r)
+	log.Printf("Received request for %s with paramas=%v", r.URL.Path, qp)
 
-	indexData := make(chan IndexData)
-	errCh := make(chan error)
+	dataCh := make(chan IndexData, 1)
+	errCh := make(chan error, 1)
 
 	go func(p models.QueryParams) {
-		defer close(indexData)
-		data, err := handleS(p)
-		indexData <- data
+		defer close(dataCh)
+		data, err := mainSearch(ctx, p)
+		dataCh <- data
 		errCh <- err
-	}(params)
+	}(qp)
 
 	select {
 	case <-ctx.Done():
@@ -92,8 +111,23 @@ func Wraper(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Request timed out", http.StatusGatewayTimeout)
 		return
 	case err := <-errCh:
-		i := IndexData{Title: "Error page", Body: map[string]string{"err": err.Error(), "msg": fmt.Sprintf("%v", err)}}
-		tmpl.Render(w, "error.html", i)
+		data := IndexData{
+			Title: "Error page",
+			Body:  map[string]string{"err": err.Error(), "msg": fmt.Sprintf("%v", err)},
+		}
+		tmpl.Render(w, "error.html", data)
+	case data := <-dataCh:
+		if data.Count != 0 {
+			tmpl.Render(w, "index.html", data)
+			return
+		} else {
+			templatePage := "home.html"
+			data = IndexData{Title: "No results",
+				Body:         map[string]string{"message": "No results found for the given keywords"},
+				SearchParams: qp}
+			tmpl.Render(w, templatePage, data)
+			return
+		}
 
 	}
 
@@ -103,105 +137,36 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 	Wraper(w, r)
 }
 
-func handleS(qp models.QueryParams) (IndexData, error) {
-
-	templatePage := "index.html"
-
-	if qp.Keywords == "" {
-		switch qp.Method {
-		case "get":
-			return IndexData{
-				Title:    "Search files",
-				Body:     map[string]string{"message": "Wyszukaj pliki po słowach kluczowych"},
-				HomePage: true,
-				SearchParams: map[string]string{
-					"keywords":  qp.Keywords,
-					"limit":     strconv.Itoa(qp.Limit),
-					"offset":    strconv.Itoa(qp.Offset),
-					"order":     qp.Order,
-					"ascending": strconv.FormatBool(qp.Ascending),
-				},
-			}, nil
-
-		case "post":
-			return IndexData{Title: "My Title", Body: map[string]string{"message": "TNie podano słów kluczowych"}}, nil
-		}
-	}
+func mainSearch(ctx context.Context, qp models.QueryParams) (IndexData, error) {
 
 	data := models.FilesDataList{}
 
-	count := make(chan int, 1)
-	errCh := make(chan error)
-
-	go func() {
-		defer close(count)
-		if err := data.SelectCount(qp.Keywords); err != nil {
-			log.Printf("Starting count goroutine: %v", err)
-			errCh <- err
-		}
-		count <- data.Count
-	}()
-
-	select {
-	case <-ctx.Done():
-		log.Println("Request timed out in handleS")
-		http.Error(w, "Request timed out", http.StatusGatewayTimeout)
-		return
-	case c := <-count:
-		if c == 0 {
-			templatePage = "home.html"
-			tmpl.Render(w, templatePage,
-				IndexData{Title: "No results",
-					Body:         map[string]string{"message": "No results found for the given keywords"},
-					SearchParams: map[string]string{"keywords": qp.Keywords}})
-			return
-		}
-	case err := <-errCh:
-		log.Printf("Error connection: %v", err)
-		i := IndexData{Title: "Error page", Body: map[string]string{"err": err.Error(), "msg": fmt.Sprintf("%v", err)}}
-		tmpl.Render(w, "error.html", i)
-		return
+	if err := data.SelectCount(qp.Keywords); err != nil {
+		return IndexData{}, err
 	}
 
-	res := make(chan models.FilesDataList)
-	resErr := make(chan error)
-	go func() {
-		defer close(res)
-		defer close(resErr)
-
-		// defer wg.Done()
-		if err := data.GetList(qp.Keywords, qp.Limit, qp.Offset); err != nil {
-			resErr <- err
-		}
-
-		res <- data
-	}()
-
-	select {
-	case <-ctx.Done():
-		log.Println("Request timed out in handleS")
-		http.Error(w, "Request timed out", http.StatusGatewayTimeout)
-		return
-	case err := <-resErr:
-		i := IndexData{Title: "Error page", Body: map[string]string{"err": err.Error(), "msg": "Error retrieving search results"}}
-		tmpl.Render(w, "error.html", i)
-		return
-	case result := <-res:
-		for index := range result.List {
-			result.List[index].SimplifyDetails()
-		}
-		tmpl.Render(w, templatePage, IndexData{
-			Title:         "My Title",
-			Body:          map[string]string{"message": "data", "keywords": qp.Keywords},
-			FilesDataList: result,
-			Count:         result.Count,
-			SearchParams:  map[string]string{"keywords": qp.Keywords, "limit": strconv.Itoa(qp.Limit), "offset": strconv.Itoa(qp.Offset)},
-		})
-
-		// log.Printf("\n\n\nSearch completed in %v\n\n", time.Since(start))
-		// log.Printf("nr of gorutines (after Render): %v", runtime.NumGoroutine())
-		return
+	if data.Count == 0 {
+		return IndexData{Title: "No results",
+			Body:         map[string]string{"message": "No results found for the given keywords"},
+			SearchParams: qp}, nil
 	}
+
+	// main SELECT
+	if err := data.GetList(qp.Keywords, qp.Limit, qp.Offset); err != nil {
+		return IndexData{}, err
+	}
+
+	for index := range data.List {
+		data.List[index].SimplifyDetails()
+	}
+
+	return IndexData{
+		SearchParams:  qp,
+		Title:         "My Title",
+		Body:          map[string]string{"message": "data"},
+		FilesDataList: data,
+		Count:         data.Count,
+	}, nil
 
 }
 
@@ -347,13 +312,11 @@ func HandleAppend(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tmpl.Render(w, "append.html", IndexData{Title: "My Title",
-		Body: map[string]string{
-			"message":  "data",
-			"keywords": qp.Keywords},
+		Body:          map[string]string{"message": "data"},
 		FilesDataList: data,
 		Count:         data.Count,
-		SearchParams:  map[string]string{"keywords": qp.Keywords, "limit": strconv.Itoa(qp.Limit), "offset": strconv.Itoa(qp.Offset), "order": qp.Order, "ascending": strconv.FormatBool(qp.Ascending)},
-	})
+		SearchParams:  qp},
+	)
 	log.Printf("nr of gorutines (HandleAppend): %v", runtime.NumGoroutine())
 
 }
