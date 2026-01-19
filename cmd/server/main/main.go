@@ -124,14 +124,9 @@ func main() {
 	protected.HandleFunc("/dirs/delete", handlers.HandleDirDelete)
 	protected.HandleFunc("/dirs/scan", handlers.HandleScan)
 
-	certPEM, keyPEM, err := cert.LocalCert()
+	cert, err := cert.LocalCert()
 	if err != nil {
 		log.Fatalf("Failed to load certificate: %v", err)
-	}
-
-	tlsCert, err := tls.X509KeyPair(certPEM, keyPEM)
-	if err != nil {
-		log.Fatalf("Failed to create TLS certificate: %v", err)
 	}
 
 	helloHandler := func(w http.ResponseWriter, req *http.Request) {
@@ -156,7 +151,7 @@ func main() {
 		Addr:    ":443",
 		Handler: nil, // Use default mux
 		TLSConfig: &tls.Config{
-			Certificates: []tls.Certificate{tlsCert},
+			Certificates: []tls.Certificate{cert},
 		},
 	}
 	log.Println("Starting HTTPS server on :443")

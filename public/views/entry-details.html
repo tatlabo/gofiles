@@ -1,21 +1,46 @@
-
-
+{{ block "entry-details" . }}
 <div id="entry-details-section" class="section">
     <h2>Entry Details</h2>
-    <ul id="list-headers" class="detail-list">`
-        <li>{{ .Directory }}</li>
-        <li>{{ .Name }}</li>
-        <li>{{ .Ext }}</li>
-        <li>{{ .Id }}</li>
-        <li>{{ .IsDir }}</li>
-        <li>{{ .Size }}</li>
-        <li>{{ .ModTime }}</li>
-        <li>{{ .DirectoryId }}</li>
-        <li>{{ .Keywords }}</li>
-        <li>{{ .SizeSimple }}</li>
-        <li>{{ .ModTimeSimple }}</li>
-        <li>{{ .Type }}</li>
-        <li>{{ .Url }}</li>
-    </ul>
+    <dl id="list-headers" class="detail-list">
+        <dt>Directory:
+        </dt>
+        <dd>{{ .Directory }}</dd>
+        <dt>Name:
+        </dt>
+        <dd>{{ .Name }}</dd>
+        <dt>Ext:
+        </dt>
+        <dd>{{ .Ext }}</dd>
+        <dt>Id:
+        </dt>
+        <dd>{{ .Id }}</dd>
+        <dt>IsDir:
+        </dt>
+        <dd>{{ .IsDir }}</dd>
+        <dt>Size:
+        </dt>
+        <dd>{{ .Size }}</dd>
+        <dt>ModTime:
+        </dt>
+        <dd>{{ .ModTime }}</dd>
+        <dt>DirectoryId:
+        </dt>
+        <dd>{{ .DirectoryId }}</dd>
+        <dt>Keywords:
+        </dt>
+        <dd>{{ .Keywords }}</dd>
+        <dt>SizeSimple:
+        </dt>
+        <dd>{{ .SizeSimple }}</dd>
+        <dt>ModTimeSimple:
+        </dt>
+        <dd>{{ .ModTimeSimple }}</dd>
+        <dt>Type:
+        </dt>
+        <dd>{{ .Type }}</dd>
+        <dt>Url:
+        </dt>
+        <dd>{{ .Url }}</dd>
+    </dl>
 </div>
-
+{{ end }}
