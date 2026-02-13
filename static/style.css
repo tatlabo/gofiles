@@ -602,3 +602,7 @@ time {
   gap: 1em;
 
 }
+
+.highlight {
+  color: var(--highlight-color, var(--orange-6));
+}
