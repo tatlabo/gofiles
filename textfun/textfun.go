@@ -63,7 +63,6 @@ func insertToPostgres(c []string) error {
 	if err != nil {
 		panic(err)
 	}
-	defer db.Close()
 
 	var (
 		s = len(c)

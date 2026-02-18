@@ -4,7 +4,7 @@ const CreateDirectory = `CREATE TABLE IF NOT EXISTS directory
 	(id UUID PRIMARY KEY DEFAULT gen_random_uuid(), json jsonb, UNIQUE (json));`
 
 const CreateFiles = `CREATE TABLE IF NOT EXISTS files (
-	id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+	id SERIAL PRIMARY KEY,
 	directory_id UUID, FOREIGN KEY(directory_id) REFERENCES directory(id) ON DELETE CASCADE,
 	data jsonb,
 	keywords TEXT,

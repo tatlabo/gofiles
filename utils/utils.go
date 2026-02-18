@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -26,14 +27,29 @@ func GenerateID() string {
 	return hex.EncodeToString(b)
 }
 
+var (
+	db   *sql.DB
+	once sync.Once
+)
+
 func PgConn() (*sql.DB, error) {
 
-	const connStr = "user=golang password=golang dbname=json host=localhost sslmode=disable"
-	db, err := sql.Open("postgres", connStr)
-	if err != nil {
-		return nil, fmt.Errorf("Error opening database connection.")
-	}
-	return db, nil
+	var err error
+	once.Do(func() {
+		connStr := "user=golang password=golang dbname=json host=localhost sslmode=disable"
+		db, err = sql.Open("postgres", connStr)
+		if err != nil {
+			return
+		}
+		// Configure pool
+		db.SetMaxOpenConns(25)
+		db.SetMaxIdleConns(5)
+		db.SetConnMaxLifetime(5 * time.Minute)
+
+		// Verify connection
+		err = db.Ping()
+	})
+	return db, err
 }
 
 const createExt = `
@@ -79,7 +95,6 @@ func CreateFiles() error {
 	if err != nil {
 		return (err)
 	}
-	defer db.Close()
 
 	if _, err := db.Exec(createFiles); err != nil {
 		return err
@@ -119,7 +134,6 @@ func DropFiles() error {
 	if err != nil {
 		return (err)
 	}
-	defer db.Close()
 
 	_, err = db.Exec(`DROP TABLE IF EXISTS files;`)
 	if err != nil {
@@ -222,7 +236,7 @@ func VanillaSql(s []string, group bool) error {
 	if e != nil {
 		return fmt.Errorf("cann't connect to database (utils.VanillaSql) with error: %s", e)
 	}
-	defer db.Close()
+
 
 	tx, e := db.Begin()
 	if e != nil {
@@ -254,7 +268,6 @@ func VanillaRaw(xs []byte) error {
 	if e != nil {
 		return e
 	}
-	defer db.Close()
 
 	tx, e := db.Begin()
 	if e != nil {

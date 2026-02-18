@@ -34,7 +34,6 @@ func (l *Directries) AddPath(path string) error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
 
 	d := Directory{}
 	err = conn.QueryRow(query, path).Scan(&d.Id, &d.Path, &d.IsDone, &d.CreatedAt, &d.UpdatedAt)
@@ -52,7 +51,6 @@ func (d *Directory) AddPath(path string) error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
 
 	err = conn.QueryRow(query, path).Scan(&d.Id, &d.Path, &d.IsDone, &d.CreatedAt, &d.UpdatedAt)
 	if err != nil {
@@ -69,7 +67,6 @@ func (l *Directries) DeletePath(id uuid.UUID) (d Directory, err error) {
 	if err != nil {
 		return d, err
 	}
-	defer conn.Close()
 
 	err = conn.QueryRow(query, id).Scan(&d.Id, &d.Path, &d.IsDone, &d.CreatedAt, &d.UpdatedAt)
 	if err != nil {
@@ -85,7 +82,6 @@ func (ds *Directries) Direcotry(id uuid.UUID) (d Directory, err error) {
 	if err != nil {
 		return d, err
 	}
-	defer conn.Close()
 
 	err = conn.QueryRow(query, id).Scan(&d.Id, &d.Path, &d.IsDone, &d.CreatedAt, &d.UpdatedAt)
 	if err != nil {
@@ -102,7 +98,6 @@ func (l *Directries) List() error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
 
 	rows, err := conn.Query(query)
 	if err != nil {
@@ -132,7 +127,6 @@ func (d *Directory) Row(id uuid.UUID) error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
 
 	err = conn.QueryRow(query, id).Scan(&d.Id, &d.Path, &d.IsDone, &d.CreatedAt, &d.UpdatedAt)
 
@@ -174,7 +168,6 @@ func (i *IndexedDirs) List() error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
 
 	rows, err := conn.Query(query)
 	if err != nil {
@@ -205,7 +198,6 @@ func (i *IndexedDirs) Append() error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
 
 	newDir := IndexedDir{}
 	err = conn.QueryRow(query, i.Params["path"], false, time.Now()).Scan(
