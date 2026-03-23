@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gofiles/chroma"
 	"gofiles/internal/models"
+	"gofiles/public"
 	"gofiles/utils"
 	"html/template"
 	"io"
@@ -27,12 +28,27 @@ func (t *Template) Render(w io.Writer, name string, data any) error {
 }
 
 var tmpl = Template{
-	templates: template.Must(template.New("").Funcs(template.FuncMap{
+	templates: template.Must(template.New("").Funcs(funcMap()).ParseFS(public.Html, "views/*html")),
+}
+
+var funcMap = func() template.FuncMap {
+
+	return template.FuncMap{
 		"formatDate": utils.FormatDate,
 		"not":        utils.Not,
 		"equals":     utils.Equals,
 		"notequals":  utils.Notequals,
-	}).ParseGlob("public/views/*.html")),
+	}
+}
+
+func customTemplate() (*template.Template, error) {
+
+	parse, err := template.New("").Funcs(funcMap()).ParseFS(public.Html, "html/*.html")
+	if err != nil {
+		return nil, err
+	}
+
+	return parse, nil
 }
 
 type SimpleReq struct{}
