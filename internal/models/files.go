@@ -194,7 +194,6 @@ func (flist *FilesDataList) AppendListParams(qp QueryParams) error {
 	defer conn.Close()
 
 	stmt := fmt.Sprintf(query, language, clause, order)
-	println("AppendList stmt:", stmt)
 
 	rows, err := conn.Query(stmt, qp.Keywords, qp.Limit, qp.Offset)
 	if err != nil {

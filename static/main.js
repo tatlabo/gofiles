@@ -82,6 +82,53 @@ if (listContainer) {
     document.getElementById("sort-date").addEventListener("click", (event) => handleSortClick(event))
 }
 
+function handleSortClick(event) {
+
+    listContainer = document.getElementById("list")
+    listItems = Array.from(listContainer.querySelectorAll("li.item-list"))
+
+    const target = event.target;
+    const sortType = target.getAttribute("data-sort-type");
+    const ascending = target.getAttribute("data-ascending") === "true";
+
+    sortList(sortType, ascending);
+
+    // Toggle the ascending/descending flag
+    target.setAttribute("data-ascending", !ascending);
+}
+
+
+function sortList(parameter, ascending = true) {
+    listItems.sort((a, b) => {
+        const aValue = a.dataset[parameter]; // Get the data attribute value
+        const bValue = b.dataset[parameter];
+
+        switch (parameter) {
+            case "name":
+                return ascending ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+            case "size":
+                return ascending ? parseInt(aValue) - parseInt(bValue) : parseInt(bValue) - parseInt(aValue);
+            case "moddate":
+                let a = aValue.replace(/\s+[A-Z]+$/, "")
+                let b = bValue.replace(/\s+[A-Z]+$/, "")
+                return ascending ? new Date(a) - new Date(b) : new Date(b) - new Date(a);
+            default:
+                return 0;
+        }
+    });
+
+    // Use a DocumentFragment to append all sorted items at once
+    const fragment = document.createDocumentFragment();
+    for (let i = 0; i < listItems.length; i++) {
+        fragment.appendChild(listItems[i]);
+    }
+
+    // Clear the current list and append the fragment
+    listContainer.innerHTML = ""; // Clear the current list
+    listContainer.appendChild(fragment); // Append all items at once
+}
+
+
 
 function updateTemplate(props) {
     template.setAttribute("hx-get", props.baseButtonURL);
@@ -141,20 +188,6 @@ function updateList(props) {
 
 
 
-function handleSortClick(event) {
-
-    listContainer = document.getElementById("list")
-    listItems = Array.from(listContainer.querySelectorAll("li.item-list"))
-
-    const target = event.target;
-    const sortType = target.getAttribute("data-sort-type");
-    const ascending = target.getAttribute("data-ascending") === "true";
-
-    sortList(sortType, ascending);
-
-    // Toggle the ascending/descending flag
-    target.setAttribute("data-ascending", !ascending);
-}
 
 
 function FindDuplcates(arr) {
