@@ -39,7 +39,7 @@ func CommitSql(sql []string) error {
 	if err != nil {
 		return (err)
 	}
-	defer db.Close()
+
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -76,7 +76,7 @@ func VanillaRawReturn(q string, param string) error {
 	if e != nil {
 		return e
 	}
-	defer db.Close()
+
 
 	tx, e := db.Begin()
 	if e != nil {
@@ -100,7 +100,7 @@ func VanillaRaw(xs []byte) error {
 	if e != nil {
 		return e
 	}
-	defer db.Close()
+
 
 	tx, e := db.Begin()
 	if e != nil {
@@ -121,7 +121,7 @@ func VanillaSql(s []string, group bool) error {
 	if e != nil {
 		return e
 	}
-	defer db.Close()
+
 
 	tx, e := db.Begin()
 	if e != nil {
@@ -251,7 +251,7 @@ func insertToPostgres(flist *[]models.Finfo) error {
 	if err != nil {
 		panic(err)
 	}
-	defer db.Close()
+	
 
 	tx, err := db.Begin()
 	if err != nil {

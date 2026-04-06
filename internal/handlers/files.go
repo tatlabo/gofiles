@@ -14,8 +14,6 @@ import (
 	"runtime"
 	"strconv"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type Template struct {
@@ -82,7 +80,7 @@ func emptyKeywords(qp models.QueryParams) (data IndexData, empty bool) {
 func Wraper(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
-	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 
 	r = r.WithContext(ctx)
 	defer cancel()
@@ -176,7 +174,8 @@ func ItemDetailsId(w http.ResponseWriter, r *http.Request) {
 
 	idStr := r.PathValue("id")
 
-	id, err := uuid.Parse(idStr)
+	id, err := strconv.Atoi(idStr)
+
 	if err != nil {
 		http.Error(w, "Invalid ID", http.StatusBadRequest)
 		return
@@ -209,7 +208,7 @@ func getItem(w http.ResponseWriter, r *http.Request) (models.FileData, error) {
 
 	idStr := r.PathValue("id")
 
-	id, err := uuid.Parse(idStr)
+	id, err := strconv.Atoi(idStr)
 	f := models.FileData{}
 
 	if err != nil {
@@ -328,7 +327,7 @@ func PreviewImage(w http.ResponseWriter, r *http.Request) {
 
 	idStr := r.PathValue("id")
 
-	id, err := uuid.Parse(idStr)
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		http.Error(w, "Invalid ID", http.StatusBadRequest)
 		return
@@ -387,7 +386,7 @@ func PreviewMedia(w http.ResponseWriter, r *http.Request) {
 
 	idStr := r.PathValue("id")
 
-	id, err := uuid.Parse(idStr)
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		http.Error(w, "Invalid ID", http.StatusBadRequest)
 		return

@@ -29,7 +29,6 @@ func CommitSql(sql []string) error {
 	if err != nil {
 		return (err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -64,7 +63,6 @@ func VanillaRaw(xs []byte) error {
 	if err != nil {
 		return (err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -82,7 +80,6 @@ func VanillaSQL(s string) error {
 	if err != nil {
 		return (err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -201,7 +198,6 @@ func JsonFilesToDb(path string) error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
-	defer db.Close()
 
 	err = filepath.WalkDir(path, visit)
 	if err != nil {
@@ -290,7 +286,6 @@ func updateDirs(path string) error {
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
 	_, err = db.Exec(stmt, true, directoryId)
 	if err != nil {
@@ -305,7 +300,6 @@ func VanillaRawReturn(q string, param string) error {
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {

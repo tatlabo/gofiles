@@ -28,7 +28,7 @@ type FinfoJSON struct {
 
 type FileData struct {
 	FinfoJSON     `json:"finfo"`
-	Id            uuid.UUID    `json:"id"`
+	Id            int          `json:"id"`
 	DirectoryId   uuid.UUID    `json:"directoryId"`
 	Keywords      string       `json:"keywords"`
 	SizeSimple    string       `json:"sizeSimple"`
@@ -60,7 +60,6 @@ func (flist *FilesDataList) GetList(name string, limit int, offset int) error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
 
 	rows, err := conn.Query(stmt, name, limit, offset)
 	if err != nil {
@@ -92,6 +91,8 @@ func (flist *FilesDataList) GetList(name string, limit int, offset int) error {
 		flist.List = append(flist.List, f)
 	}
 
+	rows.Close()
+
 	return nil
 }
 
@@ -109,7 +110,6 @@ func (flist *FilesDataList) AppendList(qp QueryParams) error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
 
 	stmt := fmt.Sprintf(query, language)
 
@@ -145,6 +145,10 @@ func (flist *FilesDataList) AppendList(qp QueryParams) error {
 		}
 
 		flist.List = append(flist.List, d)
+	}
+
+	if err := rows.Err(); err != nil {
+		return err
 	}
 
 	return nil
@@ -191,7 +195,6 @@ func (flist *FilesDataList) AppendListParams(qp QueryParams) error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
 
 	stmt := fmt.Sprintf(query, language, clause, order)
 
@@ -205,7 +208,7 @@ func (flist *FilesDataList) AppendListParams(qp QueryParams) error {
 	for rows.Next() {
 
 		tsRank := float64(0)
-		id := uuid.UUID{}
+		var id int
 		data := FinfoJSON{}
 
 		rawData := []byte{}
@@ -253,7 +256,6 @@ func (flist *FilesDataList) SelectCount(name string) error {
 	if err != nil {
 		return fmt.Errorf("There is no connection to database")
 	}
-	defer conn.Close()
 
 	err = conn.QueryRow(stmt, name).Scan(&flist.Count)
 
@@ -293,7 +295,7 @@ func (f *FileData) CheckExtension() {
 
 }
 
-func (f *FileData) GetById(id uuid.UUID) error {
+func (f *FileData) GetById(id int) error {
 
 	const stmt = `SELECT data, directory_id, keywords FROM files WHERE id=$1;`
 
@@ -301,7 +303,6 @@ func (f *FileData) GetById(id uuid.UUID) error {
 	if err != nil {
 		return fmt.Errorf("Error connecting to database:\n%v", err)
 	}
-	defer conn.Close()
 
 	raw := []byte{}
 	dirId := uuid.UUID{}
@@ -344,15 +345,15 @@ func NewIndexedDirs() *IndexedDirs {
 // Delete removes an indexed directory by ID
 func (i *IndexedDirs) Delete(id string) error {
 
-	query := `DELETE FROM directory WHERE id = $1;`
+	query := `--sql 
+	DELETE FROM directory WHERE id = $1;`
 
 	conn, err := utils.PgConn()
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
 
-	result, err := conn.Exec(fmt.Sprintf(`%s, %s;`, query, id))
+	result, err := conn.Exec(query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete indexed directory: %w", err)
 	}
@@ -377,7 +378,6 @@ func (i *IndexedDirs) DeleteByPath(path string) error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
 
 	result, err := conn.Exec(query, path)
 	if err != nil {
@@ -402,7 +402,7 @@ func Explain(stmt string, placeholders ...any) {
 		log.Println("Error connecting to the database for search words:", err)
 		return
 	}
-	defer conn.Close()
+
 	explainAnalyze := fmt.Sprintf(`EXPLAIN ANALYZE %s`, stmt)
 	fmt.Println()
 	fmt.Printf("%v %v\n", explainAnalyze, placeholders)

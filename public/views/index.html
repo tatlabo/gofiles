@@ -54,7 +54,7 @@
             <form action="/search" method="POST" class="form flex column gap-3" id="search-form">
                 <input class="" type="text" id="keywords" name="keywords" 
                     {{ if .SearchParams.Keywords }}
-                    placeholder="{{ .SearchParams.Keywords }}"
+                    value="{{ .SearchParams.Keywords }}"
                     {{ else }} placeholder="search" 
                     {{ end }}>
                 <div>
@@ -117,9 +117,9 @@
                         {{ .Directory }}
                     </span>
 
-                    <span class="item-Id">
+                    <!-- <span class="item-Id">
                         ts rank: {{ .TsRank}}
-                    </span>
+                    </span> -->
                 </li>
                 {{ end }} {{/* end of range */}}
                 {{ end }} {{/* end of block "list" */}}
@@ -160,6 +160,26 @@
 
         const $qp = "{{ .SearchParams }};"
         console.log("SearchParams:", $qp);
+
+
+        function showPreview() {
+            const previewSection = document.getElementById('preview-section');
+            previewSection.style.display = 'block';
+        }
+        
+        function redStyle(event) {
+            
+            const highlightEl = event.target
+            const parent = highlightEl.closest("ul")
+            const allSpans = parent.querySelectorAll("span")
+            allSpans.forEach(span => {
+                if (span !== highlightEl) {
+                    span.classList.remove("highlight")
+                }
+            });
+            
+            highlightEl.classList.add("highlight")
+        }
     </script>
 </body>
 
@@ -183,12 +203,12 @@
         </span>
         <span class="descending name" data-name="name" data-order="DESC"
             hx-get="/append?keywords={{ .SearchParams.Keywords }}&limit={{ .SearchParams.Limit }}&offset=0&order=name&ascending=false"
-            hx-target="#list" hx-swap="innerHTML" hx-trigger="click" hx-replapce-url="/true">
+            hx-target="#list" hx-swap="innerHTML" hx-trigger="click" hx-replapce-url="/true" onclick="redStyle(event)">
             <strong>🠋</strong>
         </span>
         <span class="ascending name" data-name="name" data-order="ASC"
             hx-get="/append?keywords={{ .SearchParams.Keywords }}&limit={{ .SearchParams.Limit }}&offset=0&order=name&ascending=true"
-            hx-target="#list" hx-swap="innerHTML" hx-trigger="click" hx-replapce-url="/true">
+            hx-target="#list" hx-swap="innerHTML" hx-trigger="click" hx-replapce-url="/true" onclick="redStyle(event)">
             <strong>🠉</strong>
         </span>
 
@@ -200,12 +220,12 @@
         </span>
         <span class="descending size" data-name="size" data-order="DESC"
             hx-get="/append?keywords={{ .SearchParams.Keywords }}&limit={{ .SearchParams.Limit }}&offset=0&order=size&ascending=false"
-            hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click" hx-replapce-url="true">
+            hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click" hx-replapce-url="/true" onclick="redStyle(event)">
             <strong>🠋</strong>
         </span>
         <span class="ascending size" data-name="size" data-order="ASC"
             hx-get="/append?keywords={{ .SearchParams.Keywords }}&limit={{ .SearchParams.Limit }}&offset=0&order=size&ascending=true"
-            hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click" hx-replapce-url="true">
+            hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click" hx-replapce-url="/true" onclick="redStyle(event)">
             <strong>🠉</strong>
         </span>
 
@@ -216,12 +236,12 @@
         </span>
         <span class="descending modtime" data-name="modtime" data-order="DESC"
             hx-get="/append?keywords={{ .SearchParams.Keywords }}&limit={{ .SearchParams.Limit }}&offset=0&order=modtime&ascending=false"
-            hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click" hx-replapce-url="true">
+            hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click" hx-replapce-url="/true" onclick="redStyle(event)">
             <strong>🠋</strong>
         </span>
         <span class="ascending modtime" data-name="modtime" data-order="ASC"
             hx-get="/append?keywords={{ .SearchParams.Keywords }}&limit={{ .SearchParams.Limit }}&offset=0&order=modtime&ascending=true"
-            hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click" hx-replapce-url="true">
+            hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click" hx-replapce-url="/true" onclick="redStyle(event)">
             <strong>🠉</strong>
         </span>
 
