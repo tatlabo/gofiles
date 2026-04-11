@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	_ "embed"
-	cert "gofiles/certs"
 	"gofiles/internal/handlers"
 	"io"
 	"log"
@@ -124,11 +123,6 @@ func main() {
 	protected.HandleFunc("/dirs/delete", handlers.HandleDirDelete)
 	protected.HandleFunc("/dirs/scan", handlers.HandleScan)
 
-	cert, err := cert.LocalCert()
-	if err != nil {
-		log.Fatalf("Failed to load certificate: %v", err)
-	}
-
 	helloHandler := func(w http.ResponseWriter, req *http.Request) {
 		io.WriteString(w, "Hello, world!\n")
 	}
@@ -146,16 +140,20 @@ func main() {
 		}
 	}()
 
+	tlsConfig := &tls.Config{
+		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
+		MinVersion:       tls.VersionTLS13,
+	}
+
 	// HTTPS server on main goroutine
 	tlsServer := &http.Server{
-		Addr:    ":443",
-		Handler: nil, // Use default mux
-		TLSConfig: &tls.Config{
-			Certificates: []tls.Certificate{cert},
-		},
+		Addr:      ":443",
+		Handler:   nil, // Use default mux
+		TLSConfig: tlsConfig,
 	}
+
 	log.Println("Starting HTTPS server on :443")
 
-	log.Fatal(tlsServer.ListenAndServeTLS("", ""))
+	log.Fatal(tlsServer.ListenAndServeTLS("./cert/cert.pem", "./cert/key.pem"))
 
 }
