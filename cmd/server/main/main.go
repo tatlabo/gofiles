@@ -154,6 +154,6 @@ func main() {
 
 	log.Println("Starting HTTPS server on :443")
 
-	log.Fatal(tlsServer.ListenAndServeTLS("./cert/cert.pem", "./cert/key.pem"))
+	log.Fatal(tlsServer.ListenAndServeTLS("./localhost.pem", "./localhost-key.pem"))
 
 }

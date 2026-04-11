@@ -66,7 +66,7 @@ func (flist *FilesDataList) GetList(name string, limit int, offset int) error {
 		return err
 	}
 
-	// go Explain(stmt, name, limit, offset)
+	go Explain(stmt, name, limit, offset)
 
 	for rows.Next() {
 

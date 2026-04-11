@@ -80,7 +80,7 @@ func emptyKeywords(qp models.QueryParams) (data IndexData, empty bool) {
 func Wraper(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 
 	r = r.WithContext(ctx)
 	defer cancel()
