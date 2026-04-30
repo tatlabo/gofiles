@@ -45,43 +45,28 @@ type FilesDataList struct {
 
 func (flist *FilesDataList) GetList(name string, limit int, offset int) error {
 
-	const language = "polish"
-
+	const language = "'polish'"
 	const query = `
-	SELECT DISTINCT(id), data,
-	ts_rank_cd(
-		CASE $1
-			WHEN 'polish' THEN to_tsvector('polish', keywords)
-			ELSE to_tsvector('english', keywords)
-		END,
-		CASE $1
-			WHEN 'polish' THEN websearch_to_tsquery('polish', $2)
-			ELSE websearch_to_tsquery('english', $2)
-		END
-		) AS ts_rank
-		FROM files WHERE
-		CASE $1
-			WHEN 'polish' THEN websearch_to_tsquery('polish', $2)
-			ELSE websearch_to_tsquery('english', $2)
-		END
-		@@
-		CASE $1
-			WHEN 'polish' THEN to_tsvector('polish', keywords)
-			ELSE to_tsvector('english', keywords)
-		END
-	ORDER BY ts_rank DESC, id ASC LIMIT $3 OFFSET $4;`
+	SELECT 
+	DISTINCT(id), data, ts_rank_cd( to_tsvector(%[1]s, keywords), websearch_to_tsquery(%[1]s, $1) ) as ts_rank
+	FROM files
+	WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords)
+	ORDER BY ts_rank DESC, id ASC
+	LIMIT $2 OFFSET $3;`
+
+	stmt := fmt.Sprintf(query, language)
 
 	conn, err := utils.PgConn()
 	if err != nil {
 		return err
 	}
 
-	rows, err := conn.Query(query, language, name, limit, offset)
+	rows, err := conn.Query(stmt, name, limit, offset)
 	if err != nil {
 		return err
 	}
 
-	go Explain(query, language, name, limit, offset)
+	// go Explain(stmt, name, limit, offset)
 
 	for rows.Next() {
 
@@ -113,10 +98,12 @@ func (flist *FilesDataList) GetList(name string, limit int, offset int) error {
 
 func (flist *FilesDataList) AppendList(qp QueryParams) error {
 
+	const language = "'polish'"
+
 	query := `
-	SELECT DISTINCT(id), data, ts_rank_cd( to_tsvector('polish', keywords),
-	websearch_to_tsquery('polish', $1) ) as ts_rank FROM files
-	WHERE websearch_to_tsquery('polish', $1) @@ to_tsvector('polish', keywords)
+	SELECT DISTINCT(id), data, ts_rank_cd( to_tsvector(%[1]s, keywords),
+	websearch_to_tsquery(%[1]s, $1) ) as ts_rank FROM files
+	WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords)
 	ORDER BY ts_rank DESC, id ASC LIMIT $2 OFFSET $3;`
 
 	conn, err := utils.PgConn()
@@ -124,12 +111,14 @@ func (flist *FilesDataList) AppendList(qp QueryParams) error {
 		return err
 	}
 
-	rows, err := conn.Query(query, qp.Keywords, qp.Limit, qp.Offset)
+	stmt := fmt.Sprintf(query, language)
+
+	rows, err := conn.Query(stmt, qp.Keywords, qp.Limit, qp.Offset)
 	if err != nil {
 		return err
 	}
 
-	// go Explain(query, name, limit, offset)
+	// go Explain(stmt, name, limit, offset)
 
 	for rows.Next() {
 
@@ -176,6 +165,8 @@ type QueryParams struct {
 
 func (flist *FilesDataList) AppendListParams(qp QueryParams) error {
 
+	const language = "'polish'"
+
 	var query string
 	var clause string
 	var order = "DESC"
@@ -194,9 +185,9 @@ func (flist *FilesDataList) AppendListParams(qp QueryParams) error {
 
 	query = `
 	SELECT 
-	DISTINCT(id), data, ts_rank_cd( to_tsvector('polish', keywords), websearch_to_tsquery('polish', $1) ) as ts_rank, %[2]s
+	DISTINCT(id), data, ts_rank_cd( to_tsvector(%[1]s, keywords), websearch_to_tsquery(%[1]s, $1) ) as ts_rank, %[2]s
 	FROM files
-	WHERE websearch_to_tsquery('polish', $1) @@ to_tsvector('polish', keywords)
+	WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords)
 	ORDER BY %[2]s %[3]s, ts_rank DESC, id ASC
 	LIMIT $2 OFFSET $3;`
 
@@ -205,7 +196,7 @@ func (flist *FilesDataList) AppendListParams(qp QueryParams) error {
 		return err
 	}
 
-	stmt := fmt.Sprintf(query, clause, order)
+	stmt := fmt.Sprintf(query, language, clause, order)
 	println("AppendList stmt:", stmt)
 
 	rows, err := conn.Query(stmt, qp.Keywords, qp.Limit, qp.Offset)
@@ -213,7 +204,7 @@ func (flist *FilesDataList) AppendListParams(qp QueryParams) error {
 		return err
 	}
 
-	// go Explain(stmt, name, limit, offset)
+	go Explain(stmt, qp.Keywords, qp.Limit, qp.Offset)
 
 	for rows.Next() {
 
@@ -257,9 +248,10 @@ func (flist *FilesDataList) AppendListParams(qp QueryParams) error {
 
 func (flist *FilesDataList) SelectCount(name string) error {
 
-	stmt := `
+	const language = "'polish'"
+	var stmt = fmt.Sprintf(`
 	SELECT COUNT(DISTINCT id) FROM files
-	WHERE websearch_to_tsquery('polish', $1) @@ to_tsvector('polish', keywords);`
+	WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords);`, language)
 
 	conn, err := utils.PgConn()
 	if err != nil {
