@@ -1,54 +1,34 @@
 package main
 
 import (
-	"context"
 	"crypto/tls"
 	_ "embed"
-	cert "gofiles/certs"
-	"gofiles/internal/handlers"
 	"io"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
+
+	cert "gofiles/certs"
+	"gofiles/internal/handlers"
 )
 
-type Middleware func(http.HandlerFunc) http.HandlerFunc
-type User struct {
-	Username string
-	Password string
-	Ok       bool
-}
-
-func TraceId(fn http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Authentication logic can be added here
-		ctx := r.Context()
-		username, password, ok := r.BasicAuth()
-
-		if traceID := r.Header.Get("X-Trace-ID"); traceID != "" {
-			ctx = context.WithValue(ctx, "X-Trace-ID", traceID)
-		}
-
-		if !ok || username != "admin" || password != "s3cr3t" {
-			w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
-			http.Error(w, "Unauthorized.", http.StatusUnauthorized)
-			return
-		}
-
-		fn.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
+type (
+	Middleware func(http.HandlerFunc) http.HandlerFunc
+	User       struct {
+		Username string
+		Password string
+		Ok       bool
+	}
+)
 
 func (m Middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	}))(w, r)
-
 }
 
 func Login(fn http.HandlerFunc) Middleware {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-
 			var user User
 			user.Username, user.Password, user.Ok = r.BasicAuth()
 
@@ -87,7 +67,6 @@ func (h *hello) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-
 	// Serve static files (CSS, JS, images)
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
@@ -95,17 +74,13 @@ func main() {
 	media := http.FileServer(http.Dir("media"))
 	http.Handle("/media/", http.StripPrefix("/media/", media))
 
-	h2 := &hello{Message: "Hello, secure world!"}
-
 	type IndexData struct {
 		Title string
 		Body  []string
 	}
 
-	var idata http.Handler
-	idata = handlers.SimpleReq{}
+	idata := handlers.SimpleReq{}
 
-	http.Handle("/h2", TraceId(h2))
 	http.HandleFunc("/h3", handlers.HandleCtx)
 	http.HandleFunc("/", handlers.HandleSearch)
 	http.HandleFunc("/append", handlers.HandleAppend)
@@ -116,11 +91,11 @@ func main() {
 
 	http.Handle("/data/", idata) // pprof
 	http.Handle("/data/{id}", idata)
-	//protected routes
+	// protected routes
 	protected := http.NewServeMux()
 	http.Handle("/admin/", http.StripPrefix("/admin", WrapAuth(protected.ServeHTTP)))
 	//
-	protected.HandleFunc("/dirs", handlers.HandleDirs)
+	protected.HandleFunc("/", handlers.HandleDirs)
 	protected.HandleFunc("/dirs/delete", handlers.HandleDirDelete)
 	protected.HandleFunc("/dirs/scan", handlers.HandleScan)
 
@@ -137,11 +112,11 @@ func main() {
 
 	// HTTP server that redirects to HTTPS
 	go func() {
-		redirectToTls := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		redirectToTLS := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "https://localhost:443"+r.RequestURI, http.StatusMovedPermanently)
 		})
 		log.Println("Starting HTTP redirect server on :80")
-		if err := http.ListenAndServe(":80", redirectToTls); err != nil {
+		if err := http.ListenAndServe(":80", redirectToTLS); err != nil {
 			log.Fatalf("HTTP server error: %v", err)
 		}
 	}()
@@ -157,5 +132,4 @@ func main() {
 	log.Println("Starting HTTPS server on :443")
 
 	log.Fatal(tlsServer.ListenAndServeTLS("", ""))
-
 }

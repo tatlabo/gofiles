@@ -1,15 +1,16 @@
+// Package handlers - main handlers
 package handlers
 
 import (
 	"fmt"
-	"gofiles/internal/models"
 	"net/http"
+
+	"gofiles/internal/models"
 
 	"github.com/google/uuid"
 )
 
 func HandleDirs(w http.ResponseWriter, r *http.Request) {
-
 	templatePage := "dirs.html"
 
 	switch r.Method {
@@ -52,7 +53,7 @@ func HandleDirs(w http.ResponseWriter, r *http.Request) {
 			r.ParseForm()
 			path := r.FormValue("path")
 
-			//todo: validate path
+			// todo: validate path
 			// todo: check if path exists
 
 			data := models.Directries{
@@ -81,7 +82,6 @@ func HandleDirs(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleDirDelete(w http.ResponseWriter, r *http.Request) {
-
 	templatePage := "dirs.html"
 
 	switch r.Method {
@@ -114,7 +114,7 @@ func HandleDirDelete(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			//todo: validate path
+			// todo: validate path
 			// todo: check if path exists
 
 			data := models.Directries{
