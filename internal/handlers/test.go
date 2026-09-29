@@ -14,14 +14,13 @@ type Data struct {
 	Text      string
 }
 
-type DataHtml struct {
+type DataHTML struct {
 	Msg    string
 	Data   Data
 	Status bool
 }
 
 func HandleCtx(w http.ResponseWriter, r *http.Request) {
-
 	delayStr := r.URL.Query().Get("delay")
 	delay, err := strconv.Atoi(delayStr)
 	if err != nil {
@@ -33,7 +32,7 @@ func HandleCtx(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	// r = r.WithContext(ctx)
-	d := make(chan DataHtml, 1)
+	d := make(chan DataHTML, 1)
 
 	go func() {
 		defer close(d)
@@ -42,7 +41,7 @@ func HandleCtx(w http.ResponseWriter, r *http.Request) {
 
 	select {
 	case <-ctx.Done():
-		var c DataHtml
+		var c DataHTML
 		c.Msg = "Request timed out"
 		c.Status = false
 
@@ -51,16 +50,14 @@ func HandleCtx(w http.ResponseWriter, r *http.Request) {
 	case res := <-d:
 		tmpl.Render(w, "teplate.html", res)
 	}
-
 }
 
-func dataR(t int) DataHtml {
-
+func dataR(t int) DataHTML {
 	t1 := time.Now()
 	time.Sleep(time.Duration(t) * time.Millisecond)
 	t2 := time.Now()
 
-	var data DataHtml
+	var data DataHTML
 	data.Data = Data{
 		StartTime: t1.Format("2006-01-02 15:04:05"),
 		EndTime:   t2.Format("2006-01-02 15:04:05"),

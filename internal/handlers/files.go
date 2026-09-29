@@ -3,10 +3,6 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"gofiles/chroma"
-	"gofiles/internal/models"
-	"gofiles/public"
-	"gofiles/utils"
 	"html/template"
 	"io"
 	"log"
@@ -15,24 +11,26 @@ import (
 	"runtime"
 	"strconv"
 	"time"
+
+	"gofiles/chroma"
+	"gofiles/internal/models"
+	"gofiles/public"
+	"gofiles/utils"
 )
 
 type Template struct {
 	templates *template.Template
 }
 
-//https://www.youtube.com/watch?v=0x_oUlxzw5A&t=64s
-
 func (t *Template) Render(w io.Writer, name string, data any) error {
 	return t.templates.ExecuteTemplate(w, name, data)
 }
 
 var tmpl = Template{
-	templates: template.Must(template.New("").Funcs(funcMap()).ParseFS(public.Html, "views/*html")),
+	templates: template.Must(template.New("").Option("missingkey=error").Funcs(funcMap()).ParseFS(public.Html, "views/*html")),
 }
 
 var funcMap = func() template.FuncMap {
-
 	return template.FuncMap{
 		"formatDate": utils.FormatDate,
 		"not":        utils.Not,
@@ -42,7 +40,6 @@ var funcMap = func() template.FuncMap {
 }
 
 func customTemplate() (*template.Template, error) {
-
 	parse, err := template.New("").Funcs(funcMap()).ParseFS(public.Html, "html/*.html")
 	if err != nil {
 		return nil, err
@@ -59,7 +56,6 @@ func (s SimpleReq) FillData(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Accept-Language", "pl-PL")
 	w.WriteHeader(404)
 	w.Header().Add("X-Content-Type-Options", "nosniff")
-
 }
 
 type IndexData struct {
@@ -74,12 +70,11 @@ type IndexData struct {
 	IsText       bool
 }
 
-func (i SimpleReq) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	i.FillData(w, r)
+func (s SimpleReq) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	s.FillData(w, r)
 }
 
 func emptyKeywords(qp models.QueryParams) (data IndexData, empty bool) {
-
 	if len(qp.Keywords) == 0 {
 		data.Title = "My Title"
 		data.Body = map[string]string{"message": "Nie podano słów kluczowych"}
@@ -90,11 +85,9 @@ func emptyKeywords(qp models.QueryParams) (data IndexData, empty bool) {
 	}
 
 	return data, false
-
 }
 
 func Wraper(w http.ResponseWriter, r *http.Request) {
-
 	ctx := r.Context()
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 
@@ -114,7 +107,7 @@ func Wraper(w http.ResponseWriter, r *http.Request) {
 
 	go func(p models.QueryParams) {
 		defer close(dataCh)
-		data, err := mainSearch(ctx, p)
+		data, err := mainSearch(p)
 		dataCh <- data
 		errCh <- err
 	}(qp)
@@ -136,23 +129,23 @@ func Wraper(w http.ResponseWriter, r *http.Request) {
 			return
 		} else {
 			templatePage := "home.html"
-			data = IndexData{Title: "No results",
+			data = IndexData{
+				Title:        "No results",
 				Body:         map[string]string{"message": "No results found for the given keywords"},
-				SearchParams: qp}
+				SearchParams: qp,
+			}
 			tmpl.Render(w, templatePage, data)
 			return
 		}
 
 	}
-
 }
 
 func HandleSearch(w http.ResponseWriter, r *http.Request) {
 	Wraper(w, r)
 }
 
-func mainSearch(ctx context.Context, qp models.QueryParams) (IndexData, error) {
-
+func mainSearch(qp models.QueryParams) (IndexData, error) {
 	data := models.FilesDataList{}
 
 	if err := data.SelectCount(qp.Keywords); err != nil {
@@ -160,9 +153,11 @@ func mainSearch(ctx context.Context, qp models.QueryParams) (IndexData, error) {
 	}
 
 	if data.Count == 0 {
-		return IndexData{Title: "No results",
+		return IndexData{
+			Title:        "No results",
 			Body:         map[string]string{"message": "No results found for the given keywords"},
-			SearchParams: qp}, nil
+			SearchParams: qp,
+		}, nil
 	}
 
 	// main SELECT
@@ -181,17 +176,14 @@ func mainSearch(ctx context.Context, qp models.QueryParams) (IndexData, error) {
 		FilesDataList: data,
 		Count:         data.Count,
 	}, nil
-
 }
 
 func ItemDetailsId(w http.ResponseWriter, r *http.Request) {
-
 	var f models.FileData
 
 	idStr := r.PathValue("id")
 
 	id, err := strconv.Atoi(idStr)
-
 	if err != nil {
 		http.Error(w, "Invalid ID", http.StatusBadRequest)
 		return
@@ -205,11 +197,9 @@ func ItemDetailsId(w http.ResponseWriter, r *http.Request) {
 	f.SimplifyDetails()
 
 	tmpl.Render(w, "entry-details.html", f)
-
 }
 
 func DetailsId(w http.ResponseWriter, r *http.Request) {
-
 	body, err := getItem(w, r)
 	if err != nil {
 		i := IndexData{Title: "Error page", Body: map[string]string{"err": err.Error(), "msg": "ItemDetailsId Error"}}
@@ -217,11 +207,9 @@ func DetailsId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tmpl.Render(w, "simple-entry-details.html", body)
-
 }
 
 func getItem(w http.ResponseWriter, r *http.Request) (models.FileData, error) {
-
 	idStr := r.PathValue("id")
 
 	id, err := strconv.Atoi(idStr)
@@ -241,7 +229,6 @@ func getItem(w http.ResponseWriter, r *http.Request) (models.FileData, error) {
 }
 
 func getItemById(w http.ResponseWriter, r *http.Request) (IndexData, error) {
-
 	f, err := getItem(w, r)
 	if err != nil {
 		http.Error(w, "Error retrieving file details in getItemById", http.StatusInternalServerError)
@@ -258,7 +245,6 @@ func getItemById(w http.ResponseWriter, r *http.Request) (IndexData, error) {
 }
 
 func processQueryParams(r *http.Request) models.QueryParams {
-
 	qp := models.QueryParams{}
 	switch r.Method {
 	case http.MethodGet:
@@ -305,7 +291,6 @@ func processQueryParams(r *http.Request) models.QueryParams {
 }
 
 func HandleAppend(w http.ResponseWriter, r *http.Request) {
-
 	qp := processQueryParams(r)
 
 	data := models.FilesDataList{}
@@ -326,18 +311,19 @@ func HandleAppend(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	tmpl.Render(w, "append.html", IndexData{Title: "My Title",
-		Body:          map[string]string{"message": "data"},
-		FilesDataList: data,
-		Count:         data.Count,
-		SearchParams:  qp},
+	tmpl.Render(
+		w, "append.html", IndexData{
+			Title:         "My Title",
+			Body:          map[string]string{"message": "data"},
+			FilesDataList: data,
+			Count:         data.Count,
+			SearchParams:  qp,
+		},
 	)
 	log.Printf("nr of gorutines (HandleAppend): %v", runtime.NumGoroutine())
-
 }
 
 func PreviewImage(w http.ResponseWriter, r *http.Request) {
-
 	var f models.FileData
 	var i IndexData
 
@@ -392,11 +378,9 @@ func PreviewImage(w http.ResponseWriter, r *http.Request) {
 	i.Title = "Image Preview"
 
 	tmpl.Render(w, "preview-media.html", i)
-
 }
 
 func PreviewMedia(w http.ResponseWriter, r *http.Request) {
-
 	var f models.FileData
 	var i IndexData
 
@@ -453,7 +437,6 @@ func PreviewMedia(w http.ResponseWriter, r *http.Request) {
 	i.Title = "Media Preview"
 
 	tmpl.Render(w, "preview-media.html", i)
-
 }
 
 func CopyImageFile(srcPath, destPath string) error {
@@ -487,7 +470,6 @@ func CopyImageFile(srcPath, destPath string) error {
 }
 
 func PreviewById(w http.ResponseWriter, r *http.Request) {
-
 	body, err := getItemById(w, r)
 	if err != nil {
 		http.Error(w, "Error retrieving file details (ItemDetailsId / getItemById)", http.StatusInternalServerError)
@@ -512,25 +494,20 @@ func PreviewById(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tmpl.Render(w, "detail.html", body)
-
 }
 
 func TxtToChoroma(f models.FinfoJSON) (template.HTML, error) {
-
 	address := fmt.Sprintf("%s\\%s.%v", f.Directory, f.Name, f.Ext)
 	fin, err := os.Open(address)
-
 	if err != nil {
 		return "", err
 	}
 	defer fin.Close()
 
 	highlightCode, err := chroma.HighlightCode(address)
-
 	if err != nil {
 		return "", err
 	}
 
 	return template.HTML(highlightCode), nil
-
 }
