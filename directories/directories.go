@@ -7,21 +7,25 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gofiles/utils"
-	"strings"
 
 	_ "github.com/lib/pq"
 )
 
-type Stmt []string
-type Filename map[int]string
-type FileNames []Filename
+type (
+	Stmt      []string
+	Filename  map[int]string
+	FileNames []Filename
+)
 
 const connStr = "user=golang password=golang dbname=json host=localhost sslmode=disable"
 
-var stmt = Stmt{}
-var filenameList = FileNames{}
+var (
+	stmt         = Stmt{}
+	filenameList = FileNames{}
+)
 
 func (f *Stmt) AddStmt(s string) {
 	*f = append(*f, s)
@@ -38,18 +42,17 @@ func (f Stmt) Insert() string {
 		for i := 0; i < len(f)-1; i++ {
 			s += fmt.Sprintf("('%s'), ", f[i])
 		}
-		s += fmt.Sprintf("('%s')", (f[len(f)-1]))
+		s += fmt.Sprintf("('%s')", f[len(f)-1])
 	}
 
 	return fmt.Sprintf(`INSERT INTO directories (dir) VALUES %s ON CONFLICT (dir) DO UPDATE SET dir = EXCLUDED.dir;`, s)
 }
 
 func (f *Filename) AddStmt(m map[int]string) {
-	maps.Copy((*f), m)
+	maps.Copy(*f, m)
 }
 
-func insertDirToDb(path string, db *sql.DB) error {
-
+func insertDirToDB(path string, db *sql.DB) error {
 	_, err := db.Exec(`CREATE TABLE IF NOT EXISTS directories (id SERIAL PRIMARY KEY, dir TEXT NOT NULL UNIQUE);`)
 	if err != nil {
 		panic(err)
@@ -68,8 +71,7 @@ func insertDirToDb(path string, db *sql.DB) error {
 }
 
 func fetchDirectories(db *sql.DB, stmt string) map[int]string {
-
-	dirWithId := make(map[int]string)
+	dirWithID := make(map[int]string)
 
 	query := stmt
 	rows, err := db.Query(query)
@@ -85,18 +87,17 @@ func fetchDirectories(db *sql.DB, stmt string) map[int]string {
 		if err != nil {
 			panic(err)
 		}
-		dirWithId[id] = dir
+		dirWithID[id] = dir
 	}
 
 	if err = rows.Err(); err != nil {
 		panic(err)
 	}
 
-	return dirWithId
+	return dirWithID
 }
 
 func visit(path string, d fs.DirEntry, err error) error {
-
 	if err != nil {
 		return err
 	}
@@ -117,8 +118,7 @@ func createFIlesTable(db *sql.DB) error {
 }
 
 func main() {
-
-	var path = os.Args[1]
+	path := os.Args[1]
 
 	if _, err := os.ReadDir(path); err != nil {
 		panic(err)
@@ -129,7 +129,7 @@ func main() {
 		panic(err)
 	}
 
-	insertDirToDb(path, db)
+	insertDirToDB(path, db)
 
 	fetchedDirs := fetchDirectories(db, "SELECT id, dir FROM directories;")
 
@@ -157,7 +157,6 @@ func main() {
 		for k, v := range filenameList[i] {
 			insertList = append(insertList, fmt.Sprintf(`INSERT INTO files (name, dir_id) VALUES ('%s', %d) 
 				ON CONFLICT(name, dir_id) DO UPDATE SET name = EXCLUDED.name, dir_id = EXCLUDED.dir_id;`, v, k))
-
 		}
 	}
 

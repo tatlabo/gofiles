@@ -6,7 +6,6 @@ import (
 )
 
 func flags() {
-
 	wordPtr := flag.String("word", "foo", "a string")
 
 	numbPtr := flag.Int("numb", 42, "an int")

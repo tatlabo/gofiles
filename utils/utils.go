@@ -1,3 +1,5 @@
+// Package utils
+// pg connection, chroma
 package utils
 
 import (
@@ -5,7 +7,6 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
-	"gofiles/chroma"
 	"html/template"
 	"os"
 	"path/filepath"
@@ -13,6 +14,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"gofiles/chroma"
 
 	_ "github.com/lib/pq"
 )
@@ -33,7 +36,6 @@ var (
 )
 
 func PgConn() (*sql.DB, error) {
-
 	var err error
 	once.Do(func() {
 		connStr := "user=golang password=golang dbname=json host=localhost sslmode=disable"
@@ -80,7 +82,7 @@ CREATE INDEX IF NOT EXISTS idx_ext ON files(LOWER(ext));`
 const insertIntoExt = `INSERT INTO ext (ext)
 SELECT DISTINCT ext FROM files WHERE files.ext IS NOT NULL ON CONFLICT (ext) DO NOTHING;`
 
-const updateExtId = `
+const updateExtID = `
 UPDATE files SET ext_id = ext.id FROM ext WHERE files.ext = ext.ext AND files.ext_id != NULL;`
 
 const updateKeywords = `
@@ -90,10 +92,9 @@ const createGinOnKeywords = `
 CREATE INDEX idx_keywords_gin ON keywords_gin USING GIN (to_tsvector('polish', keyword));`
 
 func CreateFiles() error {
-
 	db, err := PgConn()
 	if err != nil {
-		return (err)
+		return err
 	}
 
 	if _, err := db.Exec(createFiles); err != nil {
@@ -114,7 +115,7 @@ func CreateFiles() error {
 		return err
 	}
 
-	if _, err := db.Exec(updateExtId); err != nil {
+	if _, err := db.Exec(updateExtID); err != nil {
 		return err
 	}
 
@@ -132,12 +133,12 @@ func CreateFiles() error {
 func DropFiles() error {
 	db, err := PgConn()
 	if err != nil {
-		return (err)
+		return err
 	}
 
 	_, err = db.Exec(`DROP TABLE IF EXISTS files;`)
 	if err != nil {
-		return (err)
+		return err
 	}
 
 	return nil
@@ -228,8 +229,7 @@ func Notequals(a, b any) bool {
 	return a != b
 }
 
-func VanillaSql(s []string, group bool) error {
-
+func VanillaSQL(s []string, group bool) error {
 	var e error
 
 	db, e := PgConn()
@@ -237,13 +237,12 @@ func VanillaSql(s []string, group bool) error {
 		return fmt.Errorf("cann't connect to database (utils.VanillaSql) with error: %s", e)
 	}
 
-
 	tx, e := db.Begin()
 	if e != nil {
 		return fmt.Errorf("failed to begin transaction (utils.VanillaSql): %s", e)
 	}
 
-	if group == true {
+	if group {
 		groupCommands := strings.Join(s, "\n")
 		if _, e = tx.Exec(groupCommands); e != nil {
 			return fmt.Errorf("failed to group commands (utils.VanillaSql): %s", e)
@@ -257,11 +256,9 @@ func VanillaSql(s []string, group bool) error {
 		}
 	}
 	return tx.Commit()
-
 }
 
 func VanillaRaw(xs []byte) error {
-
 	var e error
 
 	db, e := PgConn()
@@ -277,24 +274,19 @@ func VanillaRaw(xs []byte) error {
 		return e
 	}
 	return tx.Commit()
-
 }
 
 func TxtToChoroma(address string) (template.HTML, error) {
-
 	fin, err := os.Open(address)
-
 	if err != nil {
 		return "", err
 	}
 	defer fin.Close()
 
 	highlightCode, err := chroma.HighlightCode(address)
-
 	if err != nil {
 		return "", err
 	}
 
 	return template.HTML(highlightCode), nil
-
 }

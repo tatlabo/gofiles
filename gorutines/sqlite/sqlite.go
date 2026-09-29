@@ -25,7 +25,6 @@ func run() error {
 	words := []string{"go", "python", "java", "csharp", "ruby", "algorithm", "variable", "function", "loop", "recursion", "array", "object", "class", "inheritance", "polymorphism", "interface", "compiler", "interpreter", "syntax", "debugger", "exception", "stack", "queue", "hashmap", "pointer", "reference", "module", "package", "library", "framework", "API", "REST", "GraphQL", "JSON", "XML", "token", "encryption", "authentication", "authorization", "CI/CD", "version control", "Git", "branch", "merge", "commit", "container", "Docker", "Kubernetes", "cloud", "virtualization", "thread", "process", "concurrency", "parallelism"}
 
 	randowmWord := func() string {
-
 		random := rand.Float64() * float64(len(words))
 		random = math.Floor(random)
 		randomInt := int(random)
@@ -45,7 +44,6 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
 
 	for rows.Next() {
 		var id int
@@ -55,6 +53,11 @@ func run() error {
 		}
 
 		fmt.Println(id, name)
+	}
+
+	defer rows.Close()
+	if err = rows.Err(); err != nil {
+		return err
 	}
 
 	return nil

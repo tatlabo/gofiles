@@ -134,7 +134,7 @@ func HandleDirDelete(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			redirectURL := fmt.Sprintf("/admin/dirs?success=true&deleted=%s&path=%s", d.Id, d.Path)
+			redirectURL := fmt.Sprintf("/admin/dirs?success=true&deleted=%s&path=%s", d.ID, d.Path)
 			http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 		}
 	}

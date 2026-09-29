@@ -1,18 +1,17 @@
-
 {{ template "header" .Title }}
 
 <main class="main">
 
     <article id="fileList" class="grid-container">
         {{ if .Body }}
-        <h4> 
+        <h4>
             {{ .Body.message }}
         </h4>
         {{ if .Body.error }}<p>{{ .Body.error }}</p>{{ end }}
         {{ if .Body.path }}<p>Path: {{ .Body.path }}</p>{{ end }}
         {{end}}
 
-        {{ template "add-path-form"  }}
+        {{ template "add-path-form" }}
 
         <ul id="list-headers" class="file-list headers">
             <li id="sort-name" data-sort-type="name" data-ascending="true">name</li>
@@ -22,42 +21,42 @@
 
         <ol id="list" class="file-list" type="1">
         </ol>
-        
+
         <ol id="list" class="file-list" type="1">
             {{ range .Array }}
-                {{ template "directory_list" . }}
+            {{ template "directory_list" . }}
             {{end}}
         </ol>
-        
+
     </article>
 </main>
 
 
 {{ block "directory_list" . }}
-    <li class="dir-item" id="entry" data-id="{{ .Id }}">
-        <span class="item-name">
-            {{ .Path }}
-        </span>
-        <form action="/admin/dirs/delete" method="POST">
-            <input type="hidden" name="id" value="{{ .Id }}">
-            <button type="submit" class="delete" data-id="{{ .Id }}" data-name="{{ .Path }}">x</button>
-        </form>
-        {{ if .IsDone }}
-            <button class="scan" data-id="{{ .Id }}" data-path="{{ .Path }}">
-                Rescan
-            </button>
-        {{ else }}
-            <form action="/admin/dirs/scan" method="POST">
-                <input type="hidden" name="scanid" value="{{ .Id }}">
-                <button type="submit" class="scan" data-id="{{ .Id }}" data-path="{{ .Path }}">
-                    Scan
-                </button>
-            </form>
-        {{ end }}
-        <time datetime="{{ .CreatedAt | formatDate }}" class="">
-            {{ .CreatedAt | formatDate }}
-        </time>
-    </li>
+<li class="dir-item" id="entry" data-id="{{ .ID }}">
+    <span class="item-name">
+        {{ .Path }}
+    </span>
+    <form action="/admin/dirs/delete" method="POST">
+        <input type="hidden" name="id" value="{{ .ID }}">
+        <button type="submit" class="delete" data-id="{{ .ID }}" data-name="{{ .Path }}">x</button>
+    </form>
+    {{ if .IsDone }}
+    <button class="scan" data-id="{{ .ID }}" data-path="{{ .Path }}">
+        Rescan
+    </button>
+    {{ else }}
+    <form action="/admin/dirs/scan" method="POST">
+        <input type="hidden" name="scanid" value="{{ .ID }}">
+        <button type="submit" class="scan" data-id="{{ .ID }}" data-path="{{ .Path }}">
+            Scan
+        </button>
+    </form>
+    {{ end }}
+    <time datetime="{{ .CreatedAt | formatDate }}" class="">
+        {{ .CreatedAt | formatDate }}
+    </time>
+</li>
 {{ end }}
 
 
@@ -72,7 +71,5 @@
 
 
 </body>
+
 </html>
-
-
-

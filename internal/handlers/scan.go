@@ -2,16 +2,16 @@ package handlers
 
 import (
 	"fmt"
-	"gofiles/internal/models"
-	"gofiles/scan"
 	"log"
 	"net/http"
+
+	"gofiles/internal/models"
+	"gofiles/scan"
 
 	"github.com/google/uuid"
 )
 
 func HandleScan(w http.ResponseWriter, r *http.Request) {
-
 	templatePage := "dirs.html"
 
 	switch r.Method {
@@ -27,7 +27,7 @@ func HandleScan(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			//todo: validate id
+			// todo: validate id
 			// todo: check if path exists
 
 			data := models.Directries{
@@ -35,7 +35,7 @@ func HandleScan(w http.ResponseWriter, r *http.Request) {
 				Body:  map[string]string{"message": "Indexuj katalogi " + id},
 			}
 
-			d := models.Directory{Id: uuid}
+			d := models.Directory{ID: uuid}
 
 			err = d.Row(uuid)
 			if err != nil {
@@ -55,7 +55,7 @@ func HandleScan(w http.ResponseWriter, r *http.Request) {
 				}
 			}(d)
 
-			redirectURL := fmt.Sprintf("/admin/dirs?scanning=true&path=%s&id=%s", d.Path, d.Id)
+			redirectURL := fmt.Sprintf("/admin/dirs?scanning=true&path=%s&id=%s", d.Path, d.ID)
 			http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 		}
 	}

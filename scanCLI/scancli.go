@@ -2,14 +2,14 @@ package main
 
 import (
 	"fmt"
-	"gofiles/internal/models"
 	"log"
 	"os"
 	"strings"
+
+	"gofiles/internal/models"
 )
 
 func main() {
-
 	var path string
 
 	switch len(os.Args) {
@@ -37,7 +37,7 @@ func main() {
 	}
 
 	fmt.Println("Path added:")
-	fmt.Printf("Id: %v\n", d.Id)
+	fmt.Printf("Id: %v\n", d.ID)
 	fmt.Printf("Path: %v\n", d.Path)
 	fmt.Printf("IsDone: %v\n", d.IsDone)
 	fmt.Printf("CreatedAt: %v\n", d.CreatedAt)

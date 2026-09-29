@@ -84,9 +84,9 @@ func main() {
 	http.HandleFunc("/h3", handlers.HandleCtx)
 	http.HandleFunc("/", handlers.HandleSearch)
 	http.HandleFunc("/append", handlers.HandleAppend)
-	http.HandleFunc("/detail/{id}", handlers.ItemDetailsId)
-	http.HandleFunc("/item-detail/{id}", handlers.ItemDetailsId)
-	http.HandleFunc("/preview/{id}", handlers.PreviewById)
+	http.HandleFunc("/detail/{id}", handlers.ItemDetailsID)
+	http.HandleFunc("/item-detail/{id}", handlers.ItemDetailsID)
+	http.HandleFunc("/preview/{id}", handlers.PreviewByID)
 	http.HandleFunc("/preview-media/{id}", handlers.PreviewMedia)
 
 	http.Handle("/data/", idata) // pprof

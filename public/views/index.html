@@ -52,11 +52,8 @@
 
             {{ block "form" . }}
             <form action="/search" method="POST" class="form flex column gap-3" id="search-form">
-                <input class="" type="text" id="keywords" name="keywords" 
-                    {{ if .SearchParams.Keywords }}
-                    value="{{ .SearchParams.Keywords }}"
-                    {{ else }} placeholder="search" 
-                    {{ end }}>
+                <input class="" type="text" id="keywords" name="keywords" {{ if .SearchParams.Keywords }}
+                    value="{{ .SearchParams.Keywords }}" {{ else }} placeholder="search" {{ end }}>
                 <div>
                 </div>
                 <button class="primary" type="submit" id="submit">Submit</button>
@@ -73,27 +70,26 @@
                 {{ block "list" . }}
                 {{ range .FilesDataList.List }}
                 <li class="item-list" data-size="{{ .Size }}" data-name="{{ .Name }}{{ .Ext }}"
-                    data-moddate="{{ .ModTime }}"
-                    data-id="{{ .Id }}">
+                    data-moddate="{{ .ModTime }}" data-id="{{ .ID }}">
                     <span class="item-name">
-                        <a href="/item-detail/{{.Id}}" class="strong" hx-get="/item-detail/{{.Id}}" hx-target="#preview"
+                        <a href="/item-detail/{{.ID}}" class="strong" hx-get="/item-detail/{{.ID}}" hx-target="#preview"
                             hx-swap="innerHTML" hx-boost="true" onClick="showPreview()">
                             {{ .Name }}{{ if .Ext }}.{{ .Ext }}{{ end}}
                         </a>
                     </span>
                     <span class="item-size">
-                        <a href="/detail/{{ .Id }}">
+                        <a href="/detail/{{ .ID }}">
                             {{ if .IsDir }}folder{{ else }}{{ .SizeSimple }}{{ end}}
                         </a>
                         {{ if eq .Type "txt" }}
-                        <a href="/preview/{{.Id}}" class="strong" hx-get="/preview/{{.Id}}" hx-target="#preview"
+                        <a href="/preview/{{.ID}}" class="strong" hx-get="/preview/{{.ID}}" hx-target="#preview"
                             hx-swap="innerHTML" hx-boost="true" onClick="showPreview()">
                             {{ if .Ext }}.{{ .Ext }}{{ end}}
                             {{ .Type }}
                         </a>
                         {{ else if eq .Type "image" }}
                         <span>
-                            <a href="/preview-media/{{.Id}}" class="strong" hx-get="/preview-media/{{.Id}}"
+                            <a href="/preview-media/{{.ID}}" class="strong" hx-get="/preview-media/{{.ID}}"
                                 hx-target="#preview" hx-swap="innerHTML" hx-boost="true" onClick="showPreview()"> {{
                                 .Type }}
                             </a>
@@ -101,7 +97,7 @@
                         </a>
                         {{ else if eq .Type "video" }}
                         <span>
-                            <a href="/preview-media/{{.Id}}" class="strong" hx-get="/preview-media/{{.Id}}"
+                            <a href="/preview-media/{{.ID}}" class="strong" hx-get="/preview-media/{{.ID}}"
                                 hx-target="#preview" hx-swap="innerHTML" hx-boost="true" onClick="showPreview()"> {{
                                 .Type }}
                             </a>
@@ -128,11 +124,9 @@
             {{ end }}{{/* end of .FilesDataList.List */}}
 
             <div class="button-container">
-                <button id="next" class="primary" type="button"
-                    data-keywords="{{ .SearchParams.Keywords }}"
-                    data-limit="{{ .SearchParams.Limit }}"
-                    data-counter="{{ .FilesDataList.Count }}"
-                    hx-target="#list" hx-swap="beforeend" hx-boost="true" hx-trigger="click" hx-replace-url="true">
+                <button id="next" class="primary" type="button" data-keywords="{{ .SearchParams.Keywords }}"
+                    data-limit="{{ .SearchParams.Limit }}" data-counter="{{ .FilesDataList.Count }}" hx-target="#list"
+                    hx-swap="beforeend" hx-boost="true" hx-trigger="click" hx-replace-url="true">
                     There is {{ .FilesDataList.Count }} results
                 </button>
             </div>
@@ -166,9 +160,9 @@
             const previewSection = document.getElementById('preview-section');
             previewSection.style.display = 'block';
         }
-        
+
         function redStyle(event) {
-            
+
             const highlightEl = event.target
             const parent = highlightEl.closest("ul")
             const allSpans = parent.querySelectorAll("span")
@@ -177,7 +171,7 @@
                     span.classList.remove("highlight")
                 }
             });
-            
+
             highlightEl.classList.add("highlight")
         }
     </script>
@@ -190,7 +184,7 @@
 
 {{ define "preview-content" }}
 <div id="preview">
-    {{ .Html }}
+    {{ .HTML }}
 </div>
 {{ end }}
 
@@ -220,12 +214,14 @@
         </span>
         <span class="descending size" data-name="size" data-order="DESC"
             hx-get="/append?keywords={{ .SearchParams.Keywords }}&limit={{ .SearchParams.Limit }}&offset=0&order=size&ascending=false"
-            hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click" hx-replapce-url="/true" onclick="redStyle(event)">
+            hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click" hx-replapce-url="/true"
+            onclick="redStyle(event)">
             <strong>🠋</strong>
         </span>
         <span class="ascending size" data-name="size" data-order="ASC"
             hx-get="/append?keywords={{ .SearchParams.Keywords }}&limit={{ .SearchParams.Limit }}&offset=0&order=size&ascending=true"
-            hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click" hx-replapce-url="/true" onclick="redStyle(event)">
+            hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click" hx-replapce-url="/true"
+            onclick="redStyle(event)">
             <strong>🠉</strong>
         </span>
 
@@ -236,12 +232,14 @@
         </span>
         <span class="descending modtime" data-name="modtime" data-order="DESC"
             hx-get="/append?keywords={{ .SearchParams.Keywords }}&limit={{ .SearchParams.Limit }}&offset=0&order=modtime&ascending=false"
-            hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click" hx-replapce-url="/true" onclick="redStyle(event)">
+            hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click" hx-replapce-url="/true"
+            onclick="redStyle(event)">
             <strong>🠋</strong>
         </span>
         <span class="ascending modtime" data-name="modtime" data-order="ASC"
             hx-get="/append?keywords={{ .SearchParams.Keywords }}&limit={{ .SearchParams.Limit }}&offset=0&order=modtime&ascending=true"
-            hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click" hx-replapce-url="/true" onclick="redStyle(event)">
+            hx-target="#list" hx-swap="innerHTML" hx-boost="true" hx-trigger="click" hx-replapce-url="/true"
+            onclick="redStyle(event)">
             <strong>🠉</strong>
         </span>
 

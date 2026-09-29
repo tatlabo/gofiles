@@ -1,21 +1,25 @@
+// Package models - postgres queries
 package models
 
 import (
 	"encoding/json"
 	"fmt"
-	"gofiles/utils"
 	"html/template"
 	"log"
 	"slices"
 	"strings"
 	"time"
 
+	"gofiles/utils"
+
 	"github.com/google/uuid"
 )
 
-var textFiles = []string{"py", "txt", "js", "jsx", "json", "css", "go", "html", "edl", "xml", "java", "c", "cpp", "h", "php", "sql", "sh", "bat", "pl", "rb", "swift", "ts", "yaml", "yml", "csv", "R", "r"}
-var imageFiles = []string{"jpg", "jpeg", "png", "gif", "bmp", "tif", "tiff", "webp", "svg", "ico", "heic", "raw"}
-var videoFiles = []string{"mp4", "wav", "mp3", "aif", "aiff", "mov", "avi", "mkv", "flv", "wmv", "webm", "mpg", "mpeg", "3gp"}
+var (
+	textFiles  = []string{"py", "txt", "js", "jsx", "json", "css", "go", "html", "edl", "xml", "java", "c", "cpp", "h", "php", "sql", "sh", "bat", "pl", "rb", "swift", "ts", "yaml", "yml", "csv", "R", "r"}
+	imageFiles = []string{"jpg", "jpeg", "png", "gif", "bmp", "tif", "tiff", "webp", "svg", "ico", "heic", "raw"}
+	videoFiles = []string{"mp4", "wav", "mp3", "aif", "aiff", "mov", "avi", "mkv", "flv", "wmv", "webm", "mpg", "mpeg", "3gp"}
+)
 
 type FinfoJSON struct {
 	Directory string    `json:"directory"`
@@ -28,14 +32,14 @@ type FinfoJSON struct {
 
 type FileData struct {
 	FinfoJSON     `json:"finfo"`
-	Id            int          `json:"id"`
-	DirectoryId   uuid.UUID    `json:"directoryId"`
+	ID            int          `json:"id"`
+	DirectoryID   uuid.UUID    `json:"directoryId"`
 	Keywords      string       `json:"keywords"`
 	SizeSimple    string       `json:"sizeSimple"`
 	ModTimeSimple string       `json:"modTimeStr"`
 	Type          string       `json:"type"`
-	Url           template.URL `json:"url"`
-	TsRank        float64      `json:"tsRank"`
+	URL           template.URL `json:"url"`
+	TSRank        float64      `json:"tsRank"`
 }
 
 type FilesDataList struct {
@@ -44,7 +48,6 @@ type FilesDataList struct {
 }
 
 func (flist *FilesDataList) GetList(name string, limit int, offset int) error {
-
 	const language = "'polish'"
 	const query = `
 	SELECT 
@@ -75,9 +78,9 @@ func (flist *FilesDataList) GetList(name string, limit int, offset int) error {
 		f.Keywords = name
 
 		err := rows.Scan(
-			&f.Id,
+			&f.ID,
 			&rawJSON,
-			&f.TsRank,
+			&f.TSRank,
 		)
 		if err != nil {
 			return err
@@ -91,13 +94,15 @@ func (flist *FilesDataList) GetList(name string, limit int, offset int) error {
 		flist.List = append(flist.List, f)
 	}
 
-	rows.Close()
+	defer rows.Close()
+	if err = rows.Err(); err != nil {
+		return err
+	}
 
 	return nil
 }
 
 func (flist *FilesDataList) AppendList(qp QueryParams) error {
-
 	const language = "'polish'"
 
 	query := `
@@ -125,18 +130,18 @@ func (flist *FilesDataList) AppendList(qp QueryParams) error {
 		var d FileData
 		d.Keywords = qp.Keywords
 
-		rawJson := []byte{}
+		rawJSON := []byte{}
 
 		err := rows.Scan(
-			&d.Id,
-			&rawJson,
-			&d.TsRank,
+			&d.ID,
+			&rawJSON,
+			&d.TSRank,
 		)
 		if err != nil {
 			return err
 		}
 
-		err = json.Unmarshal(rawJson, &d.FinfoJSON)
+		err = json.Unmarshal(rawJSON, &d.FinfoJSON)
 
 		d.SimplifyDetails()
 
@@ -164,12 +169,11 @@ type QueryParams struct {
 }
 
 func (flist *FilesDataList) AppendListParams(qp QueryParams) error {
-
 	const language = "'polish'"
 
 	var query string
 	var clause string
-	var order = "DESC"
+	order := "DESC"
 
 	switch qp.Order {
 	case "name":
@@ -228,40 +232,43 @@ func (flist *FilesDataList) AppendListParams(qp QueryParams) error {
 
 		err = json.Unmarshal(rawData, &data)
 
-		dataWithId := FileData{
+		dataWithID := FileData{
 			FinfoJSON: data,
-			Id:        id,
+			ID:        id,
 		}
 
-		dataWithId.Keywords = qp.Keywords
-		dataWithId.SimplifyDetails()
+		dataWithID.Keywords = qp.Keywords
+		dataWithID.SimplifyDetails()
 
 		if err != nil {
 			return err
 		}
 
-		flist.List = append(flist.List, dataWithId)
+		flist.List = append(flist.List, dataWithID)
+	}
+
+	defer rows.Close()
+	if err = rows.Err(); err != nil {
+		return err
 	}
 
 	return nil
 }
 
 func (flist *FilesDataList) SelectCount(name string) error {
-
 	const language = "'polish'"
-	var stmt = fmt.Sprintf(`
+	stmt := fmt.Sprintf(`
 	SELECT COUNT(DISTINCT id) FROM files
 	WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords);`, language)
 
 	conn, err := utils.PgConn()
 	if err != nil {
-		return fmt.Errorf("There is no connection to database")
+		return fmt.Errorf("no connection to database")
 	}
 
 	err = conn.QueryRow(stmt, name).Scan(&flist.Count)
-
 	if err != nil {
-		errMsg := fmt.Errorf("There is error: there is no connection to database.\n%v", err.Error())
+		errMsg := fmt.Errorf("there is no connection to database.\n%w", err)
 		return errMsg
 	}
 
@@ -275,7 +282,6 @@ func (f *FileData) SimplifyDetails() {
 }
 
 func (f *FileData) CheckExtension() {
-
 	var url string
 	f.Type = ""
 
@@ -292,26 +298,24 @@ func (f *FileData) CheckExtension() {
 		url = fmt.Sprintf("file:///%s/%s.%v", f.Directory, f.Name, f.Ext)
 	}
 
-	f.Url = template.URL(strings.ReplaceAll(url, "\\", "/"))
-
+	f.URL = template.URL(strings.ReplaceAll(url, "\\", "/"))
 }
 
-func (f *FileData) GetById(id int) error {
-
+func (f *FileData) GetByID(id int) error {
 	const stmt = `SELECT data, directory_id, keywords FROM files WHERE id=$1;`
 
 	conn, err := utils.PgConn()
 	if err != nil {
-		return fmt.Errorf("Error connecting to database:\n%v", err)
+		return fmt.Errorf("connecting to database failed:\n%v", err)
 	}
 
 	raw := []byte{}
-	dirId := uuid.UUID{}
+	dirID := uuid.UUID{}
 	keywords := ""
 
-	err = conn.QueryRow(stmt, id).Scan(&raw, &dirId, &keywords)
+	err = conn.QueryRow(stmt, id).Scan(&raw, &dirID, &keywords)
 	if err != nil {
-		return fmt.Errorf("Error querying database for file by ID:\n%v", err)
+		return fmt.Errorf("querying database failed for file by ID:\n%v", err)
 	}
 
 	data := FinfoJSON{}
@@ -319,14 +323,14 @@ func (f *FileData) GetById(id int) error {
 	err = json.Unmarshal(raw, &data)
 
 	f.FinfoJSON = data
-	f.Id = id
-	f.DirectoryId = dirId
+	f.ID = id
+	f.DirectoryID = dirID
 	f.Keywords = keywords
 
 	// f.SimplifyDetails()
 
 	if err != nil {
-		return fmt.Errorf("Error retrieving file by ID:\n%v", err)
+		return fmt.Errorf("error retrieving file by ID:\n%v", err)
 	}
 
 	return nil
@@ -345,7 +349,6 @@ func NewIndexedDirs() *IndexedDirs {
 
 // Delete removes an indexed directory by ID
 func (i *IndexedDirs) Delete(id string) error {
-
 	query := `--sql 
 	DELETE FROM directory WHERE id = $1;`
 
