@@ -1,20 +1,28 @@
+// Package models
+// Direcory
+// Directories
 package models
 
 import (
+	"database/sql"
 	"fmt"
-	"gofiles/utils"
-	"log"
 	"time"
+
+	"gofiles/utils"
 
 	"github.com/google/uuid"
 )
 
 type Directory struct {
-	Id        uuid.UUID `json:"id" db:"id"`
+	ID        uuid.UUID `json:"id" db:"id"`
 	Path      string    `json:"path" db:"path"`
 	IsDone    bool      `json:"isDone" db:"is_done"`
 	CreatedAt time.Time `json:"createdAt" db:"created_at"`
 	UpdatedAt time.Time `json:"updatedAt" db:"updated_at"`
+}
+
+type DirectoryModel struct {
+	DB *sql.DB
 }
 
 type Directries struct {
@@ -27,7 +35,7 @@ type Dir interface {
 	AddPath(path string) error
 }
 
-func (l *Directries) AddPath(path string) error {
+func (ds *Directries) AddPath(path string) error {
 	const query = `INSERT INTO directory (path, is_done, created_at, updated_at) VALUES ($1, false, NOW(), NOW()) RETURNING id, path, is_done, created_at, updated_at;`
 
 	conn, err := utils.PgConn()
@@ -36,7 +44,7 @@ func (l *Directries) AddPath(path string) error {
 	}
 
 	d := Directory{}
-	err = conn.QueryRow(query, path).Scan(&d.Id, &d.Path, &d.IsDone, &d.CreatedAt, &d.UpdatedAt)
+	err = conn.QueryRow(query, path).Scan(&d.ID, &d.Path, &d.IsDone, &d.CreatedAt, &d.UpdatedAt)
 	if err != nil {
 		return err
 	}
@@ -52,7 +60,7 @@ func (d *Directory) AddPath(path string) error {
 		return err
 	}
 
-	err = conn.QueryRow(query, path).Scan(&d.Id, &d.Path, &d.IsDone, &d.CreatedAt, &d.UpdatedAt)
+	err = conn.QueryRow(query, path).Scan(&d.ID, &d.Path, &d.IsDone, &d.CreatedAt, &d.UpdatedAt)
 	if err != nil {
 		return err
 	}
@@ -60,7 +68,7 @@ func (d *Directory) AddPath(path string) error {
 	return nil
 }
 
-func (l *Directries) DeletePath(id uuid.UUID) (d Directory, err error) {
+func (ds *Directries) DeletePath(id uuid.UUID) (d Directory, err error) {
 	const query = `DELETE FROM directory WHERE id = $1 RETURNING id, path, is_done, created_at, updated_at;`
 
 	conn, err := utils.PgConn()
@@ -68,7 +76,7 @@ func (l *Directries) DeletePath(id uuid.UUID) (d Directory, err error) {
 		return d, err
 	}
 
-	err = conn.QueryRow(query, id).Scan(&d.Id, &d.Path, &d.IsDone, &d.CreatedAt, &d.UpdatedAt)
+	err = conn.QueryRow(query, id).Scan(&d.ID, &d.Path, &d.IsDone, &d.CreatedAt, &d.UpdatedAt)
 	if err != nil {
 		return d, err
 	}
@@ -83,7 +91,7 @@ func (ds *Directries) Direcotry(id uuid.UUID) (d Directory, err error) {
 		return d, err
 	}
 
-	err = conn.QueryRow(query, id).Scan(&d.Id, &d.Path, &d.IsDone, &d.CreatedAt, &d.UpdatedAt)
+	err = conn.QueryRow(query, id).Scan(&d.ID, &d.Path, &d.IsDone, &d.CreatedAt, &d.UpdatedAt)
 	if err != nil {
 		return d, err
 	}
@@ -91,7 +99,7 @@ func (ds *Directries) Direcotry(id uuid.UUID) (d Directory, err error) {
 	return d, nil
 }
 
-func (l *Directries) List() error {
+func (ds *Directries) List() error {
 	const query = `SELECT id, path, is_done, created_at, updated_at FROM directory;`
 
 	conn, err := utils.PgConn()
@@ -105,16 +113,19 @@ func (l *Directries) List() error {
 	}
 
 	for rows.Next() {
-
 		d := Directory{}
 
-		err := rows.Scan(&d.Id, &d.Path, &d.IsDone, &d.CreatedAt, &d.UpdatedAt)
+		err := rows.Scan(&d.ID, &d.Path, &d.IsDone, &d.CreatedAt, &d.UpdatedAt)
 		if err != nil {
 			return err
 		}
 
-		l.Array = append(l.Array, d)
-		log.Println("Directory:", d)
+		ds.Array = append(ds.Array, d)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -128,8 +139,7 @@ func (d *Directory) Row(id uuid.UUID) error {
 		return err
 	}
 
-	err = conn.QueryRow(query, id).Scan(&d.Id, &d.Path, &d.IsDone, &d.CreatedAt, &d.UpdatedAt)
-
+	err = conn.QueryRow(query, id).Scan(&d.ID, &d.Path, &d.IsDone, &d.CreatedAt, &d.UpdatedAt)
 	if err != nil {
 		return err
 	}
@@ -138,7 +148,7 @@ func (d *Directory) Row(id uuid.UUID) error {
 }
 
 type IndexedDir struct {
-	Id      uuid.UUID `db:"id" json:"id"`
+	ID      uuid.UUID `db:"id" json:"id"`
 	Name    string    `db:"name" json:"name"`
 	Done    bool      `db:"done" json:"done"`
 	Created time.Time `db:"created" json:"created"`
@@ -155,13 +165,12 @@ type IndexedDirs struct {
 }
 
 type User struct {
-	Id       uuid.UUID `db:"id" json:"id"`
+	ID       uuid.UUID `db:"id" json:"id"`
 	Username string    `db:"username" json:"username"`
 	Password string    `db:"password" json:"-"`
 }
 
 func (i *IndexedDirs) List() error {
-
 	const query = `SELECT id, name, done, created FROM directory ORDER BY created DESC;`
 
 	conn, err := utils.PgConn()
@@ -176,11 +185,16 @@ func (i *IndexedDirs) List() error {
 
 	for rows.Next() {
 		var dir IndexedDir
-		if err := rows.Scan(&dir.Id, &dir.Name, &dir.Done, &dir.Created); err != nil {
+		if err := rows.Scan(&dir.ID, &dir.Name, &dir.Done, &dir.Created); err != nil {
 			return fmt.Errorf("failed to scan indexed directory: %w", err)
 		}
 
 		i.Indexeddirs = append(i.Indexeddirs, dir)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return err
 	}
 
 	if len(i.Indexeddirs) == 0 {
@@ -191,7 +205,6 @@ func (i *IndexedDirs) List() error {
 }
 
 func (i *IndexedDirs) Append() error {
-
 	query := `INSERT INTO directory (name, done, created) VALUES ($1, $2, $3) RETURNING id, name, done, created;`
 
 	conn, err := utils.PgConn()
@@ -201,7 +214,7 @@ func (i *IndexedDirs) Append() error {
 
 	newDir := IndexedDir{}
 	err = conn.QueryRow(query, i.Params["path"], false, time.Now()).Scan(
-		&newDir.Id, &newDir.Name, &newDir.Done, &newDir.Created)
+		&newDir.ID, &newDir.Name, &newDir.Done, &newDir.Created)
 	if err != nil {
 		return fmt.Errorf("failed to insert into indexed directories: %w", err)
 	}
@@ -210,5 +223,4 @@ func (i *IndexedDirs) Append() error {
 	i.Indexeddirs = append(i.Indexeddirs, newDir)
 
 	return nil
-
 }

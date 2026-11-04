@@ -1,3 +1,4 @@
+// Package sequel - move to goose
 package sequel
 
 const CreateDirectory = `CREATE TABLE IF NOT EXISTS directory 
@@ -20,7 +21,7 @@ const CreateSearch = `CREATE TABLE IF NOT EXISTS search
 const CreateIndexed = `CREATE INDEX IF NOT EXISTS idx_keywords_gin ON files USING GIN (to_tsvector('polish', keywords));`
 
 var InitialMigrations = func() []string {
-	var migrations = []string{
+	migrations := []string{
 		CreateDirectory,
 		CreateFiles,
 		CreateSearch,

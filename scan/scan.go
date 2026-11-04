@@ -1,50 +1,52 @@
+// Package scan direcories
 package scan
 
 import (
+	"embed"
 	"encoding/json"
 	"fmt"
-	"gofiles/internal/models"
-	"gofiles/utils"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 
-	"github.com/google/uuid"
+	"gofiles/internal/models"
+	"gofiles/utils"
 
-	"embed"
+	"github.com/google/uuid"
 
 	_ "github.com/lib/pq"
 )
 
-var skipDirectories = []string{".git", "node_modules", "tmp", "temp", ".vscode", ".idea", "vendor", "build", "dist", "__pycache__", "bin", ".vite", "$SysReset", "$Windows.~WS", "OneDriveTemp", "AppData"}
-var skipFiles = []string{".DS_Store", ".gitignore", ".gitattributes", ".gitmodules", "package-lock.json", "yarn.lock", "dpx"}
+var (
+	skipDirectories = []string{".git", "node_modules", "tmp", "temp", ".vscode", ".idea", "vendor", "build", "dist", "__pycache__", "bin", ".vite", "$SysReset", "$Windows.~WS", "OneDriveTemp", "AppData"}
+	skipFiles       = []string{".DS_Store", ".gitignore", ".gitattributes", ".gitmodules", "package-lock.json", "yarn.lock", "dpx"}
+)
 
 var log = []string{}
 
-func CommitSql(sql []string) error {
+// func CommitSql(sql []string) error {
+// 	db, err := utils.PgConn()
+// 	if err != nil {
+// 		return err
+// 	}
 
-	db, err := utils.PgConn()
-	if err != nil {
-		return (err)
-	}
+// 	tx, err := db.Begin()
+// 	if err != nil {
+// 		return err
+// 	}
 
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
+// 	for i := range len(sql) {
+// 		if _, err := tx.Exec(sql[i]); err != nil {
+// 			return err
+// 		}
+// 	}
 
-	for i := range len(sql) {
-		if _, err := tx.Exec(sql[i]); err != nil {
-			return err
-		}
-	}
+// 	return tx.Commit()
+// }
 
-	return tx.Commit()
-}
-
-func SqlMigrations(path string) error {
+func SQLMigrations(path string) error {
 	f, err := migrations.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("failed to read migration file %s: %w", path, err)
@@ -58,10 +60,9 @@ func SqlMigrations(path string) error {
 }
 
 func VanillaRaw(xs []byte) error {
-
 	db, err := utils.PgConn()
 	if err != nil {
-		return (err)
+		return err
 	}
 
 	tx, err := db.Begin()
@@ -75,10 +76,9 @@ func VanillaRaw(xs []byte) error {
 }
 
 func VanillaSQL(s string) error {
-
 	db, err := utils.PgConn()
 	if err != nil {
-		return (err)
+		return err
 	}
 
 	tx, err := db.Begin()
@@ -92,7 +92,6 @@ func VanillaSQL(s string) error {
 }
 
 func visit(path string, d fs.DirEntry, err error) error {
-
 	if err != nil {
 		log = append(log, fmt.Sprintf("Error accessing path %s: %v", path, err))
 		return nil // Handle errors accessing a path
@@ -148,12 +147,13 @@ func visit(path string, d fs.DirEntry, err error) error {
 //go:embed migrations/*.sql
 var migrations embed.FS
 
-var fileList = []models.FinfoJSON{}
-var directory string
-var directoryId uuid.UUID
+var (
+	fileList    = []models.FinfoJSON{}
+	directory   string
+	directoryID uuid.UUID
+)
 
 func Scan(d models.Directory) error {
-
 	// switch len(os.Args) {
 	// case 1:
 	// 	fmt.Println("Please provide a path")
@@ -170,30 +170,27 @@ func Scan(d models.Directory) error {
 	// }
 
 	directory = d.Path
-	directoryId = d.Id
+	directoryID = d.ID
 	// err := insertIntoDirs(path)
 	// if err != nil {
 	// 	fmt.Fprintf(os.Stderr, "Error inserting into directory table: %v\n", err)
 	// 	return err
 	// }
 
-	if err := JsonFilesToDb(directory); err != nil {
-		fmt.Fprintf(os.Stderr, "invalid path: %v\n", err)
-		return err
+	if err := JSONFilesToDB(directory); err != nil {
+		return fmt.Errorf("invalid path: %w", err)
 	}
 
-	if err := updateDirs(directory); err != nil {
-		fmt.Fprintf(os.Stderr, "Error updating directory table: %v\n", err)
-		return err
+	if err := updateDirs(); err != nil {
+		return fmt.Errorf("error updating directory table: %w", err)
 	}
 
-	SqlMigrations("migrations/002_initial.sql")
+	SQLMigrations("migrations/002_initial.sql")
 
 	return nil
-
 }
 
-func JsonFilesToDb(path string) error {
+func JSONFilesToDB(path string) error {
 	db, err := utils.PgConn()
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
@@ -202,17 +199,16 @@ func JsonFilesToDb(path string) error {
 	err = filepath.WalkDir(path, visit)
 	if err != nil {
 		writeLog(&log)
-		return fmt.Errorf("Error walking through directories: %w", err)
+		return fmt.Errorf("error walking through directories: %w", err)
 	}
 
 	s := len(fileList) // Use fileList length, not stmt bytes
 
 	if s == 0 {
-		fmt.Println("No items to insert")
-		os.Exit(1)
+		return fmt.Errorf("scan failed, no items to insert")
 	}
 
-	batchSize := 1000
+	batchSize := 250
 	totalInserted := 0
 
 	// Process files in batches
@@ -242,7 +238,7 @@ func JsonFilesToDb(path string) error {
 				return fmt.Errorf("error marshalling file: %w", err)
 			}
 
-			_, err = stmt.Exec(directoryId, string(jsonData))
+			_, err = stmt.Exec(directoryID, string(jsonData))
 			if err != nil {
 				stmt.Close()
 				tx.Rollback()
@@ -250,7 +246,7 @@ func JsonFilesToDb(path string) error {
 			}
 		}
 
-		stmt.Close()
+		_ = stmt.Close()
 
 		// Commit transaction
 		if err := tx.Commit(); err != nil {
@@ -265,21 +261,7 @@ func JsonFilesToDb(path string) error {
 	return nil
 }
 
-func insertIntoDirs(path string) error {
-
-	const stmt = `INSERT INTO directory(path)
-	VALUES ($1) RETURNING id;`
-
-	err := VanillaRawReturn(stmt, directory)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error inserting directory: %v\n", err)
-		os.Exit(10)
-	}
-
-	return nil
-}
-
-func updateDirs(path string) error {
+func updateDirs() error {
 	const stmt = `UPDATE directory SET is_done = $1, updated_at = NOW() WHERE id=$2;`
 
 	db, err := utils.PgConn()
@@ -287,7 +269,7 @@ func updateDirs(path string) error {
 		return err
 	}
 
-	_, err = db.Exec(stmt, true, directoryId)
+	_, err = db.Exec(stmt, true, directoryID)
 	if err != nil {
 		return fmt.Errorf("error updating directory: %w", err)
 	}
@@ -306,7 +288,7 @@ func VanillaRawReturn(q string, param string) error {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 
-	err = tx.QueryRow(q, param).Scan(&directoryId)
+	err = tx.QueryRow(q, param).Scan(&directoryID)
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("failed to insert and scan: %w", err)
@@ -320,7 +302,6 @@ func VanillaRawReturn(q string, param string) error {
 }
 
 func writeLog(log *[]string) error {
-
 	f, err := os.Create("log.txt")
 	if err != nil {
 		return err

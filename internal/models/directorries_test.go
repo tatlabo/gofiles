@@ -8,13 +8,12 @@ import (
 )
 
 func MakeTestDirectories() Directries {
-
 	id, _ := uuid.Parse("d5615d5c-be44-4913-965c-593ca75dde60")
 	createdAt, _ := time.Parse(time.RFC3339, "2026-01-09 14:14:07.070389 +0000 GMT")
 	updatedAt, _ := time.Parse(time.RFC3339, "2026-01-09 14:16:55.473366 +0000 GMT")
 
 	d := Directory{
-		Id:        id,
+		ID:        id,
 		Path:      `Z:\AFLOFARM_ONILNE\250113_Aflofarm_Proliver_diabeto`,
 		IsDone:    true,
 		CreatedAt: createdAt,
@@ -28,7 +27,6 @@ func MakeTestDirectories() Directries {
 }
 
 func TestList(t *testing.T) {
-
 	testDirs := MakeTestDirectories()
 
 	d := Directries{}
@@ -42,5 +40,4 @@ func TestList(t *testing.T) {
 	if d.Array[0].Path != testDirs.Array[0].Path {
 		t.Errorf("Directries.List() = %v, want %v", d.Array[0].Path, testDirs.Array[0].Path)
 	}
-
 }

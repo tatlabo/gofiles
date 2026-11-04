@@ -1,5 +1,5 @@
-// Package handlers - main handlers
-package handlers
+// Package application - main handlers
+package application
 
 import (
 	"fmt"
@@ -10,8 +10,22 @@ import (
 	"github.com/google/uuid"
 )
 
+type DirsPaage struct {
+	Title string
+
+	Body  map[string]string
+	Array []models.Directory
+	Err   error
+	Flash string
+}
+
 func HandleDirs(w http.ResponseWriter, r *http.Request) {
 	templatePage := "dirs.html"
+
+	data := DirsPaage{
+		Title: "strona z katalogami",
+	}
+	dirs := models.Directries{}
 
 	switch r.Method {
 	case http.MethodGet:
@@ -24,31 +38,29 @@ func HandleDirs(w http.ResponseWriter, r *http.Request) {
 			deleted := r.URL.Query().Get("deleted")
 			path := r.URL.Query().Get("path")
 
-			message := "Zindexuj katalogi"
-
 			if success == "true" && deleted != "" {
-				message = fmt.Sprintf("Successfully deleted path: %s (ID: %s)", path, deleted)
+				data.Flash = fmt.Sprintf("Successfully deleted path: %s (ID: %s)", path, deleted)
 			}
 
 			if successMsg == "true" && addedPath != "" {
-				message = fmt.Sprintf("Successfully added path: %s", addedPath)
+				data.Flash = fmt.Sprintf("Successfully added path: %s", addedPath)
 			}
 
-			data := models.Directries{
-				Title: "Directory listing",
-				Body:  map[string]string{"message": message},
-			}
-
-			if err := data.List(); err != nil {
+			err := dirs.List()
+			if err != nil {
 				fmt.Println("Error getting search list: ", err)
 				tmpl.Render(w, templatePage, data)
 				return
 			}
 
+			data.Array = dirs.Array
+
 			tmpl.Render(w, templatePage, data)
 		}
-
 	case http.MethodPost:
+		//
+		// TO DO DI
+		//
 		{
 			r.ParseForm()
 			path := r.FormValue("path")
@@ -56,19 +68,23 @@ func HandleDirs(w http.ResponseWriter, r *http.Request) {
 			// todo: validate path
 			// todo: check if path exists
 
+			data.Title = path
+
 			data := models.Directries{
 				Title: path,
 				Body:  map[string]string{"message": "Indexuj katalogi " + path},
 			}
 
-			err := data.AddPath(path)
+			err := dirs.AddPath(path)
 			if err != nil {
 				fmt.Println("Error adding path: ", err)
 				data.Body = map[string]string{"message": "Error adding path: ", "error": err.Error()}
+				tmpl.Render(w, templatePage, data)
+				return
+			}
 
-				if err := data.List(); err != nil {
-					fmt.Println("Error getting search list: ", err)
-				}
+			err = dirs.List()
+			if err != nil {
 				tmpl.Render(w, templatePage, data)
 				return
 			}
@@ -104,7 +120,7 @@ func HandleDirDelete(w http.ResponseWriter, r *http.Request) {
 
 	case http.MethodPost:
 		{
-			r.ParseForm()
+			_ = r.ParseForm()
 			id := r.FormValue("id")
 
 			uuid, err := uuid.Parse(id)
@@ -134,7 +150,7 @@ func HandleDirDelete(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			redirectURL := fmt.Sprintf("/admin/dirs?success=true&deleted=%s&path=%s", d.Id, d.Path)
+			redirectURL := fmt.Sprintf("/admin/dirs?success=true&deleted=%s&path=%s", d.ID, d.Path)
 			http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 		}
 	}
