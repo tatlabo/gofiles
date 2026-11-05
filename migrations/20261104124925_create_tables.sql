@@ -23,15 +23,6 @@ CREATE TABLE IF NOT EXISTS search
 input TEXT,
 created TIMESTAMPTZ NOT NULL DEFAULT NOW());
 
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_ts_config WHERE cfgname = 'polish'
-    ) THEN
-        CREATE TEXT SEARCH CONFIGURATION polish (COPY = simple);
-    END IF;
-END $$;
-
 CREATE INDEX IF NOT EXISTS idx_keywords_gin ON files USING GIN (to_tsvector('polish', keywords));
 
 -- +goose Down

@@ -5,7 +5,7 @@
     <article id="fileList" class="home-page-container">
 
         <h4>
-            {{ .Body.message }}
+            {{ with .Message }}{{ . }}{{ else }}wyszukaj{{ end }}
         </h4>
         {{ template "form" . }}
 

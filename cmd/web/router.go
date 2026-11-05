@@ -9,7 +9,7 @@ import (
 	"gofiles/static"
 )
 
-func Router(logger *slog.Logger) http.Handler {
+func NewRouter(app *application.Application, logger *slog.Logger) http.Handler {
 	router := http.NewServeMux()
 
 	http.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {
@@ -21,13 +21,13 @@ func Router(logger *slog.Logger) http.Handler {
 	media := http.FileServer(http.Dir("media"))
 	router.Handle("/media/", http.StripPrefix("/media/", media))
 
-	router.HandleFunc("/h3", application.HandleCtx)
-	router.HandleFunc("/", application.HandleSearch)
-	router.HandleFunc("/append", application.HandleAppend)
-	router.HandleFunc("/detail/{id}", application.ItemDetailsID)
-	router.HandleFunc("/item-detail/{id}", application.ItemDetailsID)
-	router.HandleFunc("/preview/{id}", application.PreviewByID)
-	router.HandleFunc("/preview-media/{id}", application.PreviewMedia)
+	router.HandleFunc("/h3", app.HandleCtx)
+	router.HandleFunc("/", app.HandleSearch)
+	router.HandleFunc("/append", app.HandleAppend)
+	router.HandleFunc("/detail/{id}", app.ItemDetailsID)
+	router.HandleFunc("/item-detail/{id}", app.ItemDetailsID)
+	router.HandleFunc("/preview/{id}", app.PreviewByID)
+	router.HandleFunc("/preview-media/{id}", app.PreviewMedia)
 
 	// protected routes as admin
 	protected := http.NewServeMux()
@@ -37,9 +37,9 @@ func Router(logger *slog.Logger) http.Handler {
 	router.Handle("/data/", idata) // pprof
 	router.Handle("/data/{id}", idata)
 	//
-	protected.HandleFunc("/", application.HandleDirs)
-	protected.HandleFunc("/dirs/delete", application.HandleDirDelete)
-	protected.HandleFunc("/dirs/scan", application.HandleScan)
+	protected.HandleFunc("/", app.HandleDirs)
+	protected.HandleFunc("/dirs/delete", app.HandleDirDelete)
+	protected.HandleFunc("POST /dirs/scan", app.HandleScan)
 
 	return PanicRecover(LogFunc(router, logger))
 }

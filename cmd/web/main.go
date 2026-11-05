@@ -1,17 +1,34 @@
 package main
 
 import (
+	"context"
 	_ "embed"
+	"log"
 	"log/slog"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+
+	"gofiles/internal/application"
+	"gofiles/sqldb"
 )
 
 func main() {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
 	}))
+
+	pool, err := sqldb.PgxPool()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer pool.Close()
+
+	if err := pool.Ping(context.Background()); err != nil {
+		log.Fatal(err)
+	}
+
+	app := application.Run(pool, logger)
 
 	go func() {
 		redirectToTLS := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -24,11 +41,11 @@ func main() {
 		}
 	}()
 
-	router := Router(logger)
+	router := NewRouter(app, logger)
 	tlsServer := NewServer(router)
 	logger.Info("Starting HTTPS server on :443")
 
-	err := tlsServer.ListenAndServeTLS("", "")
+	err = tlsServer.ListenAndServeTLS("", "")
 	if err != nil {
 		logger.Error("ListenAndServeTLS", "error", err)
 	}

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"gofiles/chroma"
+	"gofiles/internal/filter"
 	"gofiles/internal/models"
 	"gofiles/utils"
 )
@@ -34,7 +35,6 @@ type IndexData struct {
 	Title        string
 	Body         map[string]string
 	Count        int
-	HomePage     bool
 	HTML         template.HTML
 	IsText       bool
 }
@@ -43,107 +43,78 @@ func (s SimpleReq) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.FillData(w, r)
 }
 
-func emptyKeywords(qp models.QueryParams) (data IndexData, empty bool) {
-	if len(qp.Keywords) == 0 {
-		data.Title = "My Title"
-		data.Body = map[string]string{"message": "Nie podano słów kluczowych"}
-		data.Title = "Search files"
-		data.Body = map[string]string{"message": "Wyszukaj pliki po słowach kluczowych"}
-		data.HomePage = true
-		return data, true
+func (app *Application) HandleSearch(w http.ResponseWriter, r *http.Request) {
+	type IndexPage struct {
+		models.FilesDataList
+		FileData models.FileData
+		Title    string
+		Count    int
+		HTML     template.HTML
+		QP       filter.QueryParams
+		Message  string
+		Result   []models.FileData
 	}
 
-	return data, false
-}
-
-func HandleSearch(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+
+	templatePage := "index.html"
 
 	r = r.WithContext(ctx)
 	defer cancel()
 
 	qp := processQueryParams(r)
-	if data, empty := emptyKeywords(qp); empty {
-		tmpl.Render(w, "home.html", data)
-		return
-	}
-	// TO DO err handler
-	data, _ := mainSearch(qp)
+	filter := filter.Parse(r)
 
-	// dataCh := make(chan IndexData, 1)
-	// errCh := make(chan error, 1)
-
-	// go func(p models.QueryParams) {
-	// 	defer close(dataCh)
-	// 	dataCh <- data
-	// 	errCh <- err
-	// }(qp)
-	if data.Count != 0 {
-		tmpl.Render(w, "index.html", data)
-		return
-	} else {
-		templatePage := "home.html"
-		data = IndexData{
-			Title:        "No results",
-			Body:         map[string]string{"message": "No results found for the given keywords"},
-			SearchParams: qp,
-		}
-		tmpl.Render(w, templatePage, data)
+	// home page
+	if filter.Keywords == "" {
+		app.Render(w, "home.html", IndexPage{})
 		return
 	}
 
-	// select {
-	// case <-ctx.Done():
-	// 	log.Println("Request timed out in Wraper")
-	// 	http.Error(w, "Request timed out", http.StatusGatewayTimeout)
-	// 	return
-	// case err := <-errCh:
-	// 	data := IndexData{
-	// 		Title: "Error page",
-	// 		Body:  map[string]string{"err": err.Error(), "msg": fmt.Sprintf("%v", err)},
-	// 	}
-	// 	tmpl.Render(w, "error.html", data)
-	// 	return
-	// case data := <-dataCh:
+	model := models.FileModel{DB: app.DB}
 
-	// }
+	list, count, err := model.GetList(qp.Keywords, qp.Limit, qp.Offset)
+	if err != nil {
+		w.WriteHeader(500)
+		// TO DO
+		w.Write([]byte("error in getlist" + err.Error()))
+		return
+	}
+
+	if count == 0 {
+		app.Render(w, "home.html", IndexPage{
+			Title:   "No results",
+			Message: "No results found for the given keywords",
+			QP:      filter,
+		})
+		return
+	}
+
+	app.Logger.Debug("LIST", "LIST", list)
+	app.Logger.Debug("count", "Count", count)
+
+	for index := range list {
+		list[index].SimplifyDetails()
+	}
+
+	filesDataList := models.FilesDataList{
+		Count: count,
+		List:  list,
+	}
+
+	indexPage := IndexPage{
+		Title:         fmt.Sprintf("wyszukano %d plików", count),
+		FilesDataList: filesDataList,
+		Count:         count,
+		QP:            filter,
+		Result:        list,
+	}
+
+	app.Render(w, templatePage, indexPage)
 }
 
-func mainSearch(qp models.QueryParams) (IndexData, error) {
-	data := models.FilesDataList{}
-
-	if err := data.SelectCount(qp.Keywords); err != nil {
-		return IndexData{}, err
-	}
-
-	if data.Count == 0 {
-		return IndexData{
-			Title:        "No results",
-			Body:         map[string]string{"message": "No results found for the given keywords"},
-			SearchParams: qp,
-		}, nil
-	}
-
-	// main SELECT
-	if err := data.GetList(qp.Keywords, qp.Limit, qp.Offset); err != nil {
-		return IndexData{}, err
-	}
-
-	for index := range data.List {
-		data.List[index].SimplifyDetails()
-	}
-
-	return IndexData{
-		SearchParams:  qp,
-		Title:         "My Title",
-		Body:          map[string]string{"message": "data"},
-		FilesDataList: data,
-		Count:         data.Count,
-	}, nil
-}
-
-func ItemDetailsID(w http.ResponseWriter, r *http.Request) {
+func (app *Application) ItemDetailsID(w http.ResponseWriter, r *http.Request) {
 	var f models.FileData
 
 	idStr := r.PathValue("id")
@@ -255,12 +226,30 @@ func processQueryParams(r *http.Request) models.QueryParams {
 	return qp
 }
 
-func HandleAppend(w http.ResponseWriter, r *http.Request) {
-	qp := processQueryParams(r)
+func (app *Application) HandleAppend(w http.ResponseWriter, r *http.Request) {
+	type IndexPage struct {
+		models.FilesDataList
+		FileData models.FileData
+		Title    string
+		Count    int
+		HTML     template.HTML
+		QP       filter.QueryParams
+		Message  string
+		Result   []models.FileData
+	}
+
+	filter := filter.Parse(r)
 
 	data := models.FilesDataList{}
 
-	log.Printf("qp: %#v", qp)
+	qp := models.QueryParams{
+		Keywords:  filter.Keywords,
+		Limit:     filter.Limit,
+		Offset:    filter.Offset,
+		Order:     filter.Order,
+		Ascending: filter.Ascending,
+		Method:    filter.Method,
+	}
 
 	if len(qp.Order) > 0 {
 		if err := data.AppendListParams(qp); err != nil {
@@ -277,12 +266,12 @@ func HandleAppend(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tmpl.Render(
-		w, "append.html", IndexData{
+		w, "append.html", IndexPage{
 			Title:         "My Title",
-			Body:          map[string]string{"message": "data"},
 			FilesDataList: data,
 			Count:         data.Count,
-			SearchParams:  qp,
+			QP:            filter,
+			Result:        data.List,
 		},
 	)
 	log.Printf("nr of gorutines (HandleAppend): %v", runtime.NumGoroutine())
@@ -321,7 +310,7 @@ func PreviewImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Copy the image file
-	if err := CopyImageFile(srcPath, destPath); err != nil {
+	if err := copyImageFile(srcPath, destPath); err != nil {
 		i.Title = "Error page"
 		i.Body = map[string]string{"err": err.Error(), "msg": "Error copying image file"}
 		tmpl.Render(w, "error.html", i)
@@ -345,7 +334,7 @@ func PreviewImage(w http.ResponseWriter, r *http.Request) {
 	tmpl.Render(w, "preview-media.html", i)
 }
 
-func PreviewMedia(w http.ResponseWriter, r *http.Request) {
+func (app *Application) PreviewMedia(w http.ResponseWriter, r *http.Request) {
 	var f models.FileData
 	var i IndexData
 
@@ -380,7 +369,7 @@ func PreviewMedia(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Copy the image file
-	if err := CopyImageFile(srcPath, destPath); err != nil {
+	if err := copyImageFile(srcPath, destPath); err != nil {
 		i.Title = "Error page"
 		i.Body = map[string]string{"err": err.Error(), "msg": "Error copying image file"}
 		tmpl.Render(w, "error.html", i)
@@ -404,7 +393,7 @@ func PreviewMedia(w http.ResponseWriter, r *http.Request) {
 	tmpl.Render(w, "preview-media.html", i)
 }
 
-func CopyImageFile(srcPath, destPath string) error {
+func copyImageFile(srcPath, destPath string) error {
 	// Open the source file
 	srcFile, err := os.Open(srcPath)
 	if err != nil {
@@ -434,7 +423,7 @@ func CopyImageFile(srcPath, destPath string) error {
 	return nil
 }
 
-func PreviewByID(w http.ResponseWriter, r *http.Request) {
+func (app *Application) PreviewByID(w http.ResponseWriter, r *http.Request) {
 	body, err := getItemByID(w, r)
 	if err != nil {
 		http.Error(w, "Error retrieving file details (ItemDetailsId / getItemById)", http.StatusInternalServerError)

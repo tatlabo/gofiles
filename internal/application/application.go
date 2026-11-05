@@ -35,5 +35,6 @@ func Run(db *pgxpool.Pool, logger *slog.Logger) (app *Application) {
 		DB:       db,
 	}
 
+	app.Logger.Debug("application", "Run", "OK")
 	return app
 }

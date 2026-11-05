@@ -20,7 +20,7 @@ type DataHTML struct {
 	Status bool
 }
 
-func HandleCtx(w http.ResponseWriter, r *http.Request) {
+func (app *Application) HandleCtx(w http.ResponseWriter, r *http.Request) {
 	delayStr := r.URL.Query().Get("delay")
 	delay, err := strconv.Atoi(delayStr)
 	if err != nil {

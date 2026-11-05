@@ -19,7 +19,7 @@ type DirsPaage struct {
 	Flash string
 }
 
-func HandleDirs(w http.ResponseWriter, r *http.Request) {
+func (app *Application) HandleDirs(w http.ResponseWriter, r *http.Request) {
 	templatePage := "dirs.html"
 
 	data := DirsPaage{
@@ -97,7 +97,7 @@ func HandleDirs(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func HandleDirDelete(w http.ResponseWriter, r *http.Request) {
+func (app *Application) HandleDirDelete(w http.ResponseWriter, r *http.Request) {
 	templatePage := "dirs.html"
 
 	switch r.Method {
