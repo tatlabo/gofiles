@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -15,7 +16,7 @@ type FileModel struct {
 
 func (m *FileModel) GetList(keywords string, limit int, offset int) (list []FileData, count int, err error) {
 	ctx := context.Context(context.Background())
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
 	stmt := `SELECT DISTINCT(id), directory_id, COUNT(*) OVER () AS count, data, ts_rank_cd( to_tsvector('polish', @keywords), 

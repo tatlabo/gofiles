@@ -1,4 +1,6 @@
-// Package sqldb = sqlite connection
+// Package sqldb
+//
+// # pgx pool settings
 package sqldb
 
 import (
@@ -47,6 +49,7 @@ func pgxPoolConfig(connStr string) (*pgxpool.Config, error) {
 	return config, nil
 }
 
+// PgxPool returns pgx.Pool
 func PgxPool() (pool *pgxpool.Pool, err error) {
 	connStr, err := pgConfEnv()
 	if err != nil {

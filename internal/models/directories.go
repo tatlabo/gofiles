@@ -4,7 +4,6 @@
 package models
 
 import (
-	"database/sql"
 	"fmt"
 	"time"
 
@@ -13,27 +12,19 @@ import (
 	"github.com/google/uuid"
 )
 
-type Directory struct {
-	ID        uuid.UUID `json:"id" db:"id"`
-	Path      string    `json:"path" db:"path"`
-	IsDone    bool      `json:"isDone" db:"is_done"`
-	CreatedAt time.Time `json:"createdAt" db:"created_at"`
-	UpdatedAt time.Time `json:"updatedAt" db:"updated_at"`
-}
+// type Directory struct {
+// 	ID        uuid.UUID `json:"id" db:"id"`
+// 	Path      string    `json:"path" db:"path"`
+// 	IsDone    bool      `json:"isDone" db:"is_done"`
+// 	CreatedAt time.Time `json:"createdAt" db:"created_at"`
+// 	UpdatedAt time.Time `json:"updatedAt" db:"updated_at"`
+// }
 
-type DirectoryModel struct {
-	DB *sql.DB
-}
-
-type Directries struct {
-	Array []Directory       `json:"list"`
-	Body  map[string]string `json:"body"`
-	Title string            `json:"title"`
-}
-
-type Dir interface {
-	AddPath(path string) error
-}
+// type Directries struct {
+// 	Array []Directory       `json:"list"`
+// 	Body  map[string]string `json:"body"`
+// 	Title string            `json:"title"`
+// }
 
 func (ds *Directries) AddPath(path string) error {
 	const query = `INSERT INTO directory (path, is_done, created_at, updated_at) VALUES ($1, false, NOW(), NOW()) RETURNING id, path, is_done, created_at, updated_at;`
@@ -214,7 +205,8 @@ func (i *IndexedDirs) Append() error {
 
 	newDir := IndexedDir{}
 	err = conn.QueryRow(query, i.Params["path"], false, time.Now()).Scan(
-		&newDir.ID, &newDir.Name, &newDir.Done, &newDir.Created)
+		&newDir.ID, &newDir.Name, &newDir.Done, &newDir.Created,
+	)
 	if err != nil {
 		return fmt.Errorf("failed to insert into indexed directories: %w", err)
 	}
