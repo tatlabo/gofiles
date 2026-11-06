@@ -9,7 +9,6 @@ import (
 	"html/template"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -51,117 +50,6 @@ func PgConn() (*sql.DB, error) {
 		err = db.Ping()
 	})
 	return db, err
-}
-
-const createExt = `
-CREATE TABLE IF NOT EXISTS ext (id SERIAL, ext TEXT UNIQUE, PRIMARY KEY (id));
-`
-
-const createFiles = `
-CREATE TABLE IF NOT EXISTS files 
-(id SERIAL PRIMARY KEY,
-parent_id INTEGER,
-path TEXT NOT NULL,
-name TEXT NOT NULL,
-ext TEXT,
-ext_id INTEGER, FOREIGN KEY(ext_id) REFERENCES ext(id) ON DELETE CASCADE,
-is_dir BOOLEAN NOT NULL DEFAULT FALSE,
-size BIGINT,
-keywords TEXT,
-mod_time TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-UNIQUE (path, name, ext, is_dir));`
-
-// create index on files
-// const creteIndexOnFiles = `
-// CREATE INDEX IF NOT EXISTS idx_name ON files(LOWER(name));`
-
-const creteIndexOnExt = `
-CREATE INDEX IF NOT EXISTS idx_ext ON files(LOWER(ext));`
-
-const insertIntoExt = `INSERT INTO ext (ext)
-SELECT DISTINCT ext FROM files WHERE files.ext IS NOT NULL ON CONFLICT (ext) DO NOTHING;`
-
-const updateExtID = `
-UPDATE files SET ext_id = ext.id FROM ext WHERE files.ext = ext.ext AND files.ext_id != NULL;`
-
-const updateKeywords = `
-UPDATE files SET keywords = ( to_tsvector('polish', name) || ' ' || ext ) WHERE keywords IS NOT NULL;`
-
-const createGinOnKeywords = `
-CREATE INDEX idx_keywords_gin ON keywords_gin USING GIN (to_tsvector('polish', keyword));`
-
-func CreateFiles() error {
-	db, err := PgConn()
-	if err != nil {
-		return err
-	}
-
-	if _, err := db.Exec(createFiles); err != nil {
-		return err
-	}
-
-	if _, err := db.Exec(createExt); err != nil {
-		return err
-	}
-	// if _, err := db.Exec(creteIndexOnFiles); err != nil {
-	// 	return err
-	// }
-	if _, err := db.Exec(creteIndexOnExt); err != nil {
-		return err
-	}
-
-	if _, err := db.Exec(insertIntoExt); err != nil {
-		return err
-	}
-
-	if _, err := db.Exec(updateExtID); err != nil {
-		return err
-	}
-
-	if _, err := db.Exec(updateKeywords); err != nil {
-		return err
-	}
-
-	if _, err := db.Exec(createGinOnKeywords); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func DropFiles() error {
-	db, err := PgConn()
-	if err != nil {
-		return err
-	}
-
-	_, err = db.Exec(`DROP TABLE IF EXISTS files;`)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func ConvertBytes(bytes int64) string {
-	const unit = 1024
-	if bytes < unit {
-		return fmt.Sprintf("%d B", bytes)
-	}
-	div, exp := int64(unit), 0
-	for n := bytes / unit; n >= unit; n /= unit {
-		div *= unit
-		exp++
-	}
-	return fmt.Sprintf("%.2f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
-}
-
-func CleanInput(input string) string {
-	input = strings.TrimSpace(input)
-	input = strings.ToLower(input)
-	re := regexp.MustCompile(`[^a-zA-Z0-9.,;\/-_!$ ]+ `)
-	// re := regexp.MustCompile(`[^a-zA-Z0-9.,\-_ ]+`)
-	return re.ReplaceAllString(input, "")
 }
 
 // ValidatePath validates a directory path for security and accessibility
@@ -210,22 +98,6 @@ func ValidatePath(path string) (string, error) {
 	defer file.Close()
 
 	return absPath, nil
-}
-
-func FormatDate(t time.Time) string {
-	return t.Format("2006-01-02 15:04:05") // Customize the format as needed
-}
-
-func Not(b bool) bool {
-	return !b
-}
-
-func Equals(a, b any) bool {
-	return a == b
-}
-
-func Notequals(a, b any) bool {
-	return a != b
 }
 
 func VanillaSQL(s []string, group bool) error {

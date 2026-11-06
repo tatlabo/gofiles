@@ -17,6 +17,73 @@
     <script src="/static/js/main.js" defer>
     </script>
 
+    <style>
+        .modal-parent {
+            .modal-open-btn {
+                display: inline-block;
+                padding: .6rem 1.25rem;
+                background: #b8ff57;
+                color: #0c0c0d;
+                border-radius: 8px;
+                font-size: .9rem;
+                font-weight: 500;
+                text-decoration: none;
+                cursor: pointer;
+            }
+
+            .modal-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                align-items: center;
+                justify-content: center;
+                background: rgba(0, 0, 0, .55);
+                z-index: 200;
+            }
+
+            /* :target matches once the URL hash points at this id */
+            .modal-overlay:target {
+                display: flex;
+            }
+
+            .modal-box {
+                position: relative;
+                width: 90%;
+                max-width: 400px;
+                padding: 2rem;
+                border-radius: 12px;
+                background: #141415;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, .18);
+            }
+
+            .modal-box h3 {
+                margin: 0 0 .75rem;
+                font-size: 1.2rem;
+                color: #f0f0f0;
+            }
+
+            .modal-box p {
+                margin: 0 0 1.25rem;
+                font-size: .9rem;
+                color: #88888f;
+            }
+
+            .modal-close {
+                display: inline-block;
+                padding: .5rem 1rem;
+                background: #1c1c1e;
+                color: #f0f0f0;
+                border-radius: 6px;
+                font-size: .875rem;
+                text-decoration: none;
+            }
+
+            .modal-close:hover {
+                background: #2a2a2d;
+            }
+        }
+    </style>
+
 </head>
 
 <body>
@@ -31,6 +98,19 @@
     </nav>
 
     {{ end }}
+
+    <!-- TO DO WITH MODAL -->
+    <!-- <div class="modal-parent">
+        <a class="modal-open-btn" href="#my-modal">Open Modal</a>
+        <div class="modal-overlay" id="my-modal">
+            <div class="modal-box">
+                <h3>Pure CSS Modal</h3>
+                <p>This modal is controlled entirely by the URL hash and :target, zero JavaScript needed.</p>
+                <a class="modal-close" href="#">Close modal</a>
+            </div>
+        </div>
+    </div> -->
+
 
     <template id="props" data-keywords="{{ .QP.Keywords }}" data-limit="{{ .QP.Limit }}" data-offset="{{ .QP.Offset }}"
         data-counter="{{ .Count }}" data-order="{{ .QP.Order }}"
@@ -64,6 +144,8 @@
 
             {{ template "table-headers" . }}
             {{ if .Result }}
+
+
             <ol id="list" class="file-list" type="1">
 
                 {{ block "list" . }}
@@ -71,13 +153,14 @@
                 <li class="item-list" data-size="{{ .Size }}" data-name="{{ .Name }}{{ .Ext }}"
                     data-moddate="{{ .ModTime }}" data-id="{{ .ID }}">
                     <span class="item-name">
-                        <a href="/item-detail/{{.ID}}" class="strong" hx-get="/item-detail/{{.ID}}" hx-target="#preview"
+                        <a href="/detail/{{.ID}}" class="strong" hx-get="/detail/{{.ID}}" hx-target="#preview"
                             hx-swap="innerHTML" hx-boost="true" onClick="showPreview()">
                             {{ .Name }}{{ if .Ext }}.{{ .Ext }}{{ end}}
                         </a>
                     </span>
                     <span class="item-size">
-                        <a href="/detail/{{ .ID }}">
+                        <a href="/detail/{{.ID}}" class="strong" hx-get="/detail/{{.ID}}" hx-target="#preview"
+                            hx-swap="innerHTML" hx-boost="true" onClick="showPreview()">
                             {{ if .IsDir }}folder{{ else }}{{ .SizeSimple }}{{ end}}
                         </a>
                         {{ if eq .Type "txt" }}
@@ -142,7 +225,6 @@
 
 
 
-    {{ block "footer" . }}
 
     <script>
 
@@ -166,6 +248,7 @@
             highlightEl.classList.add("highlight")
         }
     </script>
+    {{ block "footer" . }}
 </body>
 
 </html>

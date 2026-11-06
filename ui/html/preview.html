@@ -1,0 +1,63 @@
+{{ template "header" . }}
+<main class="main">
+    <article id="fileList" class="grid-container">
+        <form action="/search" method="POST" class="form flex column gap-3" id="search-form">
+            <input class="" type="text" id="name" name="name" required placeholder="search">
+            <div>
+
+            </div>
+            <button class="primary" type="submit" id="submit">Submit</button>
+        </form>
+    </article>
+    {{ .Body }}
+
+    {{ block "entry-details" .File }}
+    <div id="entry-details-section" class="section">
+        <h2>Entry Details</h2>
+        <dl id="list-headers" class="detail-list">
+            <dt>Directory:
+            </dt>
+            <dd>{{ .Directory }}</dd>
+            <dt>Name:
+            </dt>
+            <dd>{{ .Name }}</dd>
+            <dt>Ext:
+            </dt>
+            <dd>{{ .Ext }}</dd>
+            <dt>Id:
+            </dt>
+            <dd>{{ .ID }}</dd>
+            <dt>IsDir:
+            </dt>
+            <dd>{{ .IsDir }}</dd>
+            <dt>Size:
+            </dt>
+            <dd>{{ .Size }}</dd>
+            <dt>ModTime:
+            </dt>
+            <dd>{{ .ModTime }}</dd>
+            <dt>DirectoryId:
+            </dt>
+            <dd>{{ .DirectoryID }}</dd>
+            <dt>Keywords:
+            </dt>
+            <dd>{{ .Keywords }}</dd>
+            <dt>SizeSimple:
+            </dt>
+            <dd>{{ .SizeSimple }}</dd>
+            <dt>ModTimeSimple:
+            </dt>
+            <dd>{{ .ModTimeSimple }}</dd>
+            <dt>Type:
+            </dt>
+            <dd>{{ .Type }}</dd>
+            <dt>Url:
+            </dt>
+            <dd>{{ .URL }}</dd>
+        </dl>
+    </div>
+    {{ end }}
+
+    </article>
+</main>
+{{ template "footer" }}

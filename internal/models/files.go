@@ -255,29 +255,23 @@ func (flist *FilesDataList) AppendListParams(qp QueryParams) error {
 	return nil
 }
 
-func (flist *FilesDataList) SelectCount(name string) error {
-	const language = "'polish'"
-	stmt := fmt.Sprintf(`
-	SELECT COUNT(DISTINCT id) FROM files
-	WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords);`, language)
-
-	conn, err := utils.PgConn()
-	if err != nil {
-		return fmt.Errorf("no connection to database")
-	}
-
-	err = conn.QueryRow(stmt, name).Scan(&flist.Count)
-	if err != nil {
-		return fmt.Errorf("where is error: there is no connection to database. %w", err)
-	}
-
-	return nil
-}
-
 func (f *FileData) SimplifyDetails() {
-	f.SizeSimple = utils.ConvertBytes(f.Size)
+	f.SizeSimple = ConvertBytes(f.Size)
 	f.ModTimeSimple = f.ModTime.Format("2006-01-02 15:04:05")
 	f.CheckExtension()
+}
+
+func ConvertBytes(bytes int64) string {
+	const unit = 1024
+	if bytes < unit {
+		return fmt.Sprintf("%d B", bytes)
+	}
+	div, exp := int64(unit), 0
+	for n := bytes / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.2f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
 }
 
 func (f *FileData) CheckExtension() {
@@ -330,70 +324,6 @@ func (f *FileData) GetByID(id int) error {
 
 	if err != nil {
 		return fmt.Errorf("error retrieving file by ID; %w", err)
-	}
-
-	return nil
-}
-
-// Constructor functions to ensure maps are initialized
-
-// NewIndexedDirs creates a new IndexedDirs with initialized maps
-func NewIndexedDirs() *IndexedDirs {
-	return &IndexedDirs{
-		Indexeddirs: make([]IndexedDir, 0),
-		Params:      make(map[string]string),
-		Error:       make(map[string]string),
-	}
-}
-
-// Delete removes an indexed directory by ID
-func (i *IndexedDirs) Delete(id string) error {
-	query := `--sql 
-	DELETE FROM directory WHERE id = $1;`
-
-	conn, err := utils.PgConn()
-	if err != nil {
-		return err
-	}
-
-	result, err := conn.Exec(query, id)
-	if err != nil {
-		return fmt.Errorf("failed to delete indexed directory: %w", err)
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to get rows affected: %w", err)
-	}
-
-	if rowsAffected == 0 {
-		return fmt.Errorf("no directory found with ID %v", id)
-	}
-
-	return nil
-}
-
-// DeleteByPath removes an indexed directory by path (alternative method)
-func (i *IndexedDirs) DeleteByPath(path string) error {
-	query := `DELETE FROM indexed WHERE path = $1;`
-
-	conn, err := utils.PgConn()
-	if err != nil {
-		return err
-	}
-
-	result, err := conn.Exec(query, path)
-	if err != nil {
-		return fmt.Errorf("failed to delete indexed directory: %w", err)
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to get rows affected: %w", err)
-	}
-
-	if rowsAffected == 0 {
-		return fmt.Errorf("no directory found with path %s", path)
 	}
 
 	return nil

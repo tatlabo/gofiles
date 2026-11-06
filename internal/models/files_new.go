@@ -3,9 +3,11 @@ package models
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -14,7 +16,46 @@ type FileModel struct {
 	DB *pgxpool.Pool
 }
 
-func (m *FileModel) GetList(keywords string, limit int, offset int) (list []FileData, count int, err error) {
+type Filer interface {
+	Row(id int) (f FileData, err error)
+	Rows(keywords string, limit int, offset int) (list []FileData, count int, err error)
+}
+
+func (m *FileModel) Row(id int) (f FileData, err error) {
+	ctx := context.Context(context.Background())
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	stmt := `SELECT data, directory_id, keywords FROM files WHERE id=$1;`
+
+	raw := []byte{}
+	dirID := uuid.UUID{}
+	keywords := ""
+
+	err = m.DB.QueryRow(ctx, stmt, id).Scan(&raw, &dirID, &keywords)
+	if err != nil {
+		return f, fmt.Errorf("error querying database for file by ID; %w", err)
+	}
+
+	data := FinfoJSON{}
+
+	err = json.Unmarshal(raw, &data)
+
+	f.FinfoJSON = data
+	f.ID = id
+	f.DirectoryID = dirID
+	f.Keywords = keywords
+
+	f.SimplifyDetails()
+
+	if err != nil {
+		return f, fmt.Errorf("error retrieving file by ID; %w", err)
+	}
+
+	return f, nil
+}
+
+func (m *FileModel) Rows(keywords string, limit int, offset int) (list []FileData, count int, err error) {
 	ctx := context.Context(context.Background())
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
@@ -74,166 +115,3 @@ func (m *FileModel) GetList(keywords string, limit int, offset int) (list []File
 
 	return list, count, nil
 }
-
-// func (flist *FileModel) AppendList(qp QueryParams) error {
-// 	const language = "'polish'"
-
-// 	query := `
-// 	SELECT DISTINCT(id), data, ts_rank_cd( to_tsvector(%[1]s, keywords),
-// 	websearch_to_tsquery(%[1]s, $1) ) as ts_rank FROM files
-// 	WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords)
-// 	ORDER BY ts_rank DESC, id ASC LIMIT $2 OFFSET $3;`
-
-// 	conn, err := utils.PgConn()
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	stmt := fmt.Sprintf(query, language)
-
-// 	rows, err := conn.Query(stmt, qp.Keywords, qp.Limit, qp.Offset)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	// go Explain(stmt, name, limit, offset)
-
-// 	for rows.Next() {
-
-// 		var d FileData
-// 		d.Keywords = qp.Keywords
-
-// 		rawJSON := []byte{}
-
-// 		err := rows.Scan(
-// 			&d.ID,
-// 			&rawJSON,
-// 			&d.TSRank,
-// 		)
-// 		if err != nil {
-// 			return err
-// 		}
-
-// 		err = json.Unmarshal(rawJSON, &d.FinfoJSON)
-
-// 		d.SimplifyDetails()
-
-// 		if err != nil {
-// 			return err
-// 		}
-
-// 		flist.List = append(flist.List, d)
-// 	}
-
-// 	if err := rows.Err(); err != nil {
-// 		return err
-// 	}
-
-// 	return nil
-// }
-
-// func (flist *FileModel) AppendListParams(qp QueryParams) error {
-// 	const language = "'polish'"
-
-// 	var query string
-// 	var clause string
-// 	order := "DESC"
-
-// 	switch qp.Order {
-// 	case "name":
-// 		clause = "data->>'name'"
-// 	case "size":
-// 		clause = "(data->>'size')::bigint"
-// 	case "modtime":
-// 		clause = "(data->>'modTime')::timestamp"
-// 	}
-// 	if qp.Ascending {
-// 		order = "ASC"
-// 	}
-
-// 	query = `
-// 	SELECT
-// 	DISTINCT(id), data, ts_rank_cd( to_tsvector(%[1]s, keywords), websearch_to_tsquery(%[1]s, $1) ) as ts_rank, %[2]s
-// 	FROM files
-// 	WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords)
-// 	ORDER BY %[2]s %[3]s, ts_rank DESC, id ASC
-// 	LIMIT $2 OFFSET $3;`
-
-// 	conn, err := utils.PgConn()
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	stmt := fmt.Sprintf(query, language, clause, order)
-// 	println("AppendList stmt:", stmt)
-
-// 	rows, err := conn.Query(stmt, qp.Keywords, qp.Limit, qp.Offset)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	go Explain(stmt, qp.Keywords, qp.Limit, qp.Offset)
-
-// 	for rows.Next() {
-
-// 		tsRank := float64(0)
-// 		var id int
-// 		data := FinfoJSON{}
-
-// 		rawData := []byte{}
-
-// 		_drop := ""
-
-// 		err := rows.Scan(
-// 			&id,
-// 			&rawData,
-// 			&tsRank,
-// 			&_drop,
-// 		)
-// 		if err != nil {
-// 			return err
-// 		}
-
-// 		err = json.Unmarshal(rawData, &data)
-
-// 		dataWithID := FileData{
-// 			FinfoJSON: data,
-// 			ID:        id,
-// 		}
-
-// 		dataWithID.Keywords = qp.Keywords
-// 		dataWithID.SimplifyDetails()
-
-// 		if err != nil {
-// 			return err
-// 		}
-
-// 		flist.List = append(flist.List, dataWithID)
-// 	}
-
-// 	err = rows.Err()
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	return nil
-// }
-
-// func (flist *FileModel) SelectCount(name string) error {
-// 	const language = "'polish'"
-// 	stmt := fmt.Sprintf(`
-// 	SELECT COUNT(DISTINCT id) FROM files
-// 	WHERE websearch_to_tsquery(%[1]s, $1) @@ to_tsvector(%[1]s, keywords);`, language)
-
-// 	conn, err := utils.PgConn()
-// 	if err != nil {
-// 		return fmt.Errorf("no connection to database")
-// 	}
-
-// 	err = conn.QueryRow(stmt, name).Scan(&flist.Count)
-// 	if err != nil {
-// 		return fmt.Errorf("where is error: there is no connection to database. %w", err)
-// 	}
-
-// 	return nil
-// }

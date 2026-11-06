@@ -5,9 +5,11 @@ package models
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -29,8 +31,11 @@ type Directries struct {
 	Title string            `json:"title"`
 }
 
-type Dir interface {
+type Direr interface {
 	AddPath(path string) error
+	Row(UUID uuid.UUID) (d Directory, err error)
+	Rows() ([]Directory, error)
+	Delete(UUID uuid.UUID) error
 }
 
 func (ds *DirectoryModel) AddPath(path string) error {
@@ -40,38 +45,29 @@ func (ds *DirectoryModel) AddPath(path string) error {
 
 	const query = `INSERT INTO directory (path, is_done, created_at, updated_at) VALUES ($1, false, NOW(), NOW());`
 
-	d := Directory{}
-	err := ds.DB.QueryRow(ctx, query, path).Scan(&d.ID)
+	comm, err := ds.DB.Exec(ctx, query, path)
 	if err != nil {
 		return err
+	}
+	if !comm.Insert() {
+		return fmt.Errorf("insert failed")
 	}
 
 	return nil
 }
 
-func (ds *DirectoryModel) DeletePath(id uuid.UUID) (ID int, err error) {
+func (ds *DirectoryModel) Row(UUID uuid.UUID) (d Directory, err error) {
 	ctx := context.Context(context.Background())
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	const query = `DELETE FROM directory WHERE id = $1 RETURNING id`
+	const query = `SELECT id, path, is_done, created_at, updated_at FROM directory WHERE id = @UUID;`
 
-	err = ds.DB.QueryRow(ctx, query, id).Scan(&ID)
-	if err != nil {
-		return 0, err
+	args := pgx.NamedArgs{
+		"UUID": UUID,
 	}
 
-	return ID, nil
-}
-
-func (ds *DirectoryModel) Direcotry(id uuid.UUID) (d Directory, err error) {
-	ctx := context.Context(context.Background())
-	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
-	defer cancel()
-
-	const query = `SELECT id, path, is_done, created_at, updated_at FROM directory WHERE id = $1;`
-
-	err = ds.DB.QueryRow(ctx, query, id).Scan(&d.ID, &d.Path, &d.IsDone, &d.CreatedAt, &d.UpdatedAt)
+	err = ds.DB.QueryRow(ctx, query, args).Scan(&d.ID, &d.Path, &d.IsDone, &d.CreatedAt, &d.UpdatedAt)
 	if err != nil {
 		return d, err
 	}
@@ -79,7 +75,7 @@ func (ds *DirectoryModel) Direcotry(id uuid.UUID) (d Directory, err error) {
 	return d, nil
 }
 
-func (ds *DirectoryModel) List() ([]Directory, error) {
+func (ds *DirectoryModel) Rows() ([]Directory, error) {
 	ctx := context.Context(context.Background())
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
@@ -112,17 +108,24 @@ func (ds *DirectoryModel) List() ([]Directory, error) {
 	return list, nil
 }
 
-func (ds *DirectoryModel) Row(id uuid.UUID) (d Directory, err error) {
+func (ds *DirectoryModel) Delete(UUID uuid.UUID) error {
 	ctx := context.Context(context.Background())
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	const query = `SELECT id, path, is_done, created_at, updated_at FROM directory WHERE id = $1;`
+	const query = `DELETE FROM directory WHERE id = @UUID`
 
-	err = ds.DB.QueryRow(ctx, query, id).Scan(&d.ID, &d.Path, &d.IsDone, &d.CreatedAt, &d.UpdatedAt)
-	if err != nil {
-		return d, err
+	args := pgx.NamedArgs{
+		"UUID": UUID,
 	}
 
-	return d, nil
+	comm, err := ds.DB.Exec(ctx, query, args)
+	if err != nil {
+		return err
+	}
+	if !comm.Delete() {
+		return fmt.Errorf("insert failed")
+	}
+
+	return nil
 }

@@ -4,17 +4,21 @@ import (
 	"html/template"
 	"log/slog"
 
+	"gofiles/internal/models"
 	"gofiles/ui"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Application struct {
-	Logger *slog.Logger
-	DB     *pgxpool.Pool
+	Log *slog.Logger
+	DB  *pgxpool.Pool
 
 	BasicAuthUsers UserApp
 	Template
+
+	File models.Filer
+	Dir  models.Direr
 }
 
 type UserApp struct {
@@ -31,10 +35,12 @@ func Run(db *pgxpool.Pool, logger *slog.Logger) (app *Application) {
 
 	app = &Application{
 		Template: tmpl,
-		Logger:   logger,
+		Log:      logger,
 		DB:       db,
+		File:     &models.FileModel{DB: db},
+		Dir:      &models.DirectoryModel{DB: db},
 	}
 
-	app.Logger.Debug("application", "Run", "OK")
+	app.Log.Debug("application", "Run", "OK")
 	return app
 }

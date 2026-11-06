@@ -3,18 +3,17 @@
 <main class="main">
 
     <article class="error-handler">
-        <h2>Error Page</h2>
-        {{ if .Body.err }}
-        <p>{{ .Body.err }}</p>
+        {{ with .Title }}
+        <h2>{{ . }}</h2>
         {{ end }}
-        {{ if .Body.msg }}
-        <p>{{ .Body.msg }}</p>
+
+        {{ with .Err }}
+        <p>{{ print . }}</p>
         {{ end }}
     </article>
 
 
-
-    </main>
+</main>
 
 </body>
 

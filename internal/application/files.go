@@ -15,7 +15,6 @@ import (
 	"gofiles/chroma"
 	"gofiles/internal/filter"
 	"gofiles/internal/models"
-	"gofiles/utils"
 )
 
 type SimpleReq struct{}
@@ -74,7 +73,7 @@ func (app *Application) HandleSearch(w http.ResponseWriter, r *http.Request) {
 
 	model := models.FileModel{DB: app.DB}
 
-	list, count, err := model.GetList(qp.Keywords, qp.Limit, qp.Offset)
+	list, count, err := model.Rows(qp.Keywords, qp.Limit, qp.Offset)
 	if err != nil {
 		w.WriteHeader(500)
 		// TO DO
@@ -90,9 +89,6 @@ func (app *Application) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-
-	app.Logger.Debug("LIST", "LIST", list)
-	app.Logger.Debug("count", "Count", count)
 
 	for index := range list {
 		list[index].SimplifyDetails()
@@ -114,70 +110,96 @@ func (app *Application) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	app.Render(w, templatePage, indexPage)
 }
 
-func (app *Application) ItemDetailsID(w http.ResponseWriter, r *http.Request) {
-	var f models.FileData
-
+func (app *Application) FileDetails(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		app.Log.Warn("ItemDetailsID", "wrong ID", err)
+		http.Error(w, "Invalid ID", http.StatusNotFound)
 		return
 	}
 
-	if err := f.GetByID(id); err != nil {
+	f, err := app.File.Row(id)
+	if err != nil {
 		http.Error(w, "Error retrieving file details", http.StatusInternalServerError)
 		return
 	}
 
-	f.SimplifyDetails()
-
-	tmpl.Render(w, "entry-details.html", f)
+	tmpl.Render(w, "entry-details", f)
 }
 
-func DetailsID(w http.ResponseWriter, r *http.Request) {
-	body, err := getItem(r)
-	if err != nil {
-		i := IndexData{Title: "Error page", Body: map[string]string{"err": err.Error(), "msg": "ItemDetailsId Error"}}
-		tmpl.Render(w, "error.html", i)
-		return
+func (app *Application) WrongID(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	htmx := r.Header.Get("Hx-Request") != "true"
+	app.Log.Warn("wrong Id format", "ID", idStr)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if !htmx {
+		w.WriteHeader(http.StatusBadRequest)
 	}
-	tmpl.Render(w, "simple-entry-details.html", body)
+	msg := fmt.Sprintf(`<div class="alert alert-error">Invalid ID format: <strong>%s</strong></div>`, idStr)
+	_, _ = w.Write([]byte(msg))
 }
 
-func getItem(r *http.Request) (models.FileData, error) {
+func (app *Application) NotFound(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	ID, _ := strconv.Atoi(idStr)
+	htmx := r.Header.Get("Hx-Request") != "true"
+	app.Log.Warn("not found file", "ID", ID)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if !htmx {
+		w.WriteHeader(http.StatusNotFound)
+	}
+	w.Write([]byte(`<div class="alert alert-error">record not found</div>`))
+}
+
+func (app *Application) Preview(w http.ResponseWriter, r *http.Request) {
+	type PageData struct {
+		File  models.FileData
+		Title string
+		Body  string
+		HTML  template.HTML
+	}
+
 	idStr := r.PathValue("id")
 
 	id, err := strconv.Atoi(idStr)
-	f := models.FileData{}
-
 	if err != nil {
-		return f, err
+		app.WrongID(w, r)
+		return
 	}
 
-	if err := f.GetByID(id); err != nil {
-		return f, err
-	}
-
-	f.SimplifyDetails()
-
-	return f, nil
-}
-
-func getItemByID(w http.ResponseWriter, r *http.Request) (IndexData, error) {
-	f, err := getItem(r)
+	f, err := app.File.Row(id)
 	if err != nil {
-		http.Error(w, "Error retrieving file details in getItemById", http.StatusInternalServerError)
-		return IndexData{}, err
+		app.NotFound(w, r)
+		return
 	}
 
-	body := IndexData{
-		Title:    "Details",
-		FileData: f,
-		Body:     map[string]string{"message": "Detail Page", "id": fmt.Sprintf("%v", f.ID)},
+	pageData := PageData{
+		Title: "Details",
+		File:  f,
+		Body:  fmt.Sprintf("Detail Page for ID: %v", f.ID),
 	}
 
-	return body, nil
+	//
+	if f.Type != "txt" {
+		tmpl.Render(w, "preview.html", pageData)
+		return
+	}
+
+	// chroma preview
+	address := fmt.Sprintf("%s\\%s.%s", pageData.File.Directory, pageData.File.Name, pageData.File.Ext)
+	// file to chroma
+	html, err := TxtToChoroma(address)
+	if err != nil {
+		http.Error(w, "Error converting text to choroma", http.StatusInternalServerError)
+		return
+	}
+
+	_ = fmt.Sprintf("<div><h3>Text to chroma</h3><p>%s</p></div>", html)
+	pageData.HTML = html
+
+	tmpl.Render(w, "chroma-preview.html", pageData)
 }
 
 func processQueryParams(r *http.Request) models.QueryParams {
@@ -277,9 +299,125 @@ func (app *Application) HandleAppend(w http.ResponseWriter, r *http.Request) {
 	log.Printf("nr of gorutines (HandleAppend): %v", runtime.NumGoroutine())
 }
 
+func (app *Application) PreviewMedia(w http.ResponseWriter, r *http.Request) {
+	type PageData struct {
+		File  models.FileData
+		Title string
+		Err   error
+		HTML  template.HTML
+	}
+
+	idStr := r.PathValue("id")
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		app.WrongID(w, r)
+		return
+	}
+
+	f, err := app.File.Row(id)
+	if err != nil {
+		app.NotFound(w, r)
+		return
+	}
+
+	base := "media"
+
+	srcPath := fmt.Sprintf("%v/%v.%v", f.Directory, f.Name, f.Ext)
+	destPath := fmt.Sprintf("%s/%s/%s.%v", base, f.Type, f.Name, f.Ext)
+
+	if err := os.MkdirAll(base+"/"+f.Type, os.ModePerm); err != nil {
+		app.Log.Error("preview media error", "media", err)
+		tmpl.Render(w, "error.html", PageData{
+			Title: "preview media error",
+			Err:   fmt.Errorf("error in media/video directory copy/creation %w", err),
+		})
+		return
+	}
+	// Copy the image file
+	if err := copyImageFile(srcPath, destPath); err != nil {
+		app.Log.Error("err copy file to media folder", "source", srcPath)
+		tmpl.Render(w, "error.html", PageData{
+			Title: "preview media error",
+			Err:   fmt.Errorf("error copy to media folder %w", err),
+		})
+		return
+	}
+
+	go func(filePath string) {
+		time.Sleep(120 * time.Second)
+		if err := os.Remove(filePath); err != nil {
+			app.Log.Error("Error deleting file", destPath, err)
+		} else {
+			app.Log.Info("File", destPath, "deleted successfully")
+		}
+	}(destPath)
+
+	f.URL = template.URL("/" + destPath)
+
+	pageData := PageData{
+		Title: "Media Preview",
+		File:  f,
+	}
+
+	tmpl.Render(w, "preview-media.html", pageData)
+}
+
+func copyImageFile(srcPath, destPath string) error {
+	// Open the source file
+	srcFile, err := os.Open(srcPath)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	// Create the destination file
+	destFile, err := os.Create(destPath)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	// Copy the content from source to destination
+	_, err = io.Copy(destFile, srcFile)
+	if err != nil {
+		return err
+	}
+
+	// Ensure the destination file is properly written to disk
+	err = destFile.Sync()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func TxtToChoroma(address string) (template.HTML, error) {
+	fin, err := os.Open(address)
+	if err != nil {
+		return "", err
+	}
+	defer fin.Close()
+
+	highlightCode, err := chroma.HighlightCode(address)
+	if err != nil {
+		return "", err
+	}
+
+	return template.HTML(highlightCode), nil
+}
+
 func PreviewImage(w http.ResponseWriter, r *http.Request) {
 	var f models.FileData
 	var i IndexData
+
+	type PageData struct {
+		File  models.FileData
+		Title string
+		Body  string
+		HTML  template.HTML
+	}
 
 	idStr := r.PathValue("id")
 
@@ -332,136 +470,4 @@ func PreviewImage(w http.ResponseWriter, r *http.Request) {
 	i.Title = "Image Preview"
 
 	tmpl.Render(w, "preview-media.html", i)
-}
-
-func (app *Application) PreviewMedia(w http.ResponseWriter, r *http.Request) {
-	var f models.FileData
-	var i IndexData
-
-	idStr := r.PathValue("id")
-
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
-		return
-	}
-
-	if err := f.GetByID(id); err != nil {
-		http.Error(w, "Error retrieving file details", http.StatusInternalServerError)
-		return
-	}
-
-	f.SimplifyDetails()
-
-	base := "media"
-
-	srcPath := fmt.Sprintf("%v/%v.%v", f.Directory, f.Name, f.Ext)
-	destPath := fmt.Sprintf("%s/%s/%s.%v", base, f.Type, f.Name, f.Ext)
-
-	fmt.Println(srcPath)
-	fmt.Println(destPath)
-
-	// Ensure the destination directory exists
-	if err := os.MkdirAll(base+"/"+f.Type, os.ModePerm); err != nil {
-		i.Title = "Error page"
-		i.Body = map[string]string{"err": err.Error(), "msg": "Error in media/video directory creation"}
-		tmpl.Render(w, "error.html", i)
-		return
-	}
-	// Copy the image file
-	if err := copyImageFile(srcPath, destPath); err != nil {
-		i.Title = "Error page"
-		i.Body = map[string]string{"err": err.Error(), "msg": "Error copying image file"}
-		tmpl.Render(w, "error.html", i)
-		return
-	}
-
-	go func(filePath string) {
-		time.Sleep(120 * time.Second)
-		if err := os.Remove(filePath); err != nil {
-			log.Printf("Error deleting file %s: %v", filePath, err)
-		} else {
-			log.Printf("File %s deleted successfully", filePath)
-		}
-	}(destPath)
-
-	f.URL = template.URL("/" + destPath)
-	// tmpl.Render(w, "entry-details.html", f)
-	i.FileData = f
-	i.Title = "Media Preview"
-
-	tmpl.Render(w, "preview-media.html", i)
-}
-
-func copyImageFile(srcPath, destPath string) error {
-	// Open the source file
-	srcFile, err := os.Open(srcPath)
-	if err != nil {
-		return err
-	}
-	defer srcFile.Close()
-
-	// Create the destination file
-	destFile, err := os.Create(destPath)
-	if err != nil {
-		return err
-	}
-	defer destFile.Close()
-
-	// Copy the content from source to destination
-	_, err = io.Copy(destFile, srcFile)
-	if err != nil {
-		return err
-	}
-
-	// Ensure the destination file is properly written to disk
-	err = destFile.Sync()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (app *Application) PreviewByID(w http.ResponseWriter, r *http.Request) {
-	body, err := getItemByID(w, r)
-	if err != nil {
-		http.Error(w, "Error retrieving file details (ItemDetailsId / getItemById)", http.StatusInternalServerError)
-		return
-	}
-
-	if body.FileData.Type == "txt" {
-
-		address := fmt.Sprintf("%s\\%s.%s", body.FileData.Directory, body.FileData.Name, body.FileData.Ext)
-		body.Body["address"] = address
-		html, err := utils.TxtToChoroma(address)
-		if err != nil {
-			http.Error(w, "Error converting text to choroma", http.StatusInternalServerError)
-			return
-		}
-
-		_ = fmt.Sprintf("<div><h3>Text to chroma</h3><p>%s</p></div>", html)
-		body.HTML = html
-
-		tmpl.Render(w, "chroma-preview.html", body)
-		return
-	}
-
-	tmpl.Render(w, "detail.html", body)
-}
-
-func TxtToChoroma(f models.FinfoJSON) (template.HTML, error) {
-	address := fmt.Sprintf("%s\\%s.%v", f.Directory, f.Name, f.Ext)
-	fin, err := os.Open(address)
-	if err != nil {
-		return "", err
-	}
-	defer fin.Close()
-
-	highlightCode, err := chroma.HighlightCode(address)
-	if err != nil {
-		return "", err
-	}
-
-	return template.HTML(highlightCode), nil
 }

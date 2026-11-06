@@ -1,9 +1,9 @@
-{{ if eq .FileData.Type "video" }}
+{{ if eq .File.Type "video" }}
 <video width="1280" height="720" controls>
-    <source src="{{ .FileData.URL }}" type="video/mp4">
+    <source src="{{ .File.URL }}" type="video/mp4">
 </video>
-{{ else if eq .FileData.Type "image" }}
-<img src="{{ .FileData.URL }}" alt="Image Preview" style="max-width: 100%; height: auto;" />
+{{ else if eq .File.Type "image" }}
+<img src="{{ .File.URL }}" alt="Image Preview" style="max-width: 100%; height: auto;" />
 {{ end }}
 
 {{ template "preview-image" . }}
@@ -11,19 +11,19 @@
 {{ define "preview-image" }}
 <div id="entry-details-section" class="section">
     <ul id="list-headers" class="detail-list">`
-        <li>{{ .FileData.Directory }}</li>
-        <li>{{ .FileData.Name }}</li>
-        <li>{{ .FileData.Ext }}</li>
-        <li>{{ .FileData.ID }}</li>
-        <li>{{ .FileData.IsDir }}</li>
-        <li>{{ .FileData.Size }}</li>
-        <li>{{ .FileData.ModTime }}</li>
-        <li>{{ .FileData.DirectoryId }}</li>
-        <li>{{ .FileData.Keywords }}</li>
-        <li>{{ .FileData.SizeSimple }}</li>
-        <li>{{ .FileData.ModTimeSimple }}</li>
-        <li>{{ .FileData.Type }}</li>
-        <li>{{ .FileData.URL }}</li>
+        <li>{{ .File.Directory }}</li>
+        <li>{{ .File.Name }}</li>
+        <li>{{ .File.Ext }}</li>
+        <li>{{ .File.ID }}</li>
+        <li>{{ .File.IsDir }}</li>
+        <li>{{ .File.Size }}</li>
+        <li>{{ .File.ModTime }}</li>
+        <li>{{ .File.DirectoryID }}</li>
+        <li>{{ .File.Keywords }}</li>
+        <li>{{ .File.SizeSimple }}</li>
+        <li>{{ .File.ModTimeSimple }}</li>
+        <li>{{ .File.Type }}</li>
+        <li>{{ .File.URL }}</li>
     </ul>
 </div>
 

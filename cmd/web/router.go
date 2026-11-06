@@ -24,9 +24,8 @@ func NewRouter(app *application.Application, logger *slog.Logger) http.Handler {
 	router.HandleFunc("/h3", app.HandleCtx)
 	router.HandleFunc("/", app.HandleSearch)
 	router.HandleFunc("/append", app.HandleAppend)
-	router.HandleFunc("/detail/{id}", app.ItemDetailsID)
-	router.HandleFunc("/item-detail/{id}", app.ItemDetailsID)
-	router.HandleFunc("/preview/{id}", app.PreviewByID)
+	router.HandleFunc("/detail/{id}", app.FileDetails)
+	router.HandleFunc("/preview/{id}", app.Preview)
 	router.HandleFunc("/preview-media/{id}", app.PreviewMedia)
 
 	// protected routes as admin
