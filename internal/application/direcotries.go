@@ -2,156 +2,246 @@
 package application
 
 import (
+	"context"
+	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
+	"strings"
+	"time"
 
 	"gofiles/internal/models"
+	"gofiles/scan"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
-type DirsPaage struct {
+type DirsPage struct {
 	Title string
 
-	Body  map[string]string
-	Array []models.Directory
+	Msg   string
 	Err   error
+	Dirs  []models.Directory
 	Flash string
 }
 
-func (app *Application) HandleDirs(w http.ResponseWriter, r *http.Request) {
+type MsgKey string
+
+func decodeCookie(name string, r *http.Request) (value string, err error) {
+	cookie, err := r.Cookie(name)
+	if err != nil {
+		return "", err
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(cookie.Value)
+	if err != nil {
+		return "", err
+	}
+
+	return string(decoded), nil
+}
+
+func encodeCookie(name, value string) (*http.Cookie, error) {
+	Cookie := &http.Cookie{
+		Path:     "/admin/dirs",
+		MaxAge:   60,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	}
+
+	Cookie.Name = name
+	str := base64.StdEncoding.EncodeToString([]byte(value))
+	Cookie.Value = str
+
+	return Cookie, nil
+}
+
+func (app *Application) HandleDirsGet(w http.ResponseWriter, r *http.Request) {
 	templatePage := "dirs.html"
-
-	data := DirsPaage{
-		Title: "strona z katalogami",
+	pageData := DirsPage{
+		Title: "katalogi",
 	}
-	dirs := models.Directries{}
 
-	switch r.Method {
-	case http.MethodGet:
-		{
-			// Get query parameters from URL
-			successMsg := r.URL.Query().Get("success")
-			addedPath := r.URL.Query().Get("added_path")
+	// get err or error from context
+	var (
+		errKey MsgKey = "err"
+	)
 
-			success := r.URL.Query().Get("success")
-			deleted := r.URL.Query().Get("deleted")
-			path := r.URL.Query().Get("path")
-
-			if success == "true" && deleted != "" {
-				data.Flash = fmt.Sprintf("Successfully deleted path: %s (ID: %s)", path, deleted)
-			}
-
-			if successMsg == "true" && addedPath != "" {
-				data.Flash = fmt.Sprintf("Successfully added path: %s", addedPath)
-			}
-
-			err := dirs.List()
-			if err != nil {
-				fmt.Println("Error getting search list: ", err)
-				tmpl.Render(w, templatePage, data)
-				return
-			}
-
-			data.Array = dirs.Array
-
-			tmpl.Render(w, templatePage, data)
-		}
-	case http.MethodPost:
-		//
-		// TO DO DI
-		//
-		{
-			r.ParseForm()
-			path := r.FormValue("path")
-
-			// todo: validate path
-			// todo: check if path exists
-
-			data.Title = path
-
-			data := models.Directries{
-				Title: path,
-				Body:  map[string]string{"message": "Indexuj katalogi " + path},
-			}
-
-			err := dirs.AddPath(path)
-			if err != nil {
-				fmt.Println("Error adding path: ", err)
-				data.Body = map[string]string{"message": "Error adding path: ", "error": err.Error()}
-				tmpl.Render(w, templatePage, data)
-				return
-			}
-
-			err = dirs.List()
-			if err != nil {
-				tmpl.Render(w, templatePage, data)
-				return
-			}
-
-			// Redirect to GET with query parameters
-			redirectURL := fmt.Sprintf("/admin/%s?success=true&added_path=%s", r.URL.Path, path)
-			http.Redirect(w, r, redirectURL, http.StatusSeeOther)
-
+	// check context for error
+	errMsg, ok := r.Context().Value(errKey).(error)
+	if ok {
+		if errMsg != nil {
+			app.Log.Info("context", "errMsg", errMsg)
+			pageData.Err = errMsg
 		}
 	}
+
+	// directory list
+	dirs, err := app.Dir.Rows()
+	if err != nil {
+		pageData.Err = err
+		app.ErrGatherDirs(w, pageData)
+		return
+	}
+
+	pageData.Dirs = dirs
+
+	cookie, err := decodeCookie("message", r)
+	if err == nil {
+		pageData.Msg = cookie
+		app.Log.Info("cokkie", "message", pageData.Msg)
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		MaxAge: -1,
+		Name:   "message",
+	})
+
+	tmpl.Render(w, templatePage, pageData)
+}
+
+func (app *Application) HandleDirs(w http.ResponseWriter, r *http.Request) {
+	_ = r.ParseForm()
+	path := r.FormValue("path")
+	path = strings.TrimSpace(path)
+
+	// postgres codes
+	// 23505	Unique violation
+	// 23502	Not null violation
+	// 23503	Foreign key violation
+	// 23514	Check violation
+
+	err := app.Dir.AddPath(path)
+	if err != nil {
+		// Check for unique constraint violation (SQLSTATE 23505)
+		if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok && pgErr.SQLState() == "23505" {
+			app.Log.Warn("adding path", "error", err, "path", path)
+			err = fmt.Errorf("path already exists: %s", path)
+		}
+		// redirect to admin with context err
+		app.Log.Error("adding path", "error", err)
+		app.HandleDirsGet(w, requestWithErr(err, r))
+		return
+	}
+
+	// Redirect to /admin with cookie
+	cookie, err := encodeCookie("message", "dodano folder do skanowania: "+path)
+	if err == nil {
+		http.SetCookie(w, cookie)
+	}
+	//
+	redirectURL := fmt.Sprintf("/admin/%s?success=true&added_path=%s", r.URL.Path, path)
+	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+}
+
+func requestWithMsg(msg string, r *http.Request) *http.Request {
+	var msgKey MsgKey = "msg"
+	ctx := context.WithValue(r.Context(), msgKey, msg)
+	return r.WithContext(ctx)
+}
+
+func requestWithErr(err error, r *http.Request) *http.Request {
+	var msgKey MsgKey = "err"
+	ctx := context.WithValue(r.Context(), msgKey, err)
+	return r.WithContext(ctx)
 }
 
 func (app *Application) HandleDirDelete(w http.ResponseWriter, r *http.Request) {
+	_ = r.ParseForm()
+	id := r.FormValue("id")
+
+	uuid, err := uuid.Parse(id)
+	if err != nil {
+		// fail
+		app.Log.Error("pasing UUID", "failed", err)
+		app.HandleDirsGet(w, requestWithErr(err, r))
+		return
+	}
+
+	path, err := app.Dir.DeleteDir(uuid)
+	if err != nil {
+		// fail
+		// redirect to admin with context err
+		app.Log.Error("delete directory", " failed", err)
+		app.HandleDirsGet(w, requestWithErr(err, r))
+		return
+	}
+
+	// success
+	// redirect with cookie
+	cookie, err := encodeCookie("message", "delete directory success: "+path)
+	if err == nil {
+		http.SetCookie(w, cookie)
+	}
+	redirectURL := "/admin/dirs"
+	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+}
+
+func (app *Application) HandleScan(w http.ResponseWriter, r *http.Request) {
 	templatePage := "dirs.html"
 
-	switch r.Method {
-	// case http.MethodGet:
-	// 	{
-	// 		params := r.URL.Query()
+	_ = r.ParseForm()
+	id := r.FormValue("scanid")
 
-	// 		deleted := params.Get("deleted")
-	// 		path := params.Get("path")
-	// 		success := params.Get("success")
-
-	// 		fmt.Println("Deleted ID:", deleted)
-	// 		fmt.Println("Path:", path)
-	// 		fmt.Println("Success:", success)
-
-	// 		redirectURL := "/admin/dirs"
-	// 		http.Redirect(w, r, redirectURL, http.StatusSeeOther)
-
-	// 	}
-
-	case http.MethodPost:
-		{
-			_ = r.ParseForm()
-			id := r.FormValue("id")
-
-			uuid, err := uuid.Parse(id)
-			if err != nil {
-				fmt.Println("Invalid ID: ", err)
-				http.Error(w, "Invalid ID", http.StatusBadRequest)
-				return
-			}
-
-			// todo: validate path
-			// todo: check if path exists
-
-			data := models.Directries{
-				Title: id,
-				Body:  map[string]string{"message": "Indexuj katalogi " + id},
-			}
-
-			d, err := data.DeletePath(uuid)
-			if err != nil {
-				fmt.Println("Error adding path: ", err)
-				data.Body = map[string]string{"message": "Error adding path: ", "error": err.Error()}
-
-				if err := data.List(); err != nil {
-					fmt.Println("Error getting search list: ", err)
-				}
-				tmpl.Render(w, templatePage, data)
-				return
-			}
-
-			redirectURL := fmt.Sprintf("/admin/dirs?success=true&deleted=%s&path=%s", d.ID, d.Path)
-			http.Redirect(w, r, redirectURL, http.StatusSeeOther)
-		}
+	uuid, err := uuid.Parse(id)
+	if err != nil {
+		app.Log.Error("invalid", "UUID", err)
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
 	}
+
+	dir, err := app.Dir.Row(uuid)
+	if err != nil {
+
+		pageData := DirsPage{
+			Title: id,
+			Err:   fmt.Errorf("cant't find direcotry with ID %s; error: %w", uuid, err),
+		}
+
+		dirs, err := app.Dir.Rows()
+		if err != nil {
+			pageData.Err = err
+			app.ErrGatherDirs(w, pageData)
+			return
+		}
+
+		pageData.Dirs = dirs
+
+		tmpl.Render(w, templatePage, pageData)
+		return
+	}
+
+	scanErr := make(chan error)
+	go func(d models.Directory) {
+		err := scan.Scan(dir)
+		if err != nil {
+			app.Log.Error("error scanning directory", "path", d.Path, "error", err)
+			scanErr <- err
+		}
+	}(dir)
+
+	// TO DO check if path exists
+
+	select {
+	case msgErr := <-scanErr:
+		app.Log.Error("scan dir", " failed", msgErr)
+		app.HandleDirsGet(w, requestWithErr(msgErr, r))
+	case <-time.After(2 * time.Second):
+		// scan started
+		// redirect with cookie
+		cookie, err := encodeCookie("message", "scan started")
+		if err == nil {
+			http.SetCookie(w, cookie)
+		}
+		redirectURL := "/admin/dirs"
+		http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+	}
+}
+
+func (app *Application) ErrGatherDirs(w http.ResponseWriter, pageData DirsPage) {
+	templatePage := "dirs.html"
+	app.Log.Error("dirs list", "error", pageData.Err)
+	tmpl.Render(w, templatePage, pageData)
 }

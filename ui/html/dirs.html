@@ -3,14 +3,16 @@
 <main class="main">
 
     <article id="fileList" class="grid-container">
-        {{ with .Err }}{{ print . }}{{ end }}
+
 
         <h4>
             Zindeksuj katalogi
         </h4>
-        <p>{{ with .Flash }}{{ . }}{{ end }}</p>
-        {{ with .Err }}<p>{{ . }}</p>{{ end }}
-        {{ if .Body.path }}<p>Path: {{ .Body.path }}</p>{{ end }}
+        <div>
+            {{ with .Msg }}
+            <p>Path: {{ . }}</p>{{ end }}
+            {{ with .Err }}<p>{{ . }}</p>{{ end }}
+        </div>
 
         {{ template "add-path-form" }}
 
@@ -24,7 +26,7 @@
         </ol>
 
         <ol id="list" class="file-list" type="1">
-            {{ range .Array }}
+            {{ range .Dirs }}
             {{ block "directory_list" . }}
             <li class="dir-item" id="entry" data-id="{{ .ID }}">
                 <span class="item-name">
@@ -69,6 +71,12 @@
 </form>
 {{ end }}
 
+<script>
+    const search = window.location.search
+    if (search !== "") {
+        window.history.pushState({}, "", window.location.origin + window.location.pathname);
+    }
+</script>
 
 </body>
 

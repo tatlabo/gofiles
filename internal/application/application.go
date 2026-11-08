@@ -26,7 +26,7 @@ type UserApp struct {
 	Pass string
 }
 
-func Run(db *pgxpool.Pool, logger *slog.Logger) (app *Application) {
+func Run(db *pgxpool.Pool, slogger *slog.Logger) (app *Application) {
 	//
 	// initize tempaltes
 	tmpl := Template{
@@ -35,10 +35,10 @@ func Run(db *pgxpool.Pool, logger *slog.Logger) (app *Application) {
 
 	app = &Application{
 		Template: tmpl,
-		Log:      logger,
+		Log:      slogger,
 		DB:       db,
-		File:     &models.FileModel{DB: db},
-		Dir:      &models.DirectoryModel{DB: db},
+		File:     &models.FileModel{DB: db, Log: slogger},
+		Dir:      &models.DirectoryModel{DB: db, Log: slogger},
 	}
 
 	app.Log.Debug("application", "Run", "OK")

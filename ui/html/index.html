@@ -119,6 +119,11 @@
 
     <main class="main">
 
+
+        <article id="messages" class="messages">
+            {{ with .Message }}{{ . }}{{ end }}
+        </article>
+
         <article id="fileList" class="grid-container">
             {{ with .Count }}
             <h4>
@@ -203,7 +208,7 @@
                 {{ end }} {{/* end of block "list" */}}
 
             </ol>
-            {{ end }}{{/* end of .FilesDataList.List */}}
+            {{ end }}{{/* end of dot Result */}}
 
             <div class="button-container">
                 <button id="next" class="primary" type="button" data-keywords="{{ .QP.Keywords }}"

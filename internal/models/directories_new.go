@@ -6,6 +6,7 @@ package models
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/google/uuid"
@@ -22,13 +23,8 @@ type Directory struct {
 }
 
 type DirectoryModel struct {
-	DB *pgxpool.Pool
-}
-
-type Directries struct {
-	Array []Directory       `json:"list"`
-	Body  map[string]string `json:"body"`
-	Title string            `json:"title"`
+	DB  *pgxpool.Pool
+	Log *slog.Logger
 }
 
 type Direr interface {
@@ -36,6 +32,7 @@ type Direr interface {
 	Row(UUID uuid.UUID) (d Directory, err error)
 	Rows() ([]Directory, error)
 	Delete(UUID uuid.UUID) error
+	DeleteDir(UUID uuid.UUID) (string, error)
 }
 
 func (ds *DirectoryModel) AddPath(path string) error {
@@ -128,4 +125,25 @@ func (ds *DirectoryModel) Delete(UUID uuid.UUID) error {
 	}
 
 	return nil
+}
+
+func (ds *DirectoryModel) DeleteDir(UUID uuid.UUID) (string, error) {
+	ctx := context.Context(context.Background())
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	const query = `DELETE FROM directory WHERE id = @UUID RETURNING path`
+
+	args := pgx.NamedArgs{
+		"UUID": UUID,
+	}
+
+	var path string
+	res := ds.DB.QueryRow(ctx, query, args)
+	err := res.Scan(&path)
+	if err != nil {
+		return "", err
+	}
+
+	return path, nil
 }

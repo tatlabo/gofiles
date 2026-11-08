@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"html/template"
 	"io"
-	"log"
 	"net/http"
 	"os"
-	"runtime"
 	"strconv"
 	"time"
 
@@ -27,15 +25,13 @@ func (s SimpleReq) FillData(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("X-Content-Type-Options", "nosniff")
 }
 
-type IndexData struct {
-	models.FilesDataList
-	SearchParams models.QueryParams
-	FileData     models.FileData
-	Title        string
-	Body         map[string]string
-	Count        int
-	HTML         template.HTML
-	IsText       bool
+type IndexPage struct {
+	Title   string
+	HTML    template.HTML
+	Message string
+	Count   int
+	Result  []models.FileData
+	QP      filter.QueryParams
 }
 
 func (s SimpleReq) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -43,17 +39,6 @@ func (s SimpleReq) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) HandleSearch(w http.ResponseWriter, r *http.Request) {
-	type IndexPage struct {
-		models.FilesDataList
-		FileData models.FileData
-		Title    string
-		Count    int
-		HTML     template.HTML
-		QP       filter.QueryParams
-		Message  string
-		Result   []models.FileData
-	}
-
 	ctx := r.Context()
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 
@@ -71,9 +56,7 @@ func (app *Application) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	model := models.FileModel{DB: app.DB}
-
-	list, count, err := model.Rows(qp.Keywords, qp.Limit, qp.Offset)
+	list, count, err := app.File.Rows(qp.Keywords, qp.Limit, qp.Offset)
 	if err != nil {
 		w.WriteHeader(500)
 		// TO DO
@@ -90,21 +73,11 @@ func (app *Application) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for index := range list {
-		list[index].SimplifyDetails()
-	}
-
-	filesDataList := models.FilesDataList{
-		Count: count,
-		List:  list,
-	}
-
 	indexPage := IndexPage{
-		Title:         fmt.Sprintf("wyszukano %d plików", count),
-		FilesDataList: filesDataList,
-		Count:         count,
-		QP:            filter,
-		Result:        list,
+		Title:  fmt.Sprintf("wyszukano %d plików", count),
+		Count:  count,
+		QP:     filter,
+		Result: list,
 	}
 
 	app.Render(w, templatePage, indexPage)
@@ -122,6 +95,7 @@ func (app *Application) FileDetails(w http.ResponseWriter, r *http.Request) {
 
 	f, err := app.File.Row(id)
 	if err != nil {
+		app.Log.Debug("FileDetails", "error", err)
 		http.Error(w, "Error retrieving file details", http.StatusInternalServerError)
 		return
 	}
@@ -174,6 +148,7 @@ func (app *Application) Preview(w http.ResponseWriter, r *http.Request) {
 		app.NotFound(w, r)
 		return
 	}
+	app.Log.Info("preview", "file", f)
 
 	pageData := PageData{
 		Title: "Details",
@@ -249,20 +224,7 @@ func processQueryParams(r *http.Request) models.QueryParams {
 }
 
 func (app *Application) HandleAppend(w http.ResponseWriter, r *http.Request) {
-	type IndexPage struct {
-		models.FilesDataList
-		FileData models.FileData
-		Title    string
-		Count    int
-		HTML     template.HTML
-		QP       filter.QueryParams
-		Message  string
-		Result   []models.FileData
-	}
-
 	filter := filter.Parse(r)
-
-	data := models.FilesDataList{}
 
 	qp := models.QueryParams{
 		Keywords:  filter.Keywords,
@@ -273,30 +235,20 @@ func (app *Application) HandleAppend(w http.ResponseWriter, r *http.Request) {
 		Method:    filter.Method,
 	}
 
-	if len(qp.Order) > 0 {
-		if err := data.AppendListParams(qp); err != nil {
-			fmt.Println("Error getting search list: ", err)
-			tmpl.Render(w, "index.html", IndexData{Title: "My Title", Body: map[string]string{"message": "Error retrieving search results"}})
-			return
-		}
-	} else {
-		if err := data.AppendList(qp); err != nil {
-			fmt.Println("Error getting search list: ", err)
-			tmpl.Render(w, "index.html", IndexData{Title: "My Title", Body: map[string]string{"message": "Error retrieving search results"}})
-			return
-		}
+	result, err := app.File.AppendListParams(qp)
+	if err != nil {
+		app.Log.Debug("getting search list", "fail", err)
+		tmpl.Render(w, "index.html", IndexPage{Title: "Fetch error", Message: "Error retrieving search results"})
+		return
 	}
 
 	tmpl.Render(
-		w, "append.html", IndexPage{
-			Title:         "My Title",
-			FilesDataList: data,
-			Count:         data.Count,
-			QP:            filter,
-			Result:        data.List,
+		w, "list", IndexPage{
+			Title:  "My Title",
+			QP:     filter,
+			Result: result,
 		},
 	)
-	log.Printf("nr of gorutines (HandleAppend): %v", runtime.NumGoroutine())
 }
 
 func (app *Application) PreviewMedia(w http.ResponseWriter, r *http.Request) {
@@ -334,7 +286,9 @@ func (app *Application) PreviewMedia(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	// Copy the image file
+	/*
+		Copy the image file
+	*/
 	if err := copyImageFile(srcPath, destPath); err != nil {
 		app.Log.Error("err copy file to media folder", "source", srcPath)
 		tmpl.Render(w, "error.html", PageData{
@@ -406,68 +360,4 @@ func TxtToChoroma(address string) (template.HTML, error) {
 	}
 
 	return template.HTML(highlightCode), nil
-}
-
-func PreviewImage(w http.ResponseWriter, r *http.Request) {
-	var f models.FileData
-	var i IndexData
-
-	type PageData struct {
-		File  models.FileData
-		Title string
-		Body  string
-		HTML  template.HTML
-	}
-
-	idStr := r.PathValue("id")
-
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
-		return
-	}
-
-	if err := f.GetByID(id); err != nil {
-		http.Error(w, "Error retrieving file details", http.StatusInternalServerError)
-		return
-	}
-
-	f.SimplifyDetails()
-
-	srcPath := fmt.Sprintf("%v/%v.%v", f.Directory, f.Name, f.Ext)
-	destPath := fmt.Sprintf("media/images/%s.%v", f.Name, f.Ext)
-
-	fmt.Println(srcPath)
-	fmt.Println(destPath)
-
-	// Ensure the destination directory exists
-	if err := os.MkdirAll("media/images", os.ModePerm); err != nil {
-		i.Title = "Error page"
-		i.Body = map[string]string{"err": err.Error(), "msg": "Error in media/images directory creation"}
-		tmpl.Render(w, "error.html", i)
-		return
-	}
-	// Copy the image file
-	if err := copyImageFile(srcPath, destPath); err != nil {
-		i.Title = "Error page"
-		i.Body = map[string]string{"err": err.Error(), "msg": "Error copying image file"}
-		tmpl.Render(w, "error.html", i)
-		return
-	}
-
-	go func(filePath string) {
-		time.Sleep(120 * time.Second)
-		if err := os.Remove(filePath); err != nil {
-			log.Printf("Error deleting file %s: %v", filePath, err)
-		} else {
-			log.Printf("File %s deleted successfully", filePath)
-		}
-	}(destPath)
-
-	f.URL = template.URL("/" + destPath)
-	// tmpl.Render(w, "entry-details.html", f)
-	i.FileData = f
-	i.Title = "Image Preview"
-
-	tmpl.Render(w, "preview-media.html", i)
 }

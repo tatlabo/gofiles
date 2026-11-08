@@ -36,8 +36,9 @@ func NewRouter(app *application.Application, logger *slog.Logger) http.Handler {
 	router.Handle("/data/", idata) // pprof
 	router.Handle("/data/{id}", idata)
 	//
-	protected.HandleFunc("/", app.HandleDirs)
-	protected.HandleFunc("/dirs/delete", app.HandleDirDelete)
+	protected.HandleFunc("GET /", app.HandleDirsGet)
+	protected.HandleFunc("POST /", app.HandleDirs)
+	protected.HandleFunc("POST /dirs/delete", app.HandleDirDelete)
 	protected.HandleFunc("POST /dirs/scan", app.HandleScan)
 
 	return PanicRecover(LogFunc(router, logger))

@@ -6,14 +6,11 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
-	"html/template"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
-
-	"gofiles/chroma"
 
 	_ "github.com/lib/pq"
 )
@@ -98,66 +95,4 @@ func ValidatePath(path string) (string, error) {
 	defer file.Close()
 
 	return absPath, nil
-}
-
-func VanillaSQL(s []string, group bool) error {
-	var e error
-
-	db, e := PgConn()
-	if e != nil {
-		return fmt.Errorf("cann't connect to database (utils.VanillaSql) with error: %s", e)
-	}
-
-	tx, e := db.Begin()
-	if e != nil {
-		return fmt.Errorf("failed to begin transaction (utils.VanillaSql): %s", e)
-	}
-
-	if group {
-		groupCommands := strings.Join(s, "\n")
-		if _, e = tx.Exec(groupCommands); e != nil {
-			return fmt.Errorf("failed to group commands (utils.VanillaSql): %s", e)
-		}
-		return tx.Commit()
-	}
-
-	for _, s := range s {
-		if _, e = tx.Exec(s); e != nil {
-			return fmt.Errorf("failed to execute (utils.VanillaSql) grouped commands: %s", e)
-		}
-	}
-	return tx.Commit()
-}
-
-func VanillaRaw(xs []byte) error {
-	var e error
-
-	db, e := PgConn()
-	if e != nil {
-		return e
-	}
-
-	tx, e := db.Begin()
-	if e != nil {
-		return e
-	}
-	if _, e = tx.Exec(string(xs)); e != nil {
-		return e
-	}
-	return tx.Commit()
-}
-
-func TxtToChoroma(address string) (template.HTML, error) {
-	fin, err := os.Open(address)
-	if err != nil {
-		return "", err
-	}
-	defer fin.Close()
-
-	highlightCode, err := chroma.HighlightCode(address)
-	if err != nil {
-		return "", err
-	}
-
-	return template.HTML(highlightCode), nil
 }

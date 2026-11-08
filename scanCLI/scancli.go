@@ -22,7 +22,7 @@ func main() {
 		path = strings.ReplaceAll(path, "/", "\\")
 		_, err := os.ReadDir(path)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error reading directory: %v\n", err)
+			fmt.Printf("Error reading directory: %v\n", err)
 			os.Exit(1)
 		}
 
@@ -31,8 +31,8 @@ func main() {
 	d := models.Directory{}
 	err := d.AddPath(path)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error adding path:")
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+		fmt.Println("Error adding path:")
+		fmt.Printf("%v\n", err)
 		log.Fatal(err)
 	}
 

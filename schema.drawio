@@ -1,0 +1,62 @@
+<mxfile host="65bd71144e">
+    <diagram id="2qgAeTzpaF9hZjpqRW0Z" name="Page-1">
+        <mxGraphModel dx="615" dy="626" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="1" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="coKNLiICIyUgnKRkTdQz-1" parent="0" value="Untitled Layer"/>
+                <mxCell id="coKNLiICIyUgnKRkTdQz-2" parent="coKNLiICIyUgnKRkTdQz-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f9f7ed;strokeColor=#36393d;" value="get all directories" vertex="1">
+                    <mxGeometry height="445" width="160" x="210" y="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="coKNLiICIyUgnKRkTdQz-3" parent="coKNLiICIyUgnKRkTdQz-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="post add dir" vertex="1">
+                    <mxGeometry height="40" width="150" x="530" y="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="coKNLiICIyUgnKRkTdQz-7" parent="coKNLiICIyUgnKRkTdQz-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="post delete dir" vertex="1">
+                    <mxGeometry height="40" width="150" x="530" y="410" as="geometry"/>
+                </mxCell>
+                <mxCell id="coKNLiICIyUgnKRkTdQz-10" parent="coKNLiICIyUgnKRkTdQz-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="success 303" vertex="1">
+                    <mxGeometry height="40" width="150" x="560" y="460" as="geometry"/>
+                </mxCell>
+                <mxCell id="coKNLiICIyUgnKRkTdQz-11" parent="coKNLiICIyUgnKRkTdQz-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="UUID fail" vertex="1">
+                    <mxGeometry height="40" width="150" x="560" y="510" as="geometry"/>
+                </mxCell>
+                <mxCell id="coKNLiICIyUgnKRkTdQz-12" parent="coKNLiICIyUgnKRkTdQz-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="DB fail" vertex="1">
+                    <mxGeometry height="40" width="150" x="560" y="560" as="geometry"/>
+                </mxCell>
+                <mxCell id="coKNLiICIyUgnKRkTdQz-14" parent="coKNLiICIyUgnKRkTdQz-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="success 303" vertex="1">
+                    <mxGeometry height="40" width="150" x="560" y="210" as="geometry"/>
+                </mxCell>
+                <mxCell id="coKNLiICIyUgnKRkTdQz-16" parent="coKNLiICIyUgnKRkTdQz-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="DB fail" vertex="1">
+                    <mxGeometry height="40" width="150" x="560" y="260" as="geometry"/>
+                </mxCell>
+                <mxCell id="coKNLiICIyUgnKRkTdQz-19" parent="coKNLiICIyUgnKRkTdQz-1" style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;shapeInside=1;fixedSize=1;flipH=1;legacyAnchorPoints=0;fillColor=#f8cecc;strokeColor=#b85450;" value="fail Err" vertex="1">
+                    <mxGeometry height="30" width="120" x="425" y="265" as="geometry"/>
+                </mxCell>
+                <mxCell id="coKNLiICIyUgnKRkTdQz-20" parent="coKNLiICIyUgnKRkTdQz-1" style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;shapeInside=1;fixedSize=1;flipH=1;legacyAnchorPoints=0;fillColor=#d5e8d4;strokeColor=#82b366;" value="ok" vertex="1">
+                    <mxGeometry height="30" width="120" x="425" y="215" as="geometry"/>
+                </mxCell>
+                <mxCell id="coKNLiICIyUgnKRkTdQz-21" parent="coKNLiICIyUgnKRkTdQz-1" style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;shapeInside=1;fixedSize=1;flipH=1;legacyAnchorPoints=0;fillColor=#d5e8d4;strokeColor=#82b366;" value="ok" vertex="1">
+                    <mxGeometry height="30" width="120" x="425" y="470" as="geometry"/>
+                </mxCell>
+                <mxCell id="coKNLiICIyUgnKRkTdQz-22" parent="coKNLiICIyUgnKRkTdQz-1" style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;shapeInside=1;fixedSize=1;flipH=1;legacyAnchorPoints=0;fillColor=#f8cecc;strokeColor=#b85450;" value="fail Err" vertex="1">
+                    <mxGeometry height="30" width="120" x="425" y="515" as="geometry"/>
+                </mxCell>
+                <mxCell id="coKNLiICIyUgnKRkTdQz-23" parent="coKNLiICIyUgnKRkTdQz-1" style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;shapeInside=1;fixedSize=1;flipH=1;legacyAnchorPoints=0;fillColor=#f8cecc;strokeColor=#b85450;" value="fail Err" vertex="1">
+                    <mxGeometry height="30" width="120" x="425" y="565" as="geometry"/>
+                </mxCell>
+                <mxCell id="coKNLiICIyUgnKRkTdQz-24" parent="coKNLiICIyUgnKRkTdQz-1" style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;shapeInside=1;fixedSize=1;size=10;flipH=1;legacyAnchorPoints=0;fillColor=#d5e8d4;strokeColor=#82b366;" value="ok msg" vertex="1">
+                    <mxGeometry height="30" width="110" x="235" y="470" as="geometry"/>
+                </mxCell>
+                <mxCell id="coKNLiICIyUgnKRkTdQz-25" parent="coKNLiICIyUgnKRkTdQz-1" style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;shapeInside=1;fixedSize=1;size=10;flipH=1;legacyAnchorPoints=0;fillColor=#f8cecc;strokeColor=#b85450;" value="err msg" vertex="1">
+                    <mxGeometry height="30" width="110" x="235" y="535" as="geometry"/>
+                </mxCell>
+                <mxCell id="6BG4RkdjG0IK42gYCcWF-3" parent="coKNLiICIyUgnKRkTdQz-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" value="ok" vertex="1">
+                    <mxGeometry height="30" width="105" x="235" y="180" as="geometry"/>
+                </mxCell>
+                <mxCell id="6BG4RkdjG0IK42gYCcWF-4" parent="coKNLiICIyUgnKRkTdQz-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="DB fail" vertex="1">
+                    <mxGeometry height="30" width="105" x="235" y="220" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
