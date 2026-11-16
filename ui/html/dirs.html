@@ -1,18 +1,17 @@
 {{ template "header" .Title }}
-
+{{ template "navbar" .}}
 <main class="main">
 
+    <article id="message" class="grid-container">
+        {{ with .Message }}
+        <h4 class="messages">
+            {{ . }}
+        </h4>
+        {{ end }}
+        {{ with .Err }}<h4>{{ . }}</h4>{{ end }}
+    </article>
     <article id="fileList" class="grid-container">
 
-
-        <h4>
-            Zindeksuj katalogi
-        </h4>
-        <div>
-            {{ with .Msg }}
-            <p>Path: {{ . }}</p>{{ end }}
-            {{ with .Err }}<p>{{ . }}</p>{{ end }}
-        </div>
 
         {{ template "add-path-form" }}
 
@@ -36,24 +35,28 @@
                     <input type="hidden" name="id" value="{{ .ID }}">
                     <button type="submit" class="delete" data-id="{{ .ID }}" data-name="{{ .Path }}">x</button>
                 </form>
-                {{ if .IsDone }}
+                {{ if eq 1 0 }}
                 <button class="scan" data-id="{{ .ID }}" data-path="{{ .Path }}">
                     Rescan
                 </button>
-                {{ else }}
-                <form action="/admin/dirs/scan" method="POST">
-                    <input type="hidden" name="scanid" value="{{ .ID }}">
-                    <button type="submit" class="scan" data-id="{{ .ID }}" data-path="{{ .Path }}">
-                        Scan
-                    </button>
-                </form>
                 {{ end }}
+
+                <span data-id="{{ .ID }}" data-path="{{ .Path }}">
+                    {{ if .IsDone }} V {{ else }}
+                    <form action="/admin/dirs/scan" method="POST">
+                        <input type="hidden" name="scanid" value="{{ .ID }}">
+                        <button type="submit" class="scan" data-id="{{ .ID }}" data-path="{{ .Path }}">
+                            Scan
+                        </button>
+                    </form>
+                    {{ end }}
+                </span>
                 <time datetime="{{ .CreatedAt | formatDate }}" class="">
                     {{ .CreatedAt | formatDate }}
                 </time>
             </li>
             {{ end }}
-            {{end}}
+            {{ end }}
         </ol>
 
     </article>
@@ -63,13 +66,7 @@
 
 
 
-{{ define "add-path-form" }}
-<form action="/admin/dirs" method="POST" class="form flex column" id="search-form">
-    <label for="path">Add Directory Path to Scan:</label>
-    <input class="" type="text" id="path" name="path" required placeholder="add path">
-    <button class="primary" type="submit" id="submit">Add Path</button>
-</form>
-{{ end }}
+
 
 <script>
     const search = window.location.search
@@ -81,3 +78,12 @@
 </body>
 
 </html>
+
+
+{{ define "add-path-form" }}
+<form action="/admin/dirs" method="POST" class="form flex column" id="search-form">
+    <label for="path">Add Directory Path to Scan:</label>
+    <input class="" type="text" id="path" name="path" required placeholder="add path">
+    <button class="primary" type="submit" id="submit">Add Path</button>
+</form>
+{{ end }}

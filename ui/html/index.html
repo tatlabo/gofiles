@@ -119,17 +119,20 @@
 
     <main class="main">
 
-
-        <article id="messages" class="messages">
-            {{ with .Message }}{{ . }}{{ end }}
-        </article>
-
-        <article id="fileList" class="grid-container">
+        <article id="message" class="grid-container">
+            {{ with .Message }}
+            <h4 class="messages">
+                {{ . }}
+            </h4>
+            {{ end }}
             {{ with .Count }}
-            <h4>
+            <h4 class="messages">
                 {{ . }} results found
             </h4>
             {{end}}
+        </article>
+
+        <article id="fileList" class="grid-container">
 
             {{/* Start of form */}}
 

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"gofiles/internal/models"
+	"gofiles/scan"
 )
 
 func main() {
@@ -42,12 +43,13 @@ func main() {
 	fmt.Printf("IsDone: %v\n", d.IsDone)
 	fmt.Printf("CreatedAt: %v\n", d.CreatedAt)
 	fmt.Printf("UpdatedAt: %v\n", d.UpdatedAt)
-	// err := scan.Scan(d)
-	// if err != nil {
-	// 	fmt.Fprintf(os.Stderr, "Error scanning directory: %v\n", err)
-	// }
 
-	// err := insertIntoDirs(path)
+	err = scan.Scan(d)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error scanning directory: %v\n", err)
+	}
+
+	// err = insertIntoDirs(path)
 	// if err != nil {
 	// 	fmt.Fprintf(os.Stderr, "Error inserting into directory table: %v\n", err)
 	// 	return err

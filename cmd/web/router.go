@@ -21,6 +21,8 @@ func NewRouter(app *application.Application, logger *slog.Logger) http.Handler {
 	media := http.FileServer(http.Dir("media"))
 	router.Handle("/media/", http.StripPrefix("/media/", media))
 
+	ch := new(application.CountHandler)
+	router.Handle("/count", ch)
 	router.HandleFunc("/h3", app.HandleCtx)
 	router.HandleFunc("/", app.HandleSearch)
 	router.HandleFunc("/append", app.HandleAppend)

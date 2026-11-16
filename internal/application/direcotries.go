@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"gofiles/internal/models"
@@ -20,13 +21,13 @@ import (
 type DirsPage struct {
 	Title string
 
-	Msg   string
-	Err   error
-	Dirs  []models.Directory
-	Flash string
+	Message string
+	Err     error
+	Dirs    []models.Directory
+	Flash   string
 }
 
-type MsgKey string
+type MessageKey string
 
 func decodeCookie(name string, r *http.Request) (value string, err error) {
 	cookie, err := r.Cookie(name)
@@ -42,9 +43,37 @@ func decodeCookie(name string, r *http.Request) (value string, err error) {
 	return string(decoded), nil
 }
 
-func encodeCookie(name, value string) (*http.Cookie, error) {
-	Cookie := &http.Cookie{
-		Path:     "/admin/dirs",
+/*
+type Cookie struct {
+    Name       string
+    Value      string
+
+	path that must exist in the requested URL for the browser
+    Path       string
+    Domain     string
+	expires and should be deleted by browser
+    Expires    time.Time
+	expires in that many seconds
+	< 0 delete
+    MaxAge     int
+	only over https
+    Secure     bool
+	only with http; can't be accessed by JS
+    HttpOnly   bool
+		http.SameSiteDefaultMode
+		http.SameSiteLaxMode
+		http.SameSiteStrictMode
+		http.SameSiteNoneMode
+    SameSite   SameSite
+    Raw        string
+    Unparsed   []string
+}
+
+*/
+
+func encodeCookie(name, value string) (http.Cookie, error) {
+	Cookie := http.Cookie{
+		Path:     "/admin",
 		MaxAge:   60,
 		HttpOnly: true,
 		Secure:   true,
@@ -66,15 +95,15 @@ func (app *Application) HandleDirsGet(w http.ResponseWriter, r *http.Request) {
 
 	// get err or error from context
 	var (
-		errKey MsgKey = "err"
+		errKey MessageKey = "err"
 	)
 
 	// check context for error
-	errMsg, ok := r.Context().Value(errKey).(error)
+	errMessage, ok := r.Context().Value(errKey).(error)
 	if ok {
-		if errMsg != nil {
-			app.Log.Info("context", "errMsg", errMsg)
-			pageData.Err = errMsg
+		if errMessage != nil {
+			app.Log.Info("context", "errMessage", errMessage)
+			pageData.Err = errMessage
 		}
 	}
 
@@ -88,10 +117,10 @@ func (app *Application) HandleDirsGet(w http.ResponseWriter, r *http.Request) {
 
 	pageData.Dirs = dirs
 
-	cookie, err := decodeCookie("message", r)
-	if err == nil {
-		pageData.Msg = cookie
-		app.Log.Info("cokkie", "message", pageData.Msg)
+	cookie, _ := decodeCookie("message", r)
+	if cookie != "" {
+		pageData.Message = cookie
+		app.Log.Info("cokkie", "message", pageData.Message)
 	}
 
 	http.SetCookie(w, &http.Cookie{
@@ -100,6 +129,18 @@ func (app *Application) HandleDirsGet(w http.ResponseWriter, r *http.Request) {
 	})
 
 	tmpl.Render(w, templatePage, pageData)
+}
+
+type CountHandler struct {
+	mu sync.Mutex // guards n
+	n  int
+}
+
+func (h *CountHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.n++
+	fmt.Fprintf(w, "count is %d\n", h.n)
 }
 
 func (app *Application) HandleDirs(w http.ResponseWriter, r *http.Request) {
@@ -129,22 +170,23 @@ func (app *Application) HandleDirs(w http.ResponseWriter, r *http.Request) {
 	// Redirect to /admin with cookie
 	cookie, err := encodeCookie("message", "dodano folder do skanowania: "+path)
 	if err == nil {
-		http.SetCookie(w, cookie)
+		// set cookie must be pointer
+		http.SetCookie(w, &cookie)
 	}
 	//
 	redirectURL := fmt.Sprintf("/admin/%s?success=true&added_path=%s", r.URL.Path, path)
 	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 }
 
-func requestWithMsg(msg string, r *http.Request) *http.Request {
-	var msgKey MsgKey = "msg"
-	ctx := context.WithValue(r.Context(), msgKey, msg)
-	return r.WithContext(ctx)
-}
+// func requestWithMessage(Message string, r *http.Request) *http.Request {
+// 	var MessageKey MessageKey = "Message"
+// 	ctx := context.WithValue(r.Context(), MessageKey, Message)
+// 	return r.WithContext(ctx)
+// }
 
 func requestWithErr(err error, r *http.Request) *http.Request {
-	var msgKey MsgKey = "err"
-	ctx := context.WithValue(r.Context(), msgKey, err)
+	var MessageKey MessageKey = "err"
+	ctx := context.WithValue(r.Context(), MessageKey, err)
 	return r.WithContext(ctx)
 }
 
@@ -170,10 +212,10 @@ func (app *Application) HandleDirDelete(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// success
-	// redirect with cookie
+	// redirect with cookie; cookie must be pointer
 	cookie, err := encodeCookie("message", "delete directory success: "+path)
 	if err == nil {
-		http.SetCookie(w, cookie)
+		http.SetCookie(w, &cookie)
 	}
 	redirectURL := "/admin/dirs"
 	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
@@ -225,15 +267,16 @@ func (app *Application) HandleScan(w http.ResponseWriter, r *http.Request) {
 	// TO DO check if path exists
 
 	select {
-	case msgErr := <-scanErr:
-		app.Log.Error("scan dir", " failed", msgErr)
-		app.HandleDirsGet(w, requestWithErr(msgErr, r))
+	case MessageErr := <-scanErr:
+		app.Log.Error("scan dir", " failed", MessageErr)
+		app.HandleDirsGet(w, requestWithErr(MessageErr, r))
 	case <-time.After(2 * time.Second):
 		// scan started
 		// redirect with cookie
+		// cookie must be a pointer
 		cookie, err := encodeCookie("message", "scan started")
 		if err == nil {
-			http.SetCookie(w, cookie)
+			http.SetCookie(w, &cookie)
 		}
 		redirectURL := "/admin/dirs"
 		http.Redirect(w, r, redirectURL, http.StatusSeeOther)

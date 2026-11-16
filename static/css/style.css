@@ -106,7 +106,7 @@ ol.file-list li:nth-child(even) {
 .headers,
 ol.file-list li {
   list-style-position: inside;
-  margin-left: var(--size-fluid-1);
+  /* margin-left: var(--size-fluid-1); */
   padding: var(--size-1) var(--size-fluid-1);
   max-width: calc(100% - var(--size-fluid-2));
   position: static;
@@ -400,6 +400,7 @@ nav {
 .grid-container {
   display: grid;
   grid-template-columns: 5vw 1fr 5vw;
+  margin-bottom: 1.5rem;
 }
 
 
